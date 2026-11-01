@@ -103,7 +103,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
       <button id="createSellerSaleButton" class="seller-action-button" type="button">Enviar pedido por WhatsApp</button>
       <div id="sellerSaleCreateStatus" class="seller-status" role="status"></div>
       <label id="sellerPreparedMessageWrap" class="seller-field" style="display:none">Pedido preparado<textarea id="sellerPreparedMessage" rows="7" readonly></textarea></label>
-      <a id="sellerOpenWhatsAppLink" class="seller-action-button" style="display:none;text-align:center;text-decoration:none" target="_blank" rel="noopener">Abrir selector de WhatsApp</a>
+      <button id="sellerOpenWhatsAppLink" class="seller-action-button" type="button" style="display:none">Compartir pedido por WhatsApp</button>
       <button id="sellerCopyPreparedButton" class="seller-action-button secondary" type="button" style="display:none">Copiar pedido</button>
     </section>
     <section id="sellerSalesHistoryPanel" style="display:none">
@@ -167,6 +167,16 @@ function getDeviceId(){
   let id=localStorage.getItem(DEVICE_STORAGE_KEY);
   if(!id){ id=crypto.randomUUID ? crypto.randomUUID() : ("dev-"+Date.now()+"-"+Math.random().toString(36).slice(2)); localStorage.setItem(DEVICE_STORAGE_KEY,id); }
   return id;
+}
+function getSessionId(session){
+  if(session?.session_id)return session.session_id;
+  try{
+    const part=String(session?.access_token||"").split(".")[1];
+    if(!part)return null;
+    const base64=part.replace(/-/g,"+").replace(/_/g,"/");
+    const payload=JSON.parse(atob(base64+"=".repeat((4-base64.length%4)%4)));
+    return typeof payload.session_id==="string"?payload.session_id:null;
+  }catch(_){return null}
 }
 function getDeviceLabel(){
   const ua=navigator.userAgent||"";
@@ -241,7 +251,7 @@ async function sellerLogin(){
 async function registerSellerDevice(session, mode="restore"){
   if(!session?.access_token) return {ok:false,message:"Sesión inválida."};
   const {data,error}=await db.functions.invoke("register-seller-device",{
-    body:{device_id:getDeviceId(),device_label:getDeviceLabel(),session_id:session.session_id || null,action:mode}
+    body:{device_id:getDeviceId(),device_label:getDeviceLabel(),session_id:getSessionId(session),action:mode}
   });
   if(error){
     let message=error.message||"No se pudo verificar el dispositivo.";
@@ -437,10 +447,6 @@ function selectedSellerSaleItems(){
     product:allProducts.find(p=>Number(p.id)===Number(row.dataset.saleProduct))
   })).filter(item=>item.quantity>0);
 }
-function sellerSaleMessage(orderText,items,saleId){
-  const lines=items.map(item=>"• "+productTitle(item.product)+" — Cantidad: "+item.quantity).join("\n");
-  return "PEDIDO DE CLIENTE\n"+orderText.trim()+"\n\nPRODUCTOS Y CANTIDADES\n"+lines+"\n\nVendedor: "+(currentSeller?.name||"Vendedor")+"\nPedido: "+String(saleId).slice(0,8);
-}
 async function copySellerSaleText(text,button){
   try{
     await navigator.clipboard.writeText(text);
@@ -452,37 +458,45 @@ async function copySellerSaleText(text,button){
   }
 }
 async function createSellerSale(){
-  const orderText=$("saleOrderText").value.trim();
+  const orderText=$("saleOrderText").value;
   const items=selectedSellerSaleItems();
   if(!items.length){$("sellerSaleCreateStatus").textContent="Elegí al menos un producto y cargá su cantidad.";return}
-  if(!orderText){$("sellerSaleCreateStatus").textContent="Pegá el pedido del cliente antes de registrar la venta.";return}
-  // Reservamos una pestaña durante el clic del vendedor para que el navegador no bloquee
-  // la apertura de WhatsApp después de guardar el pedido en Supabase.
-  const whatsappWindow=window.open("about:blank","_blank");
+  if(!orderText.trim()){$("sellerSaleCreateStatus").textContent="Pegá el pedido del cliente antes de registrar la venta.";return}
   const button=$("createSellerSaleButton");button.disabled=true;
   $("sellerSaleCreateStatus").textContent="Registrando pedido y reservando stock…";
   try{
     const payload=items.map(({product_id,quantity})=>({product_id,quantity}));
-    const {data:saleId,error}=await db.rpc("create_seller_sale",{p_order_text:orderText,p_items:payload});
+    let {data:saleId,error}=await db.rpc("create_seller_sale",{p_order_text:orderText,p_items:payload});
+    if(error&&/sesión.*dispositivo.*autorizada/i.test(error.message||"")){
+      const {data:sessionData}=await db.auth.getSession();
+      const device=await registerSellerDevice(sessionData?.session,"restore");
+      if(device.ok){
+        const retry=await db.rpc("create_seller_sale",{p_order_text:orderText,p_items:payload});
+        saleId=retry.data;error=retry.error;
+      }
+    }
     if(error)throw error;
-    const message=sellerSaleMessage(orderText,items,saleId);
-    $("sellerPreparedMessage").value=message;
+    $("sellerPreparedMessage").value=orderText;
     $("sellerPreparedMessageWrap").style.display="block";
     $("sellerCopyPreparedButton").style.display="block";
-    const whatsappUrl="https://wa.me/?text="+encodeURIComponent(message);
-    $("sellerOpenWhatsAppLink").href=whatsappUrl;
     $("sellerOpenWhatsAppLink").style.display="block";
-    $("sellerSaleCreateStatus").textContent="✅ Pedido registrado con cantidades. En WhatsApp elegí el grupo y tocá Enviar. Después confirmá cada producto antes de las 48 horas.";
+    $("sellerSaleCreateStatus").textContent="✅ Pedido registrado y stock reservado. Se compartirá únicamente el texto que pegaste. Elegí WhatsApp y luego el grupo.";
     for(const row of $("saleProductList").querySelectorAll(".sale-quantity"))row.value="0";
     $("saleOrderText").value="";
-    if(whatsappWindow){
-      whatsappWindow.opener=null;
-      whatsappWindow.location.href=whatsappUrl;
-    }else{
-      $("sellerSaleCreateStatus").textContent+=" Si no se abrió automáticamente, tocá «Abrir selector de WhatsApp».";
+    try{
+      if(!navigator.share)throw new Error("Este navegador no permite abrir el selector para compartir.");
+      await navigator.share({text:orderText});
+      $("sellerSaleCreateStatus").textContent="Selector cerrado. Confirmá que hayas enviado el texto exacto en WhatsApp.";
+    }catch(shareError){
+      if(shareError?.name==="AbortError"){
+        $("sellerSaleCreateStatus").textContent="El pedido quedó registrado y el stock reservado. No se compartió; podés volver a abrir el selector.";
+      }else{
+        console.warn("No se pudo abrir el selector de compartir:",shareError);
+        $("sellerSaleCreateStatus").textContent="El pedido quedó registrado y el stock reservado. Tocá «Compartir pedido por WhatsApp» para elegir WhatsApp y el grupo.";
+      }
     }
     await loadSellerSales();
-  }catch(e){if(whatsappWindow)whatsappWindow.close();$("sellerSaleCreateStatus").textContent="No se pudo registrar el pedido: "+(e.message||e)}
+  }catch(e){$("sellerSaleCreateStatus").textContent="No se pudo registrar el pedido: "+(e.message||e)}
   finally{button.disabled=false}
 }
 function saleStatusLabel(status){
@@ -541,13 +555,24 @@ async function resolveSellerSaleItem(button){
 }
 async function copyExistingSale(saleId){
   const {data:sale,error}=await db.from("seller_sales")
-    .select("id,seller_name,order_text,seller_sale_items(product_name,quantity)")
+    .select("id,order_text")
     .eq("id",saleId).eq("seller_id",currentSellerId).maybeSingle();
   if(error||!sale){$("sellerSalesHistory").textContent="No se pudo preparar el texto del pedido.";return}
-  const items=(sale.seller_sale_items||[]).map(item=>({product:{name:item.product_name},quantity:item.quantity}));
-  const message=sellerSaleMessage(sale.order_text,items,sale.id);
-  try{await navigator.clipboard.writeText(message);$("sellerSaleCreateStatus").textContent="Texto copiado. Pegalo manualmente en el grupo de WhatsApp."}
-  catch(e){alert(message)}
+  try{await navigator.clipboard.writeText(sale.order_text);$("sellerSaleCreateStatus").textContent="Texto exacto del pedido copiado."}
+  catch(e){alert(sale.order_text)}
+}
+async function sharePreparedSellerOrder(){
+  const text=$("sellerPreparedMessage").value;
+  if(!text)return;
+  try{
+    if(!navigator.share)throw new Error("Este navegador no permite compartir directamente.");
+    await navigator.share({text});
+    $("sellerSaleCreateStatus").textContent="Elegí WhatsApp y luego el grupo para enviar el texto exacto.";
+  }catch(e){
+    if(e?.name==="AbortError")return;
+    try{await navigator.clipboard.writeText(text);$("sellerSaleCreateStatus").textContent="No se pudo abrir el selector. Copié el texto exacto; pegalo en WhatsApp."}
+    catch(_){$("sellerPreparedMessage").focus();$("sellerPreparedMessage").select();$("sellerSaleCreateStatus").textContent="No se pudo abrir el selector. El texto exacto está seleccionado para copiarlo."}
+  }
 }
 
 function catalogCard(p,index){
@@ -878,6 +903,7 @@ $("sellerSalesNewTab").addEventListener("click",()=>showSellerSalesTab("new"));
 $("sellerSalesHistoryTab").addEventListener("click",()=>showSellerSalesTab("history"));
 $("saleProductSearch").addEventListener("input",renderSaleProducts);
 $("createSellerSaleButton").addEventListener("click",createSellerSale);
+$("sellerOpenWhatsAppLink").addEventListener("click",sharePreparedSellerOrder);
 $("sellerCopyPreparedButton").addEventListener("click",()=>copySellerSaleText($("sellerPreparedMessage").value,$("sellerCopyPreparedButton")));
 $("sellerSalesRefresh").addEventListener("click",loadSellerSales);
 $("sellerSalesHistory").addEventListener("click",e=>{
