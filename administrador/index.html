@@ -159,6 +159,17 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     el.className = "small" + (type ? " " + type : "");
   }
 
+  function pushOutcomeText(result) {
+    const sent=Number(result?.sent||0), failed=Number(result?.failed||0), removed=Number(result?.removed||0);
+    const statuses=new Map();
+    for(const failure of (Array.isArray(result?.failures)?result.failures:[])){
+      const status=Number(failure?.status);
+      if(Number.isInteger(status)&&status>0) statuses.set(status,(statuses.get(status)||0)+1);
+    }
+    const statusText=[...statuses].map(([status,count])=>`HTTP ${status}: ${count}`).join(", ");
+    return `${sent} enviada${sent===1?"":"s"}, ${failed} fallida${failed===1?"":"s"}${statusText?` (${statusText})`:""}${removed?`, ${removed} eliminadas por inválidas`:""}`;
+  }
+
   function normalizePhone(value) {
     return String(value ?? "").replace(/\D/g, "");
   }
@@ -1321,7 +1332,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     finally{button.disabled=false;}
   }
   async function uploadGeneralPushImage(){const file=$("generalPushImage").files?.[0];if(!file)return "";const ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";const path=`notifications/general/${crypto.randomUUID()}.${ext}`;const {error}=await db.storage.from("client-media").upload(path,file,{contentType:file.type||"image/jpeg",upsert:false});if(error)throw error;return db.storage.from("client-media").getPublicUrl(path).data.publicUrl;}
-  async function sendGeneralPush(){const title=String($("generalPushTitle").value||"").trim();const body=String($("generalPushBody").value||"").trim();const whatsapp=normalizeWhatsApp($("generalPushWhatsApp").value);if(!title){setStatus("generalPushStatus","Escribí un título.","warn");return;}if(whatsapp.length<8){setStatus("generalPushStatus","Ingresá un número válido con código de país.","warn");return;}const button=$("sendGeneralPushButton");button.disabled=true;try{setStatus("generalPushStatus","Preparando notificación…");const image=await uploadGeneralPushImage();const {data:{session}}=await db.auth.getSession();if(!session?.access_token)throw new Error("No hay sesión de administrador activa.");const resp=await fetch(`${EV_CONFIG.SUPABASE_URL}/functions/v1/send-client-push`,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({general:{title,body,image,whatsappNumber:whatsapp}})});const result=await resp.json().catch(()=>({}));if(!resp.ok)throw new Error(result?.error||result?.message||`HTTP ${resp.status}`);const sent=Number(result?.sent||0),failed=Number(result?.failed||0),removed=Number(result?.removed||0);setStatus("generalPushStatus",`✅ Enviada. ${sent} enviadas, ${failed} fallidas${removed?`, ${removed} eliminadas por inválidas`:""}.`,failed?"warn":"ok");$("generalPushImage").value="";}catch(error){console.error(error);setStatus("generalPushStatus","❌ No se pudo enviar: "+(error.message||error),"danger");}finally{button.disabled=false;}}
+  async function sendGeneralPush(){const title=String($("generalPushTitle").value||"").trim();const body=String($("generalPushBody").value||"").trim();const whatsapp=normalizeWhatsApp($("generalPushWhatsApp").value);if(!title){setStatus("generalPushStatus","Escribí un título.","warn");return;}if(whatsapp.length<8){setStatus("generalPushStatus","Ingresá un número válido con código de país.","warn");return;}const button=$("sendGeneralPushButton");button.disabled=true;try{setStatus("generalPushStatus","Preparando notificación…");const image=await uploadGeneralPushImage();const {data:{session}}=await db.auth.getSession();if(!session?.access_token)throw new Error("No hay sesión de administrador activa.");const resp=await fetch(`${EV_CONFIG.SUPABASE_URL}/functions/v1/send-client-push`,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({general:{title,body,image,whatsappNumber:whatsapp}})});const result=await resp.json().catch(()=>({}));if(!resp.ok)throw new Error(result?.error||result?.message||`HTTP ${resp.status}`);const failed=Number(result?.failed||0);setStatus("generalPushStatus",`✅ ${pushOutcomeText(result)}.`,failed?"warn":"ok");$("generalPushImage").value="";}catch(error){console.error(error);setStatus("generalPushStatus","❌ No se pudo enviar: "+(error.message||error),"danger");}finally{button.disabled=false;}}
 
   async function loadClientFeatures(){
     const box=$("clientFeaturesList"); if(!box) return;
@@ -1447,12 +1458,10 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
                 pushStatusSet=true;
               }else{
                 const total=Number(result?.subscriptions||0);
-                const sent=Number(result?.sent||0);
                 const failed=Number(result?.failed||0);
-                const removed=Number(result?.removed||0);
                 const detail=total===0
                   ? "No hay suscripciones Push activas."
-                  : `Push: ${sent} enviadas, ${failed} fallidas${removed?`, ${removed} eliminadas por inválidas`:""}.`;
+                  : `Push: ${pushOutcomeText(result)}.`;
                 setStatus("clientFeaturesStatus",`✅ Destacados guardados. ${detail}`,failed?"warn":"ok");
                 if(Array.isArray(result?.failures) && result.failures.length) console.warn("Detalles de fallos Push",result.failures);
                 pushStatusSet=true;

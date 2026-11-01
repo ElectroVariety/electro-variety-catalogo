@@ -593,6 +593,23 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     return Uint8Array.from([...rawData].map(c=>c.charCodeAt(0)));
   }
 
+  async function getCurrentPushSubscription(reg){
+    const expectedKey=urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY);
+    let sub=await reg.pushManager.getSubscription();
+    if(sub){
+      const currentKey=sub.options?.applicationServerKey;
+      const matches=!!currentKey && currentKey.byteLength===expectedKey.byteLength &&
+        new Uint8Array(currentKey).every((byte,index)=>byte===expectedKey[index]);
+      if(matches) return sub;
+      await sub.unsubscribe();
+      if(await reg.pushManager.getSubscription()) throw new Error("No se pudo reemplazar la suscripción Push anterior.");
+    }
+    return reg.pushManager.subscribe({
+      userVisibleOnly:true,
+      applicationServerKey:expectedKey
+    });
+  }
+
   async function unregisterLegacyServiceWorkers(){
     const ROOT="/electro-variety-catalogo/";
     const OWN="/electro-variety-catalogo/clientes/";
@@ -668,24 +685,8 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
         if(permission==="granted"){
           showNotice(false);
 
-          let sub=await reg.pushManager.getSubscription();
-
-          if(sub){
-            try{
-              await savePushSubscription(sub);
-              return true;
-            }catch(error){
-              console.warn("Push existente: no se pudo sincronizar con Supabase",error);
-            }
-          }
-
-          // The permission is already granted, so create a replacement
-          // subscription without requesting permission again.
           try{
-            sub=await reg.pushManager.subscribe({
-              userVisibleOnly:true,
-              applicationServerKey:urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY)
-            });
+            const sub=await getCurrentPushSubscription(reg);
             await savePushSubscription(sub);
             return true;
           }catch(error){
@@ -714,10 +715,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
             }
           }
 
-          const sub=await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({
-            userVisibleOnly:true,
-            applicationServerKey:urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY)
-          });
+          const sub=await getCurrentPushSubscription(reg);
 
           await savePushSubscription(sub);
           showNotice(false);

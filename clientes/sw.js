@@ -1,4 +1,4 @@
-const CACHE = "electro-variety-clientes-push-v8";
+const CACHE = "electro-variety-clientes-push-v9";
 const BASE = "/electro-variety-catalogo/clientes/";
 const ROOT = "/electro-variety-catalogo/";
 const SUPABASE_URL = "https://fwshqclpurjzotehqowq.supabase.co";
