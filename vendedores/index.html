@@ -82,6 +82,8 @@ let currentPage=1;
 const PRODUCTS_PER_PAGE=20;
 let handlingAuth=false;
 let deviceHeartbeat=null;
+let deviceRetryTimer=null;
+let deviceRetryDelay=5000;
 let cartIds=new Set();
 const DEVICE_STORAGE_KEY="electro-variety-seller-device-id";
 
@@ -94,6 +96,18 @@ function getDeviceLabel(){
   const ua=navigator.userAgent||"";
   const mobile=/Android|iPhone|iPad|Mobile/i.test(ua);
   return (mobile?"Móvil":"Computadora")+" · "+(navigator.platform||"Navegador");
+}
+
+function retrySessionCheck(mode="restore"){
+  if(deviceRetryTimer)clearTimeout(deviceRetryTimer);
+  deviceRetryTimer=setTimeout(async()=>{
+    deviceRetryTimer=null;
+    try{
+      const {data,error}=await db.auth.getSession();
+      if(!error&&data?.session)await handleSession(data.session,mode);
+    }catch(e){console.warn("Reintento de sesión del vendedor",e)}
+  },deviceRetryDelay);
+  deviceRetryDelay=Math.min(deviceRetryDelay*2,60000);
 }
 
 const $=id=>document.getElementById(id);
@@ -166,11 +180,7 @@ async function checkSellerDevice(session, mode="heartbeat"){
   if(result.ok) return true;
   if(result.temporary){
     console.warn("Verificación de dispositivo temporalmente no disponible",result.message);
-    if(mode==="heartbeat"){
-      await db.auth.signOut({scope:"local"});
-      showLogin("No se pudo verificar el dispositivo. Iniciá sesión nuevamente.");
-      return false;
-    }
+    if(mode==="heartbeat")return false;
     return false;
   }
   await db.auth.signOut({scope:"local"});
@@ -197,8 +207,8 @@ async function handleSession(session, mode="restore"){
       .select("user_id,name,phone,active").eq("user_id",session.user.id).maybeSingle();
     if(sellerError){
       console.warn("Verificación del vendedor temporalmente fallida",sellerError);
-      showLogin("Verificando sesión…");
-      setTimeout(async()=>{try{const {data:retry}=await db.auth.getSession();if(retry?.session)handleSession(retry.session);}catch(_){ }},4000);
+      if($("catLogout").style.display!=="block")showLogin("Verificando sesión…");
+      retrySessionCheck(mode);
       return
     }
     if(seller){
@@ -209,10 +219,20 @@ async function handleSession(session, mode="restore"){
       }
       const device=await registerSellerDevice(session,mode);
       if(!device.ok){
+        if(device.temporary){
+          console.warn("No se pudo verificar el dispositivo; se conserva la sesión y se reintentará.",device.message);
+          if($("catLogout").style.display!=="block")showLogin("No se pudo verificar el dispositivo por un problema temporal. Se volverá a intentar automáticamente.");
+          retrySessionCheck(mode);
+          return;
+        }
+        if(deviceRetryTimer)clearTimeout(deviceRetryTimer);
+        deviceRetryTimer=null;deviceRetryDelay=5000;
         await db.auth.signOut({scope:"local"});
         showLogin(device.pending ? "⏳ Dispositivo nuevo: solicitud enviada al administrador." : (device.message||"🔒 Dispositivo no autorizado."));
         return;
       }
+      if(deviceRetryTimer)clearTimeout(deviceRetryTimer);
+      deviceRetryTimer=null;deviceRetryDelay=5000;
       startDeviceHeartbeat();
       await startCatalog();
       return;
@@ -581,7 +601,7 @@ $("catLogout").addEventListener("click",async()=>{
 db=supabase.createClient(EV_CONFIG.SUPABASE_URL,EV_CONFIG.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storage:window.localStorage,storageKey:"electro-variety-seller-auth-v2"}});
 
 db.auth.onAuthStateChange((event,session)=>{
-  if(event==="SIGNED_OUT"){ if(deviceHeartbeat) clearInterval(deviceHeartbeat); showLogin(); }
+  if(event==="SIGNED_OUT"){ if(deviceHeartbeat) clearInterval(deviceHeartbeat); if(deviceRetryTimer)clearTimeout(deviceRetryTimer); deviceRetryTimer=null; showLogin(); }
   else if(event==="INITIAL_SESSION"||event==="TOKEN_REFRESHED"){
     if(session)setTimeout(()=>handleSession(session,"restore"),0);
   }
@@ -592,16 +612,14 @@ db.auth.onAuthStateChange((event,session)=>{
     const {data,error}=await db.auth.getSession();
     if(error){
       console.warn("Sesión local no recuperable",error);
-      try{ localStorage.removeItem("electro-variety-seller-auth-v2"); }catch(_){}
-      showLogin("La sesión anterior venció. Iniciá sesión nuevamente.");
+      showLogin("No se pudo recuperar la sesión en este momento. Recargá la página o volvé a intentar.");
       return
     }
     if(data?.session)await handleSession(data.session);
     else showLogin();
   }catch(e){
     console.warn("Error recuperando sesión",e);
-    try{ localStorage.removeItem("electro-variety-seller-auth-v2"); }catch(_){}
-    showLogin("La sesión anterior venció. Iniciá sesión nuevamente.");
+    showLogin("No se pudo recuperar la sesión en este momento. Recargá la página o volvé a intentar.");
   }
 })();
 </script>
