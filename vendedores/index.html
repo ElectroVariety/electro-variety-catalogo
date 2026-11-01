@@ -457,6 +457,12 @@ async function copySellerSaleText(text,button){
     $("sellerPreparedMessage").focus();$("sellerPreparedMessage").select();
   }
 }
+function clearPreparedSellerOrder(){
+  $("sellerPreparedMessage").value="";
+  $("sellerPreparedMessageWrap").style.display="none";
+  $("sellerCopyPreparedButton").style.display="none";
+  $("sellerOpenWhatsAppLink").style.display="none";
+}
 async function createSellerSale(){
   const orderText=$("saleOrderText").value;
   const items=selectedSellerSaleItems();
@@ -486,7 +492,8 @@ async function createSellerSale(){
     try{
       if(!navigator.share)throw new Error("Este navegador no permite abrir el selector para compartir.");
       await navigator.share({text:orderText});
-      $("sellerSaleCreateStatus").textContent="Selector cerrado. Confirmá que hayas enviado el texto exacto en WhatsApp.";
+      clearPreparedSellerOrder();
+      $("sellerSaleCreateStatus").textContent="✅ Pedido compartido. Se limpió el texto preparado.";
     }catch(shareError){
       if(shareError?.name==="AbortError"){
         $("sellerSaleCreateStatus").textContent="El pedido quedó registrado y el stock reservado. No se compartió; podés volver a abrir el selector.";
@@ -567,7 +574,8 @@ async function sharePreparedSellerOrder(){
   try{
     if(!navigator.share)throw new Error("Este navegador no permite compartir directamente.");
     await navigator.share({text});
-    $("sellerSaleCreateStatus").textContent="Elegí WhatsApp y luego el grupo para enviar el texto exacto.";
+    clearPreparedSellerOrder();
+    $("sellerSaleCreateStatus").textContent="✅ Pedido compartido. Se limpió el texto preparado.";
   }catch(e){
     if(e?.name==="AbortError")return;
     try{await navigator.clipboard.writeText(text);$("sellerSaleCreateStatus").textContent="No se pudo abrir el selector. Copié el texto exacto; pegalo en WhatsApp."}
