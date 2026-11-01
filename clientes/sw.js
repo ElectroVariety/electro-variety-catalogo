@@ -1,9 +1,9 @@
-const CACHE = "electro-variety-clientes-push-v7";
+const CACHE = "electro-variety-clientes-push-v8";
 const BASE = "/electro-variety-catalogo/clientes/";
 const ROOT = "/electro-variety-catalogo/";
-const SUPABASE_URL = "https://vntrxxerufqpqstdkokb.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_KoeXTWxTDfImBLbnLsBVfg_qenotVz4";
-const PUSH_VAPID_PUBLIC_KEY = "BMlz3G8Al0zPdVVYTPtcQ65xOP9qqa0O8W23ubnApHkzSmT837k53-TX7CuAeGW0jFcX7EbFxYXv06W_7kAtIbE";
+const SUPABASE_URL = "https://fwshqclpurjzotehqowq.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_1SjIU9YCPiRriheH4AK1TA_oLMn_Iol";
+const PUSH_VAPID_PUBLIC_KEY = "BErwYnWOMtaFCFL3l1IPvqTVRuqKbUCqB3-pxkzo9uKlNw9JgPufCMp73srJHCJ0nKA16NGecQ9o6Et9v_hBia0";
 
 const SHELL = [
   BASE,

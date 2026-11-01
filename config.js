@@ -1,4 +1,4 @@
 window.EV_CONFIG = {
-  SUPABASE_URL: "https://vntrxxerufqpqstdkokb.supabase.co",
-  SUPABASE_ANON_KEY: "sb_publishable_KoeXTWxTDfImBLbnLsBVfg_qenotVz4"
+  SUPABASE_URL: "https://fwshqclpurjzotehqowq.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_1SjIU9YCPiRriheH4AK1TA_oLMn_Iol"
 };
