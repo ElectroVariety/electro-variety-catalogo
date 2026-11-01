@@ -48,15 +48,6 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <div class="full"><label>Nombre</label><input id="name"/></div><div><label>Subtítulo</label><input id="subtitle"/></div><div><label>Categoría</label><input id="category"/></div>
 <div><label>Cuota quincenal</label><input id="qprice"/></div><div><label>Cantidad quincenal</label><input id="qcount" min="1" type="number"/></div><div><label>Cuota mensual</label><input id="mprice"/></div><div><label>Cantidad mensual</label><input id="mcount" min="1" type="number"/></div>
 <div class="full"><label>Imagen (obligatoria al crear; opcional al editar)</label><input accept="image/*" id="image" type="file"/></div>
-<div class="full" style="border:1px solid #e5e7eb;border-radius:12px;padding:12px;background:#f9fafb">
-<label style="display:flex;align-items:center;gap:8px"><input id="hasColors" type="checkbox" style="width:auto;margin:0"> 🎨 Este producto tiene variantes de color</label>
-<div id="colorEditor" class="hidden" style="margin-top:10px">
-<div class="small">Elegí los colores disponibles. Podrás modificar sus cantidades desde Depósito y Local.</div>
-<div id="colorOptions" style="display:flex;flex-wrap:wrap;gap:7px;margin-top:9px"></div>
-<div style="margin-top:12px;padding:10px;border:1px dashed #d1d5db;border-radius:10px;background:#fff"><div style="font-size:12px;font-weight:900;margin-bottom:7px">🎨 Combinar dos colores</div><div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap"><select id="comboColor1" style="flex:1;min-width:130px;padding:10px;border:1px solid #d1d5db;border-radius:9px"></select><span style="font-weight:900">+</span><select id="comboColor2" style="flex:1;min-width:130px;padding:10px;border:1px solid #d1d5db;border-radius:9px"></select><button class="dark" id="addComboColor" type="button">➕ Agregar combinación</button></div><div class="small" style="margin-top:6px">Ejemplo: Blanco con Celeste. El círculo se mostrará dividido en dos mitades.</div></div>
-<div style="display:flex;gap:7px;margin-top:9px"><input id="customColorName" placeholder="Color personalizado" style="flex:1;margin:0"><input id="customColorHex" type="color" value="#6b7280" style="width:55px;height:42px;padding:3px;margin:0"><button class="dark" id="addCustomColor" type="button">➕ Agregar</button></div>
-<div id="selectedColors" style="margin-top:10px"></div>
-</div></div>
 </div><div class="actions"><button class="blue" id="saveButton" type="button">💾 Guardar</button><button class="dark" id="resetButton" type="button">Nuevo / cancelar edición</button></div><div class="small" id="status"></div></div><div class="card">
 <h2>📥 Importar desde WhatsApp</h2>
 <div class="small">Exportá un chat de WhatsApp con <b>Incluir archivos</b> y subí el ZIP acá. El sistema detectará automáticamente nombre, cuotas e imagen y te mostrará una vista previa antes de guardar.</div>
@@ -510,66 +501,6 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     }
   }
 
-  const COLOR_PALETTE=[
-    ["Negro","#111111"],["Blanco","#ffffff"],["Gris","#9ca3af"],["Rojo","#ef4444"],
-    ["Naranja","#f97316"],["Amarillo","#eab308"],["Verde","#22c55e"],["Celeste","#38bdf8"],
-    ["Azul","#3b82f6"],["Violeta","#8b5cf6"],["Rosa","#ec4899"],["Marrón","#92400e"],
-    ["Beige","#d6c2a1"]
-  ];
-  let selectedColors=[];
-  const colorStyle=(a,b)=>b?`background:linear-gradient(90deg,${a} 0 50%,${b} 50% 100%)`:`background:${a}`;
-  function availableComboColors(){
-    const map=new Map(COLOR_PALETTE.map(([n,h])=>[n,h]));
-    selectedColors.forEach(c=>{if(c.name&&!map.has(c.name))map.set(c.name,c.hex);if(c.name2&&!map.has(c.name2))map.set(c.name2,c.hex2)});
-    return [...map.entries()];
-  }
-  function renderComboSelectors(){
-    const a=$("comboColor1"),b=$("comboColor2"); if(!a||!b)return;
-    const opts=availableComboColors();
-    const make=(selected)=>opts.map(([n,h])=>`<option value="${esc(n)}" data-hex="${h}" ${selected===n?"selected":""}>${esc(n)}</option>`).join("");
-    const prevA=a.value,prevB=b.value;
-    a.innerHTML=make(prevA&&opts.some(x=>x[0]===prevA)?prevA:opts[0]?.[0]||"");
-    b.innerHTML=make(prevB&&opts.some(x=>x[0]===prevB)?prevB:(opts[1]?.[0]||opts[0]?.[0]||""));
-  }
-  function renderColorEditor(){
-    const wrap=$("colorEditor"), opts=$("colorOptions"), selected=$("selectedColors");
-    if(!wrap)return; wrap.classList.toggle("hidden",!$("hasColors").checked);
-    opts.innerHTML=COLOR_PALETTE.map(([n,h])=>`<button type="button" class="badge" data-color-name="${esc(n)}" data-color-hex="${h}" style="cursor:pointer;border:2px solid ${selectedColors.some(c=>c.name===n&&!c.name2)?"#2563eb":"#e5e7eb"};background:#fff"><span style="display:inline-block;width:15px;height:15px;border-radius:50%;${colorStyle(h)};border:1px solid #9ca3af;vertical-align:middle"></span> ${esc(n)}</button>`).join("");
-    opts.querySelectorAll("[data-color-name]").forEach(b=>b.onclick=()=>toggleColor(b.dataset.colorName,b.dataset.colorHex));
-    selected.innerHTML=selectedColors.length?selectedColors.map((c,i)=>{const label=c.name2?`${c.name} con ${c.name2}`:c.name;return `<span class="badge" style="display:inline-flex;align-items:center;gap:5px;margin:3px"><span style="width:14px;height:14px;border-radius:50%;${colorStyle(c.hex,c.hex2)};border:1px solid #9ca3af;display:inline-block"></span>${esc(label)} <button type="button" data-remove-color="${i}" style="padding:1px 5px;border-radius:8px">×</button></span>`}).join(""):"<div class='small'>No hay colores seleccionados.</div>";
-    selected.querySelectorAll("[data-remove-color]").forEach(b=>b.onclick=()=>{selectedColors.splice(Number(b.dataset.removeColor),1);renderColorEditor()});
-    renderComboSelectors();
-  }
-  function toggleColor(name,hex){
-    const i=selectedColors.findIndex(c=>c.name===name&&!c.name2);
-    if(i>=0)selectedColors.splice(i,1);else selectedColors.push({name,hex});
-    renderColorEditor();
-  }
-  function addCustomColor(){const n=cleanText($("customColorName").value),h=$("customColorHex").value||"#6b7280";if(!n)return;if(!selectedColors.some(c=>c.name.toLowerCase()===n.toLowerCase()&&!c.name2))selectedColors.push({name:n,hex:h});$("customColorName").value="";renderColorEditor()}
-  function addComboColor(){
-    const a=$("comboColor1"),b=$("comboColor2"); if(!a||!b||!a.value||!b.value)return;
-    if(a.value===b.value){alert("Elegí dos colores diferentes para la combinación.");return;}
-    const ah=a.selectedOptions[0]?.dataset.hex||"#6b7280", bh=b.selectedOptions[0]?.dataset.hex||"#6b7280";
-    const exists=selectedColors.some(c=>(c.name2?`${c.name}|${c.name2}`:c.name)===`${a.value}|${b.value}` || (c.name2?`${c.name2}|${c.name}`:c.name)===`${a.value}|${b.value}`);
-    if(exists){alert("Esa combinación ya está agregada.");return;}
-    selectedColors.push({name:a.value,hex:ah,name2:b.value,hex2:bh});
-    renderColorEditor();
-  }
-  async function loadProductColors(productId){
-    const {data,error}=await db.from("product_color_variants").select("id,name,hex,name2,hex2,sort_order").eq("product_id",productId).order("sort_order",{ascending:true});
-    if(error){selectedColors=[];return;} selectedColors=(data||[]).map(x=>({id:x.id,name:x.name,hex:x.hex,name2:x.name2||null,hex2:x.hex2||null})); $("hasColors").checked=selectedColors.length>0; renderColorEditor();
-  }
-  async function syncProductColors(productId){
-    const {data:existing,error}=await db.from("product_color_variants").select("id,name,hex,name2,hex2").eq("product_id",productId);
-    if(error)throw error;
-    const wanted=selectedColors.map((c,i)=>{const row={product_id:productId,name:c.name,hex:c.hex,name2:c.name2||null,hex2:c.hex2||null,sort_order:i};if(c.id!==undefined&&c.id!==null&&String(c.id)!=="")row.id=c.id;return row;});
-    const wantedIds=new Set(wanted.filter(x=>x.id).map(x=>String(x.id)));
-    const remove=(existing||[]).filter(x=>!wantedIds.has(String(x.id)));
-    if(remove.length){const ids=remove.map(x=>x.id);const {data:stockRows,error:se}=await db.from("product_color_inventory").select("variant_id,quantity").in("variant_id",ids);if(se)throw se;if((stockRows||[]).some(x=>x.quantity!==null&&Number(x.quantity)>0))throw new Error("No podés quitar un color que todavía tiene stock. Primero dejalo en 0 en Depósito y Local.");const {error:de}=await db.from("product_color_variants").delete().in("id",ids);if(de)throw de;}
-    if(wanted.length){const {error:ue}=await db.from("product_color_variants").upsert(wanted,{onConflict:"id"});if(ue)throw ue;}
-  }
-
-
   async function save() {
     const name = cleanText($("name").value);
     const qprice = cleanText($("qprice").value);
@@ -633,14 +564,6 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         : await db.from(REQUIRED_TABLE).insert(row).select("id").single();
 
       if (result.error) throw result.error;
-      const savedProductId=editing ? editing.id : result.data?.id;
-      if(!savedProductId) throw new Error("No se pudo obtener el ID del producto guardado.");
-      if($("hasColors").checked){ await syncProductColors(savedProductId); }
-      else if(editing){
-        const {data:existingColors}=await db.from("product_color_variants").select("id").eq("product_id",savedProductId);
-        if(existingColors?.length){ const {data:stockRows,error:se}=await db.from("product_color_inventory").select("variant_id,quantity").in("variant_id",existingColors.map(x=>x.id)); if(se)throw se; if((stockRows||[]).some(x=>x.quantity!==null&&Number(x.quantity)>0)) throw new Error("Este producto tiene stock por color. Primero llevá todas las variantes a 0 antes de quitar los colores."); const {error:de}=await db.from("product_color_variants").delete().eq("product_id",savedProductId); if(de)throw de; }
-      }
-
       if (editing && file && editing.image_url && editing.image_url !== imageUrl) {
         await tryDeleteImage(editing.image_url);
       }
@@ -673,7 +596,6 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     $("mprice").value = data.m_price || "";
     $("mcount").value = data.m_count || "";
     $("image").value = "";
-    selectedColors=[]; await loadProductColors(data.id);
     setStatus("status", "Editando: " + data.name);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -682,7 +604,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     editing = null;
     $("formTitle").textContent = "Nuevo producto";
     ["name","subtitle","category","qprice","qcount","mprice","mcount"].forEach(id => $(id).value = "");
-    $("image").value = ""; selectedColors=[]; $("hasColors").checked=false; renderColorEditor();
+    $("image").value = "";
   }
 
   let deliveryChecksCache = [];
@@ -1495,25 +1417,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       defaultPushWhatsApp=normalizeWhatsApp(pushSetting?.whatsapp_number||$("defaultPushWhatsApp")?.value||"");
       if(productIds.length){
         const {data:productsForPush}=await db.from("products").select("id,name,stock,image_url").in("id",productIds);
-        const {data:pushVariants}=await db.from("product_color_variants").select("id,product_id").in("product_id",productIds);
-        const pushVariantIds=(pushVariants||[]).map(v=>v.id);
-        const {data:pushInventory}=pushVariantIds.length
-          ? await db.from("product_color_inventory").select("variant_id,location,quantity").in("variant_id",pushVariantIds)
-          : {data:[]};
-        const pushInv=new Map((pushInventory||[]).map(x=>[String(x.variant_id)+"|"+x.location,x.quantity===null?".":Math.max(0,Number(x.quantity)||0)]));
-        const pushVariantMap=new Map();
-        (pushVariants||[]).forEach(v=>{if(!pushVariantMap.has(Number(v.product_id)))pushVariantMap.set(Number(v.product_id),[]);pushVariantMap.get(Number(v.product_id)).push(v)});
-        const hasPushStock=p=>{
-          const vs=pushVariantMap.get(Number(p.id))||[];
-          if(!vs.length){const n=Number(p.stock);return n===-1||n>0;}
-          let sum=0;
-          for(const v of vs){
-            const d=pushInv.get(String(v.id)+"|deposito"),l=pushInv.get(String(v.id)+"|local");
-            if(d==="."||l===".") return true;
-            sum+=(Number(d)||0)+(Number(l)||0);
-          }
-          return sum>0;
-        };
+        const hasPushStock=p=>{const n=Number(p.stock);return n===-1||n>0;};
         if(rows.some(r=>r.notification_whatsapp_mode==="direct") && defaultPushWhatsApp.length<8){
           setStatus("clientFeaturesStatus","⚠️ Guardá primero un número de WhatsApp válido para usar “WhatsApp directo”.","warn");
           return;
@@ -1647,10 +1551,6 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   $("logout").addEventListener("click", signout);
   $("saveButton").addEventListener("click", save);
   $("resetButton").addEventListener("click", resetForm);
-  $("hasColors").addEventListener("change",renderColorEditor);
-  $("addCustomColor").addEventListener("click",addCustomColor);
-  $("addComboColor").addEventListener("click",addComboColor);
-  renderColorEditor();
   $("createSellerButton").addEventListener("click", createSeller);
   $("createStockUserButton").addEventListener("click", createStockUser);
   $("analyzeWaButton").addEventListener("click", analyzeWhatsApp);
