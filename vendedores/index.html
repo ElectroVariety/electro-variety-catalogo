@@ -100,10 +100,11 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
       <div id="saleProductList" class="sale-product-list"></div>
       <label class="seller-field">Pedido para el grupo de WhatsApp<textarea id="saleOrderText" rows="5" maxlength="10000" placeholder="Pegá acá el pedido completo"></textarea></label>
       <div class="seller-help">Cada producto queda pendiente de entrega por 48 horas. Si no confirmás su entrega, se devuelve automáticamente al stock.</div>
-      <button id="createSellerSaleButton" class="seller-action-button" type="button">Registrar pedido y preparar texto</button>
+      <button id="createSellerSaleButton" class="seller-action-button" type="button">Enviar pedido por WhatsApp</button>
       <div id="sellerSaleCreateStatus" class="seller-status" role="status"></div>
-      <label id="sellerPreparedMessageWrap" class="seller-field" style="display:none">Texto listo para copiar y enviar manualmente<textarea id="sellerPreparedMessage" rows="7" readonly></textarea></label>
-      <button id="sellerCopyPreparedButton" class="seller-action-button" type="button" style="display:none">Copiar texto del pedido</button>
+      <label id="sellerPreparedMessageWrap" class="seller-field" style="display:none">Pedido preparado<textarea id="sellerPreparedMessage" rows="7" readonly></textarea></label>
+      <a id="sellerOpenWhatsAppLink" class="seller-action-button" style="display:none;text-align:center;text-decoration:none" target="_blank" rel="noopener">Abrir selector de WhatsApp</a>
+      <button id="sellerCopyPreparedButton" class="seller-action-button secondary" type="button" style="display:none">Copiar pedido</button>
     </section>
     <section id="sellerSalesHistoryPanel" style="display:none">
       <button id="sellerSalesRefresh" class="seller-action-button secondary" type="button">Actualizar historial</button>
@@ -437,8 +438,8 @@ function selectedSellerSaleItems(){
   })).filter(item=>item.quantity>0);
 }
 function sellerSaleMessage(orderText,items,saleId){
-  const lines=items.map(item=>"• "+productTitle(item.product)+" × "+item.quantity).join("\n");
-  return orderText.trim()+"\n\nProductos registrados:\n"+lines+"\n\nVendedor: "+(currentSeller?.name||"Vendedor")+"\nPedido: "+String(saleId).slice(0,8);
+  const lines=items.map(item=>"• "+productTitle(item.product)+" — Cantidad: "+item.quantity).join("\n");
+  return "PEDIDO DE CLIENTE\n"+orderText.trim()+"\n\nPRODUCTOS Y CANTIDADES\n"+lines+"\n\nVendedor: "+(currentSeller?.name||"Vendedor")+"\nPedido: "+String(saleId).slice(0,8);
 }
 async function copySellerSaleText(text,button){
   try{
@@ -455,6 +456,9 @@ async function createSellerSale(){
   const items=selectedSellerSaleItems();
   if(!items.length){$("sellerSaleCreateStatus").textContent="Elegí al menos un producto y cargá su cantidad.";return}
   if(!orderText){$("sellerSaleCreateStatus").textContent="Pegá el pedido del cliente antes de registrar la venta.";return}
+  // Reservamos una pestaña durante el clic del vendedor para que el navegador no bloquee
+  // la apertura de WhatsApp después de guardar el pedido en Supabase.
+  const whatsappWindow=window.open("about:blank","_blank");
   const button=$("createSellerSaleButton");button.disabled=true;
   $("sellerSaleCreateStatus").textContent="Registrando pedido y reservando stock…";
   try{
@@ -465,12 +469,20 @@ async function createSellerSale(){
     $("sellerPreparedMessage").value=message;
     $("sellerPreparedMessageWrap").style.display="block";
     $("sellerCopyPreparedButton").style.display="block";
-    $("sellerSaleCreateStatus").textContent="✅ Pedido registrado. Confirmá cada producto como entregado o no entregado antes del plazo de 48 horas.";
+    const whatsappUrl="https://wa.me/?text="+encodeURIComponent(message);
+    $("sellerOpenWhatsAppLink").href=whatsappUrl;
+    $("sellerOpenWhatsAppLink").style.display="block";
+    $("sellerSaleCreateStatus").textContent="✅ Pedido registrado con cantidades. En WhatsApp elegí el grupo y tocá Enviar. Después confirmá cada producto antes de las 48 horas.";
     for(const row of $("saleProductList").querySelectorAll(".sale-quantity"))row.value="0";
     $("saleOrderText").value="";
-    await copySellerSaleText(message);
+    if(whatsappWindow){
+      whatsappWindow.opener=null;
+      whatsappWindow.location.href=whatsappUrl;
+    }else{
+      $("sellerSaleCreateStatus").textContent+=" Si no se abrió automáticamente, tocá «Abrir selector de WhatsApp».";
+    }
     await loadSellerSales();
-  }catch(e){$("sellerSaleCreateStatus").textContent="No se pudo registrar el pedido: "+(e.message||e)}
+  }catch(e){if(whatsappWindow)whatsappWindow.close();$("sellerSaleCreateStatus").textContent="No se pudo registrar el pedido: "+(e.message||e)}
   finally{button.disabled=false}
 }
 function saleStatusLabel(status){
