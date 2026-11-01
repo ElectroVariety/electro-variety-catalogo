@@ -54,6 +54,11 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <input id="search" type="search" placeholder="🔎 Buscar producto" autocomplete="off">
     <select id="category"><option value="">Todas las categorías</option></select>
   </div>
+  <div id="sellerActions" class="seller-actions" style="display:none">
+    <button id="sellerProfileButton" type="button">👤 Mi perfil</button>
+    <button id="sellerSalesButton" type="button">🧾 Mis ventas</button>
+    <button id="sellerNewSaleButton" type="button">➕ Crear pedido</button>
+  </div>
 </header>
 <main id="app"><div class="msg">Cargando…</div></main>
 <div id="cartBar" class="cartbar"><button id="cartOpenButton" type="button">🛒 Ver carrito</button></div>
@@ -72,10 +77,80 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <button id="cartClear" class="cart-clear" type="button">Vaciar carrito</button>
   </div>
 </div>
+<div id="sellerProfileModal" class="cart-modal seller-modal" aria-hidden="true">
+  <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="sellerProfileTitle">
+    <div class="cart-head"><h2 id="sellerProfileTitle">👤 Mi perfil</h2><button id="sellerProfileClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
+    <label class="seller-field">Nombre visible<input id="sellerProfileName" maxlength="80" autocomplete="name"></label>
+    <button id="sellerNameSave" class="seller-action-button" type="button">Guardar nombre</button>
+    <hr>
+    <h3>Cambiar contraseña</h3>
+    <label class="seller-field">Nueva contraseña<input id="sellerPassword" type="password" autocomplete="new-password"></label>
+    <label class="seller-field">Repetir contraseña<input id="sellerPasswordConfirm" type="password" autocomplete="new-password"></label>
+    <button id="sellerPasswordSave" class="seller-action-button" type="button">Actualizar contraseña</button>
+    <div id="sellerProfileStatus" class="seller-status" role="status"></div>
+  </div>
+</div>
+<div id="sellerSalesModal" class="cart-modal seller-modal" aria-hidden="true">
+  <div class="cart-panel seller-sales-panel" role="dialog" aria-modal="true" aria-labelledby="sellerSalesTitle">
+    <div class="cart-head"><h2 id="sellerSalesTitle">🧾 Pedidos y ventas</h2><button id="sellerSalesClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
+    <div class="seller-tabs"><button id="sellerSalesNewTab" class="active" type="button">Crear pedido</button><button id="sellerSalesHistoryTab" type="button">Mi historial</button></div>
+    <section id="sellerSalesNewPanel">
+      <p class="seller-help">Elegí los productos y cantidades, pegá el pedido del cliente y registralo. Después copiá el texto y envialo manualmente al grupo de WhatsApp.</p>
+      <input id="saleProductSearch" class="seller-search" type="search" placeholder="Buscar producto">
+      <div id="saleProductList" class="sale-product-list"></div>
+      <label class="seller-field">Pedido para el grupo de WhatsApp<textarea id="saleOrderText" rows="5" maxlength="10000" placeholder="Pegá acá el pedido completo"></textarea></label>
+      <div class="seller-help">Cada producto queda pendiente de entrega por 48 horas. Si no confirmás su entrega, se devuelve automáticamente al stock.</div>
+      <button id="createSellerSaleButton" class="seller-action-button" type="button">Registrar pedido y preparar texto</button>
+      <div id="sellerSaleCreateStatus" class="seller-status" role="status"></div>
+      <label id="sellerPreparedMessageWrap" class="seller-field" style="display:none">Texto listo para copiar y enviar manualmente<textarea id="sellerPreparedMessage" rows="7" readonly></textarea></label>
+      <button id="sellerCopyPreparedButton" class="seller-action-button" type="button" style="display:none">Copiar texto del pedido</button>
+    </section>
+    <section id="sellerSalesHistoryPanel" style="display:none">
+      <button id="sellerSalesRefresh" class="seller-action-button secondary" type="button">Actualizar historial</button>
+      <div id="sellerSalesHistory" class="seller-sales-history">Cargando…</div>
+    </section>
+  </div>
+</div>
+<style>
+.seller-actions{max-width:760px;margin:8px auto 0;display:flex;gap:7px}
+.seller-actions button,.seller-tabs button{flex:1;min-width:0;border:0;border-radius:8px;padding:9px 7px;font-size:12px;font-weight:900;background:#374151;color:#fff}
+.seller-actions button:active,.seller-tabs button:active{transform:scale(.98)}
+.seller-modal{z-index:80}
+.seller-modal .cart-panel{padding-bottom:24px}
+.seller-sales-panel{max-height:90vh}
+.seller-field{display:block;margin:14px 0 8px;font-size:13px;font-weight:900}
+.seller-field input,.seller-field textarea,.seller-search{display:block;width:100%;margin-top:6px;padding:11px;border:1px solid #d1d5db;border-radius:9px;font:inherit;font-size:14px}
+.seller-field textarea{resize:vertical;line-height:1.4}
+.seller-action-button{width:100%;margin:8px 0;border:0;border-radius:9px;background:#2563eb;color:#fff;padding:12px;font-weight:900}
+.seller-action-button.secondary{background:#374151}
+.seller-status{min-height:20px;margin:8px 0;color:#374151;font-size:13px;white-space:pre-wrap}
+.seller-help{color:#4b5563;font-size:13px;line-height:1.4;margin:8px 0}
+.seller-tabs{display:flex;gap:7px;margin:12px 0}
+.seller-tabs button{background:#e5e7eb;color:#111827}
+.seller-tabs button.active{background:#2563eb;color:#fff}
+.sale-product-list{max-height:35vh;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;margin:8px 0}
+.sale-product-row{display:flex;gap:10px;align-items:center;padding:9px;border-bottom:1px solid #e5e7eb}
+.sale-product-row:last-child{border-bottom:0}
+.sale-product-info{flex:1;min-width:0;font-size:13px}
+.sale-product-info small{display:block;color:#6b7280;margin-top:3px}
+.sale-quantity{width:76px;padding:9px;border:1px solid #d1d5db;border-radius:8px;text-align:center;font-size:15px}
+.seller-sale-card{border:1px solid #e5e7eb;border-radius:11px;padding:12px;margin:12px 0}
+.seller-sale-card h3{font-size:15px;margin:0 0 6px}
+.seller-sale-card .sale-date,.seller-sale-card .sale-order{font-size:12px;color:#4b5563;margin:6px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.seller-sale-item{border-top:1px solid #e5e7eb;padding:9px 0;font-size:13px}
+.seller-sale-item-actions{display:flex;gap:6px;margin-top:7px}
+.seller-sale-item-actions button,.seller-copy-sale{border:0;border-radius:8px;padding:8px;font-size:12px;font-weight:900}
+.seller-sale-item-actions .delivered{background:#dcfce7;color:#166534}
+.seller-sale-item-actions .not-delivered{background:#fee2e2;color:#991b1b}
+.seller-copy-sale{width:100%;background:#e5e7eb;color:#111827}
+@media(max-width:600px){.seller-actions button{font-size:11px;padding:9px 4px}.seller-modal .cart-panel{max-height:88vh}}
+</style>
 <script>
 "use strict";
 let db;
 let allProducts=[];
+let currentSeller=null;
+let currentSellerId=null;
 
 let filteredProducts=[];
 let currentPage=1;
@@ -123,6 +198,10 @@ const productTitle=p=>p.subtitle?`${p.name} (${p.subtitle})`:p.name;
 
 function showLogin(message=""){
   $("tools").style.display="none";
+  $("sellerActions").style.display="none";
+  currentSeller=null;currentSellerId=null;
+  $("sellerProfileModal").style.display="none";$("sellerProfileModal").setAttribute("aria-hidden","true");
+  $("sellerSalesModal").style.display="none";$("sellerSalesModal").setAttribute("aria-hidden","true");
   $("counter").textContent="—";
   $("catLogout").style.display="none";
   $("app").innerHTML=`<div class="loginbox">
@@ -234,7 +313,7 @@ async function handleSession(session, mode="restore"){
       if(deviceRetryTimer)clearTimeout(deviceRetryTimer);
       deviceRetryTimer=null;deviceRetryDelay=5000;
       startDeviceHeartbeat();
-      await startCatalog();
+      await startCatalog(seller);
       return;
     }
     const {data:admin}=await db.from("admin_profiles")
@@ -245,8 +324,12 @@ async function handleSession(session, mode="restore"){
   }finally{handlingAuth=false}
 }
 
-async function startCatalog(){
+async function startCatalog(seller=null){
+  currentSeller=seller;
+  currentSellerId=seller?.user_id||null;
   $("tools").style.display="flex";
+  $("sellerActions").style.display=seller?"flex":"none";
+  if(seller)$("sellerProfileButton").textContent="👤 "+(seller.name||"Mi perfil");
   $("catLogout").style.display="block";
   $("app").innerHTML='<div class="msg">Cargando catálogo…</div>';
   try{
@@ -277,6 +360,183 @@ async function startCatalog(){
   }
 }
 
+function openSellerModal(id){$(id).style.display="flex";$(id).setAttribute("aria-hidden","false")}
+function closeSellerModal(id){$(id).style.display="none";$(id).setAttribute("aria-hidden","true")}
+function openSellerProfile(){
+  if(!currentSeller)return;
+  $("sellerProfileName").value=currentSeller.name||"";
+  $("sellerProfileStatus").textContent="";
+  $("sellerPassword").value="";
+  $("sellerPasswordConfirm").value="";
+  openSellerModal("sellerProfileModal");
+}
+async function saveSellerName(){
+  const name=$("sellerProfileName").value.trim();
+  if(!name){$("sellerProfileStatus").textContent="Ingresá tu nombre.";return}
+  $("sellerNameSave").disabled=true;
+  try{
+    const {data,error}=await db.rpc("update_seller_display_name",{p_name:name});
+    if(error)throw error;
+    currentSeller={...currentSeller,name:data||name};
+    $("sellerProfileButton").textContent="👤 "+currentSeller.name;
+    $("sellerProfileStatus").textContent="✅ Nombre actualizado.";
+  }catch(e){$("sellerProfileStatus").textContent="No se pudo guardar el nombre: "+(e.message||e)}
+  finally{$("sellerNameSave").disabled=false}
+}
+async function saveSellerPassword(){
+  const password=$("sellerPassword").value;
+  const confirm=$("sellerPasswordConfirm").value;
+  if(password.length<8){$("sellerProfileStatus").textContent="La contraseña debe tener al menos 8 caracteres.";return}
+  if(password!==confirm){$("sellerProfileStatus").textContent="Las contraseñas no coinciden.";return}
+  $("sellerPasswordSave").disabled=true;
+  try{
+    const {error}=await db.auth.updateUser({password});
+    if(error)throw error;
+    $("sellerPassword").value="";$("sellerPasswordConfirm").value="";
+    $("sellerProfileStatus").textContent="✅ Contraseña actualizada.";
+  }catch(e){$("sellerProfileStatus").textContent="No se pudo cambiar la contraseña: "+(e.message||e)}
+  finally{$("sellerPasswordSave").disabled=false}
+}
+function openSellerSales(tab="new"){
+  if(!currentSellerId)return;
+  openSellerModal("sellerSalesModal");
+  showSellerSalesTab(tab);
+  renderSaleProducts();
+}
+function showSellerSalesTab(tab){
+  const history=tab==="history";
+  $("sellerSalesNewPanel").style.display=history?"none":"block";
+  $("sellerSalesHistoryPanel").style.display=history?"block":"none";
+  $("sellerSalesNewTab").classList.toggle("active",!history);
+  $("sellerSalesHistoryTab").classList.toggle("active",history);
+  if(history)loadSellerSales();
+}
+function stockHint(product){
+  const n=Number(product.stock);
+  return n===-1?"Hay stock (sin cantidad exacta)":n>0?"Stock visible: "+n:"Sin stock visible";
+}
+function renderSaleProducts(){
+  const query=String($("saleProductSearch").value||"").trim().toLocaleLowerCase("es");
+  $("saleProductList").innerHTML=allProducts.map(p=>{
+    const title=productTitle(p),category=p.category||"Sin categoría";
+    return "<div class=\"sale-product-row\" data-sale-product=\""+Number(p.id)+"\">"+
+      "<div class=\"sale-product-info\"><b>"+esc(title)+"</b><small>"+esc(category)+" · "+esc(stockHint(p))+"</small></div>"+
+      "<input class=\"sale-quantity\" type=\"number\" min=\"0\" step=\"1\" value=\"0\" inputmode=\"numeric\" aria-label=\"Cantidad de "+esc(title)+"\"></div>";
+  }).join("")||'<div class="seller-help" style="padding:10px">No hay productos para elegir.</div>';
+  $("saleProductList").querySelectorAll("[data-sale-product]").forEach(row=>{
+    const p=allProducts.find(x=>Number(x.id)===Number(row.dataset.saleProduct));
+    const haystack=(p?.name||"")+" "+(p?.subtitle||"")+" "+(p?.category||"");
+    row.style.display=!query||haystack.toLocaleLowerCase("es").includes(query)?"flex":"none";
+  });
+}
+function selectedSellerSaleItems(){
+  return [...$("saleProductList").querySelectorAll("[data-sale-product]")].map(row=>({
+    product_id:Number(row.dataset.saleProduct),
+    quantity:Math.floor(Number(row.querySelector(".sale-quantity").value)||0),
+    product:allProducts.find(p=>Number(p.id)===Number(row.dataset.saleProduct))
+  })).filter(item=>item.quantity>0);
+}
+function sellerSaleMessage(orderText,items,saleId){
+  const lines=items.map(item=>"• "+productTitle(item.product)+" × "+item.quantity).join("\n");
+  return orderText.trim()+"\n\nProductos registrados:\n"+lines+"\n\nVendedor: "+(currentSeller?.name||"Vendedor")+"\nPedido: "+String(saleId).slice(0,8);
+}
+async function copySellerSaleText(text,button){
+  try{
+    await navigator.clipboard.writeText(text);
+    $("sellerSaleCreateStatus").textContent="✅ Texto copiado. Abrí WhatsApp y pegalo en el grupo de pedidos.";
+    if(button){const old=button.textContent;button.textContent="✅ Copiado";setTimeout(()=>button.textContent=old,1600)}
+  }catch(e){
+    $("sellerSaleCreateStatus").textContent="Copiá el texto del recuadro y pegalo manualmente en el grupo de WhatsApp.";
+    $("sellerPreparedMessage").focus();$("sellerPreparedMessage").select();
+  }
+}
+async function createSellerSale(){
+  const orderText=$("saleOrderText").value.trim();
+  const items=selectedSellerSaleItems();
+  if(!items.length){$("sellerSaleCreateStatus").textContent="Elegí al menos un producto y cargá su cantidad.";return}
+  if(!orderText){$("sellerSaleCreateStatus").textContent="Pegá el pedido del cliente antes de registrar la venta.";return}
+  const button=$("createSellerSaleButton");button.disabled=true;
+  $("sellerSaleCreateStatus").textContent="Registrando pedido y reservando stock…";
+  try{
+    const payload=items.map(({product_id,quantity})=>({product_id,quantity}));
+    const {data:saleId,error}=await db.rpc("create_seller_sale",{p_order_text:orderText,p_items:payload});
+    if(error)throw error;
+    const message=sellerSaleMessage(orderText,items,saleId);
+    $("sellerPreparedMessage").value=message;
+    $("sellerPreparedMessageWrap").style.display="block";
+    $("sellerCopyPreparedButton").style.display="block";
+    $("sellerSaleCreateStatus").textContent="✅ Pedido registrado. Confirmá cada producto como entregado o no entregado antes del plazo de 48 horas.";
+    for(const row of $("saleProductList").querySelectorAll(".sale-quantity"))row.value="0";
+    $("saleOrderText").value="";
+    await copySellerSaleText(message);
+    await loadSellerSales();
+  }catch(e){$("sellerSaleCreateStatus").textContent="No se pudo registrar el pedido: "+(e.message||e)}
+  finally{button.disabled=false}
+}
+function saleStatusLabel(status){
+  return ({pending_delivery:"Pendiente de confirmar",partially_resolved:"Parcialmente confirmado",delivered:"Entregado",not_delivered:"No entregado",expired:"Venció sin confirmar"})[status]||status;
+}
+function saleItemStatusLabel(status){
+  return ({pending_delivery:"Pendiente",delivered:"Entregado",not_delivered:"No entregado · stock devuelto",expired:"Venció · stock devuelto"})[status]||status;
+}
+function saleAllocationLabel(item){
+  const parts=[];
+  if(item.reserved_deposito)parts.push("Depósito: "+item.reserved_deposito+(item.deposito_untracked?" (sin cantidad exacta)":""));
+  if(item.reserved_local)parts.push("Local: "+item.reserved_local+(item.local_untracked?" (sin cantidad exacta)":""));
+  return parts.join(" · ");
+}
+function renderSellerSales(sales){
+  if(!sales?.length){$("sellerSalesHistory").innerHTML='<div class="seller-help">Todavía no registraste pedidos.</div>';return}
+  $("sellerSalesHistory").innerHTML=sales.map(sale=>{
+    const items=Array.isArray(sale.seller_sale_items)?sale.seller_sale_items:[];
+    const itemHtml=items.map(item=>{
+      const actions=item.status==="pending_delivery"?"<div class=\"seller-sale-item-actions\">"+
+        "<button class=\"delivered\" type=\"button\" data-resolve-sale=\""+esc(sale.id)+"\" data-resolve-product=\""+Number(item.product_id)+"\" data-delivered=\"true\">Entregado</button>"+
+        "<button class=\"not-delivered\" type=\"button\" data-resolve-sale=\""+esc(sale.id)+"\" data-resolve-product=\""+Number(item.product_id)+"\" data-delivered=\"false\">No entregado · devolver stock</button></div>":"";
+      return "<div class=\"seller-sale-item\"><b>"+esc(item.product_name)+" × "+Number(item.quantity)+"</b>"+
+        "<div>"+esc(saleItemStatusLabel(item.status))+"</div><small>"+esc(saleAllocationLabel(item))+"</small>"+actions+"</div>";
+    }).join("");
+    const expiry=new Date(sale.expires_at).toLocaleString("es-AR");
+    const order=esc(sale.order_text).replace(/\n/g,"<br>");
+    const date=new Date(sale.created_at).toLocaleString("es-AR");
+    const deadline=["pending_delivery","partially_resolved"].includes(sale.status)?" · Confirmar antes de: "+esc(expiry):"";
+    return "<article class=\"seller-sale-card\"><h3>Pedido "+esc(String(sale.id).slice(0,8))+" · "+esc(saleStatusLabel(sale.status))+"</h3>"+
+      "<div class=\"sale-date\">Creado: "+esc(date)+deadline+"</div><div class=\"sale-order\">"+order+"</div>"+itemHtml+
+      "<button class=\"seller-copy-sale\" type=\"button\" data-copy-sale=\""+esc(sale.id)+"\">Copiar pedido para WhatsApp</button></article>";
+  }).join("");
+}
+async function loadSellerSales(){
+  if(!currentSellerId)return;
+  $("sellerSalesHistory").textContent="Cargando pedidos…";
+  const {data,error}=await db.from("seller_sales")
+    .select("id,seller_name,order_text,status,created_at,expires_at,seller_sale_items(id,product_id,product_name,quantity,reserved_deposito,reserved_local,deposito_untracked,local_untracked,status,resolved_at)")
+    .eq("seller_id",currentSellerId).order("created_at",{ascending:false}).limit(100);
+  if(error){$("sellerSalesHistory").textContent="No se pudo cargar el historial: "+error.message;return}
+  renderSellerSales(data||[]);
+}
+async function resolveSellerSaleItem(button){
+  const saleId=button.dataset.resolveSale,productId=Number(button.dataset.resolveProduct),delivered=button.dataset.delivered==="true";
+  const prompt=delivered?"¿Confirmás que este producto fue entregado?":"¿Confirmás que este producto no se entregó y debe volver al stock?";
+  if(!confirm(prompt))return;
+  button.disabled=true;
+  try{
+    const {data,error}=await db.rpc("resolve_seller_sale_item",{p_sale_id:saleId,p_product_id:productId,p_delivered:delivered});
+    if(error)throw error;
+    await loadSellerSales();
+    $("sellerSaleCreateStatus").textContent=data==="expired"?"El plazo venció y el stock ya fue devuelto.":delivered?"Entrega confirmada.":"Producto marcado como no entregado; stock devuelto.";
+  }catch(e){$("sellerSalesHistory").textContent="No se pudo actualizar el estado: "+(e.message||e)}
+  finally{button.disabled=false}
+}
+async function copyExistingSale(saleId){
+  const {data:sale,error}=await db.from("seller_sales")
+    .select("id,seller_name,order_text,seller_sale_items(product_name,quantity)")
+    .eq("id",saleId).eq("seller_id",currentSellerId).maybeSingle();
+  if(error||!sale){$("sellerSalesHistory").textContent="No se pudo preparar el texto del pedido.";return}
+  const items=(sale.seller_sale_items||[]).map(item=>({product:{name:item.product_name},quantity:item.quantity}));
+  const message=sellerSaleMessage(sale.order_text,items,sale.id);
+  try{await navigator.clipboard.writeText(message);$("sellerSaleCreateStatus").textContent="Texto copiado. Pegalo manualmente en el grupo de WhatsApp."}
+  catch(e){alert(message)}
+}
 
 function catalogCard(p,index){
   const stock=Number(p.stock);
@@ -592,6 +852,28 @@ $("cartSend").addEventListener("click",sendCartWhatsApp);
 $("cartClear").addEventListener("click",()=>{cartIds.clear();updateCartButtons();renderCart();});
 $("cartModal").addEventListener("click",e=>{if(e.target===$("cartModal"))closeCart();});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeCart();closeCartShareModal();}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeSellerModal("sellerProfileModal");closeSellerModal("sellerSalesModal");}});
+$("sellerProfileButton").addEventListener("click",openSellerProfile);
+$("sellerProfileClose").addEventListener("click",()=>closeSellerModal("sellerProfileModal"));
+$("sellerProfileModal").addEventListener("click",e=>{if(e.target===$("sellerProfileModal"))closeSellerModal("sellerProfileModal")});
+$("sellerNameSave").addEventListener("click",saveSellerName);
+$("sellerPasswordSave").addEventListener("click",saveSellerPassword);
+$("sellerSalesButton").addEventListener("click",()=>openSellerSales("history"));
+$("sellerNewSaleButton").addEventListener("click",()=>openSellerSales("new"));
+$("sellerSalesClose").addEventListener("click",()=>closeSellerModal("sellerSalesModal"));
+$("sellerSalesModal").addEventListener("click",e=>{if(e.target===$("sellerSalesModal"))closeSellerModal("sellerSalesModal")});
+$("sellerSalesNewTab").addEventListener("click",()=>showSellerSalesTab("new"));
+$("sellerSalesHistoryTab").addEventListener("click",()=>showSellerSalesTab("history"));
+$("saleProductSearch").addEventListener("input",renderSaleProducts);
+$("createSellerSaleButton").addEventListener("click",createSellerSale);
+$("sellerCopyPreparedButton").addEventListener("click",()=>copySellerSaleText($("sellerPreparedMessage").value,$("sellerCopyPreparedButton")));
+$("sellerSalesRefresh").addEventListener("click",loadSellerSales);
+$("sellerSalesHistory").addEventListener("click",e=>{
+  const resolveButton=e.target.closest("[data-resolve-sale]");
+  if(resolveButton){resolveSellerSaleItem(resolveButton);return}
+  const copyButton=e.target.closest("[data-copy-sale]");
+  if(copyButton)copyExistingSale(copyButton.dataset.copySale);
+});
 $("catLogout").addEventListener("click",async()=>{
   if(deviceHeartbeat) clearInterval(deviceHeartbeat);
   await db.auth.signOut({scope:"local"});
