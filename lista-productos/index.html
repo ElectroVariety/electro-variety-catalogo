@@ -40,12 +40,14 @@ function productCard(product){
   const name=String(product.name||"Sin nombre").trim();
   const description=String(product.subtitle||"").trim();
   const nameAndDescription=description?`${name}\n${description}`:name;
+  const qCount=product.q_count?`${product.q_count} Quincenales`:"—";
+  const mCount=product.m_count?`${product.m_count} Mensuales`:"—";
   const plans=[];
   if(product.q_count||product.q_price){
-    plans.push(`<section class="plan"><div class="plan-title">Cuotas quincenales</div><div class="field"><span class="field-label">Cantidad</span><span class="field-value">${esc(product.q_count||"—")}</span>${copyButton(product.q_count,"cantidad de cuotas quincenales")}</div><div class="field"><span class="field-label">Valor de cada cuota</span><span class="field-value">${esc(money(product.q_price))}</span>${copyButton(money(product.q_price),"valor de cuota quincenal")}</div></section>`);
+    plans.push(`<section class="plan"><div class="plan-title">Cuotas quincenales</div><div class="field"><span class="field-label">Cantidad</span><span class="field-value">${esc(qCount)}</span>${copyButton(qCount,"cantidad de cuotas quincenales")}</div><div class="field"><span class="field-label">Valor de cada cuota</span><span class="field-value">${esc(money(product.q_price))}</span>${copyButton(money(product.q_price),"valor de cuota quincenal")}</div></section>`);
   }
   if(product.m_count||product.m_price){
-    plans.push(`<section class="plan"><div class="plan-title">Cuotas mensuales</div><div class="field"><span class="field-label">Cantidad</span><span class="field-value">${esc(product.m_count||"—")}</span>${copyButton(product.m_count,"cantidad de cuotas mensuales")}</div><div class="field"><span class="field-label">Valor de cada cuota</span><span class="field-value">${esc(money(product.m_price))}</span>${copyButton(money(product.m_price),"valor de cuota mensual")}</div></section>`);
+    plans.push(`<section class="plan"><div class="plan-title">Cuotas mensuales</div><div class="field"><span class="field-label">Cantidad</span><span class="field-value">${esc(mCount)}</span>${copyButton(mCount,"cantidad de cuotas mensuales")}</div><div class="field"><span class="field-label">Valor de cada cuota</span><span class="field-value">${esc(money(product.m_price))}</span>${copyButton(money(product.m_price),"valor de cuota mensual")}</div></section>`);
   }
   return `<article class="product"><div class="product-head"><div style="flex:1;min-width:0"><h2 class="product-title">${esc(name)}</h2>${description?`<p class="product-description">${esc(description)}</p>`:""}</div>${copyButton(nameAndDescription,"nombre y descripción","copy-name")}</div>${plans.length?`<div class="plan-list">${plans.join("")}</div>`:""}</article>`;
 }
