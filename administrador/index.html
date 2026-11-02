@@ -114,7 +114,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <div><label>Nombre del vendedor</label><input id="sellerName" placeholder="Ej. Juan Pérez"/></div>
 <div><label>Número de WhatsApp / celular</label><input autocomplete="off" id="sellerPhone" inputmode="numeric" placeholder="2224534328" type="tel"/></div>
 <div><label>Contraseña inicial</label><input autocomplete="new-password" id="sellerPassword" placeholder="Mínimo 6 caracteres" type="password"/></div>
-</div><div class="actions"><button class="blue" id="createSellerButton" type="button">➕ Crear vendedor</button></div><div class="small seller-status" id="sellerStatus"></div></div><div id="sellerList" style="margin-top:14px">Cargando…</div></div></section><section class="admin-panel" data-admin-panel="sales" id="admin-panel-sales"><div class="card"><h2>👤 Perfiles de vendedores</h2><div class="small" id="sellerProfilesStatus">Cargando perfiles…</div><div id="sellerProfilesList"></div></div><div class="card"><h2>🧾 Pedidos y ventas</h2><div class="actions"><button class="blue" id="refreshSellerSalesButton" type="button">🔄 Actualizar</button><div class="small" id="sellerSalesAdminStatus"></div></div><div id="sellerSalesAdminList">Cargando pedidos…</div></div><div class="card" id="supervisorManagementCard"><h2>👔 Supervisores</h2><div class="small">Elegí un usuario con perfil de vendedor o de stock para darle el rol de supervisor. Después seleccioná los vendedores que podrá consultar.</div><div class="actions"><select id="supervisorRoleUser" style="flex:1;min-width:240px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir usuario</option></select><button class="blue" id="makeSupervisorButton" type="button">➕ Crear rol de supervisor</button></div><div class="small" id="supervisorRoleStatus" style="margin-top:8px"></div><div id="supervisorManagerList" style="margin-top:12px">Cargando supervisores…</div></div></section></main></div></div>
+</div><div class="actions"><button class="blue" id="createSellerButton" type="button">➕ Crear vendedor</button></div><div class="small seller-status" id="sellerStatus"></div></div><div id="sellerList" style="margin-top:14px">Cargando…</div></div></section><section class="admin-panel" data-admin-panel="sales" id="admin-panel-sales"><div class="card"><h2>👤 Perfiles de vendedores</h2><div class="small" id="sellerProfilesStatus">Cargando perfiles…</div><div id="sellerProfilesList"></div></div><div class="card"><h2>🧾 Pedidos y ventas</h2><div class="actions"><button class="blue" id="refreshSellerSalesButton" type="button">🔄 Actualizar</button><div class="small" id="sellerSalesAdminStatus"></div></div><div id="sellerSalesAdminList">Cargando pedidos…</div><button class="blue hidden" id="loadMoreSellerSalesButton" type="button" style="margin-top:12px">⬇️ Cargar pedidos anteriores</button></div><div class="card" id="supervisorManagementCard"><h2>👔 Supervisores</h2><div class="small">Elegí un usuario con perfil de vendedor o de stock para darle el rol de supervisor. Después seleccioná los vendedores que podrá consultar.</div><div class="actions"><select id="supervisorRoleUser" style="flex:1;min-width:240px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir usuario</option></select><button class="blue" id="makeSupervisorButton" type="button">➕ Crear rol de supervisor</button></div><div class="small" id="supervisorRoleStatus" style="margin-top:8px"></div><div id="supervisorManagerList" style="margin-top:12px">Cargando supervisores…</div></div></section></main></div></div>
 <script>
 "use strict";
 
@@ -762,30 +762,46 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     return ({pending_delivery:"Pendiente de entrega",partially_resolved:"Parcialmente confirmado",delivered:"Entregado",not_delivered:"No entregado",expired:"Vencido"})[status] || status || "—";
   }
 
-  async function loadAdminSales() {
+  let sellerSalesOffset = 0;
+  async function loadAdminSales(reset = true) {
     const box = $("sellerSalesAdminList");
     const status = $("sellerSalesAdminStatus");
+    const moreButton = $("loadMoreSellerSalesButton");
     if (!box) return;
-    box.textContent = "Cargando pedidos…";
+    if (reset) {
+      sellerSalesOffset = 0;
+      box.textContent = "Cargando pedidos…";
+    }
+    if (moreButton) moreButton.disabled = true;
     const { data, error } = await db.from("seller_sales")
       .select("id,seller_id,seller_name,order_text,status,created_at,expires_at,seller_sale_items(id,product_name,quantity,status,reserved_deposito,reserved_local,deposito_untracked,local_untracked)")
-      .order("created_at", { ascending: false }).limit(300);
+      .order("created_at", { ascending: false }).range(sellerSalesOffset, sellerSalesOffset + 299);
     if (error) {
       box.innerHTML = `<div class="small danger">No se pudieron cargar los pedidos: ${esc(error.message)}</div>`;
       if (status) status.textContent = "";
+      if (moreButton) moreButton.classList.add("hidden");
       return;
     }
     const sales = data || [];
-    if (status) status.textContent = `${sales.length} pedido(s) recientes.`;
-    if (!sales.length) {
+    if (reset && !sales.length) {
       box.innerHTML = '<div class="small">Todavía no hay pedidos.</div>';
+      if (status) status.textContent = "";
+      if (moreButton) moreButton.classList.add("hidden");
       return;
     }
-    box.innerHTML = sales.map(sale => {
+    const markup = sales.map(sale => {
       const items = (sale.seller_sale_items || []).map(item => `<li>${esc(item.product_name)} × ${Number(item.quantity)} · ${esc(saleStatusName(item.status))}</li>`).join("");
       const deleteButton = currentAccessRole === "admin" ? `<button class="red" type="button" data-delete-seller-sale="${esc(sale.id)}">🗑️ Borrar pedido</button>` : "";
       return `<article class="sales-order"><div class="seller-actions" style="justify-content:space-between"><b>Pedido ${esc(String(sale.id).slice(0,8))} · ${esc(saleStatusName(sale.status))}</b>${deleteButton}</div><div class="small">Vendedor: ${esc(sale.seller_name || "Sin nombre")} · ${sale.created_at ? new Date(sale.created_at).toLocaleString("es-AR") : "—"}</div><ul>${items}</ul><details><summary>Ver texto del pedido</summary><pre>${esc(sale.order_text)}</pre></details></article>`;
     }).join("");
+    if (reset) box.innerHTML = markup;
+    else box.insertAdjacentHTML("beforeend", markup);
+    sellerSalesOffset += sales.length;
+    if (status) status.textContent = `${sellerSalesOffset} pedido(s) cargados.`;
+    if (moreButton) {
+      moreButton.classList.toggle("hidden", sales.length < 300);
+      moreButton.disabled = false;
+    }
   }
 
   async function loadSupervisorManagement() {
@@ -1727,6 +1743,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   $("createSellerButton").addEventListener("click", createSeller);
   $("makeSupervisorButton").addEventListener("click", enableSupervisorRole);
   $("refreshSellerSalesButton").addEventListener("click", async()=>{await loadSellerProfiles();await loadAdminSales();});
+  $("loadMoreSellerSalesButton").addEventListener("click",()=>loadAdminSales(false));
   $("sellerSalesAdminList").addEventListener("click",event=>{
     const button=event.target.closest("[data-delete-seller-sale]");
     if(button)deleteSellerSale(button);
