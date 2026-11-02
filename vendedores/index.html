@@ -61,7 +61,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <button id="sellerTeamButton" type="button" style="display:none">👥 Ventas del equipo</button>
   </div>
 </header>
-<main id="app"><div class="msg">Cargando…</div></main>
+<div id="catalogLayout"><main id="app"><div class="msg">Cargando…</div></main><aside id="onlineStaffPanel" class="online-staff-panel" aria-label="Personal conectado" style="display:none"><div class="online-staff-heading"><h2>👥 Conectados</h2><span id="onlineStaffCount" class="online-staff-count">0</span></div><div id="onlineStaffStatus" class="seller-help" role="status">Conectando…</div><div id="onlineStaffList" aria-live="polite"></div></aside></div>
 <div id="cartBar" class="cartbar"><button id="cartOpenButton" type="button">🛒 Ver carrito</button></div>
 <div id="cartShareModal" class="cart-modal" aria-hidden="true" style="z-index:70">
   <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="cartShareTitle">
@@ -139,6 +139,23 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .seller-actions button,.seller-tabs button{flex:1;min-width:0;border:0;border-radius:8px;padding:9px 7px;font-size:12px;font-weight:900;background:#374151;color:#fff}
 .seller-actions button:active,.seller-tabs button:active{transform:scale(.98)}
 .seller-modal{z-index:80}
+#catalogLayout{display:flex;align-items:flex-start;justify-content:center;gap:14px;max-width:1180px;margin:12px auto;padding:0 12px}
+#catalogLayout #app{flex:1;min-width:0;width:auto;max-width:760px;margin:0}
+.online-staff-panel{flex:0 0 280px;width:280px;max-height:calc(100vh - 28px);position:sticky;top:14px;overflow:auto;padding:14px;background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 5px 18px rgba(17,24,39,.06)}
+.online-staff-heading{display:flex;align-items:center;gap:9px;border-bottom:1px solid #e5e7eb;padding-bottom:10px}
+.online-staff-heading h2{margin:0;flex:1;font-size:18px}
+.online-staff-count{min-width:25px;padding:4px 7px;border-radius:999px;background:#dcfce7;color:#166534;font-size:12px;font-weight:900;text-align:center}
+.online-staff-status{color:#6b7280;font-size:12px;margin:9px 0}
+.online-staff-section{margin-top:12px}
+.online-staff-section h3{margin:0 0 5px;padding:6px 8px;border-radius:7px;background:#f3f4f6;color:#374151;font-size:12px;text-transform:uppercase;letter-spacing:.3px}
+.online-staff-person{display:flex;align-items:center;gap:7px;padding:6px 7px;border-bottom:1px solid #f3f4f6;font-size:13px}
+.online-staff-dot{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px #dcfce7}
+.online-staff-person-name{min-width:0;overflow-wrap:anywhere;font-weight:700}
+.online-staff-person-role{margin-left:auto;color:#6b7280;font-size:11px;white-space:nowrap}
+.online-staff-team{margin:6px 0 0 13px;padding-left:8px;border-left:2px solid #dbeafe}
+.online-staff-team h4{margin:7px 0 2px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+.online-staff-subheading{margin:7px 0 2px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+@media(max-width:900px){#catalogLayout{flex-direction:column;margin:10px auto;padding:0 10px}.online-staff-panel{order:-1;position:static;flex:0 0 auto;width:100%;max-width:760px;max-height:300px;margin:0 auto}#catalogLayout #app{width:100%;max-width:760px;margin:0 auto}}
 .first-login-setup{z-index:300;align-items:center!important}.first-login-setup .cart-panel{border-radius:18px;width:min(100% - 28px,480px)}
 .seller-modal .cart-panel{padding-bottom:24px}
 .seller-sales-panel{max-height:90vh}
@@ -187,6 +204,10 @@ let currentStaffProfileName="";
 let afterFirstLoginSetup=null;
 let teamSellerIds=[];
 let teamSalesOffset=0;
+let onlineStaffChannel=null;
+let onlineStaffClient=null;
+let onlineStaffDirectory=[];
+let onlineStaffRefreshTimer=null;
 
 let filteredProducts=[];
 let currentPage=1;
@@ -240,6 +261,114 @@ function staffRoleLabel(access=currentStaffAccess,seller=currentSeller){
   if(seller)return "Vendedor";
   return "Usuario";
 }
+const ONLINE_STAFF_TOPIC="electro-variety:seller-catalog:online";
+function onlineRoleGroup(role){
+  const value=String(role||"").trim().toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  if(value==="boss")return "boss";
+  if(value==="admin")return "admin";
+  if(value==="cm")return "cm";
+  if(value.includes("supervisor"))return "supervisor";
+  if(value.includes("encargad"))return "encargado";
+  if(value.includes("coordinad"))return "coordinador";
+  if(value.includes("vendedor")||value==="seller")return "vendedor";
+  if(value.includes("administracion"))return "administracion";
+  if(value==="local"||value.includes("stock local"))return "local";
+  if(value.includes("logistic"))return "logistica";
+  if(value.includes("repart"))return "reparto";
+  return "otros";
+}
+function renderOnlineStaff(){
+  const list=$("onlineStaffList"),status=$("onlineStaffStatus"),count=$("onlineStaffCount");
+  if(!list||!onlineStaffChannel)return;
+  const known=new Map(onlineStaffDirectory.map(user=>[user.user_id,user]));
+  const onlineIds=new Set();
+  for(const metas of Object.values(onlineStaffChannel.presenceState()||{}))for(const meta of metas||[])if(meta?.user_id&&known.has(meta.user_id))onlineIds.add(meta.user_id);
+  const online=[...onlineIds].map(id=>known.get(id));
+  if(count)count.textContent=String(online.length);
+  if(status)status.textContent=online.length?`${online.length} persona(s) conectada(s).`:"No hay usuarios conectados ahora.";
+  const roleRank={boss:0,admin:1,cm:2,supervisor:3,encargado:4,coordinador:5,vendedor:6,administracion:7,local:8,logistica:9,reparto:10,otros:11};
+  const collator=new Intl.Collator("es",{sensitivity:"base"});
+  const roleOf=user=>onlineRoleGroup(user.role_label);
+  const sortPeople=(a,b)=>(roleRank[roleOf(a)]-roleRank[roleOf(b)])||collator.compare(a.display_name||"",b.display_name||"");
+  const person=user=>`<div class="online-staff-person"><span class="online-staff-dot" aria-label="Conectado"></span><span class="online-staff-person-name">${esc(user.display_name||"Sin nombre")}</span><span class="online-staff-person-role">${esc(user.role_label||"Usuario")}</span></div>`;
+  const section=(title,people)=>people.length?`<section class="online-staff-section"><h3>${esc(title)}</h3>${people.sort(sortPeople).map(person).join("")}</section>`:"";
+  let markup="";
+  const topRoles=["boss","admin","cm"];
+  for(const group of topRoles){const matches=online.filter(user=>roleOf(user)===group);const title={boss:"Boss",admin:"Admin",cm:"CM"}[group];markup+=section(title,matches)}
+  const supervisors=online.filter(user=>roleOf(user)==="supervisor").sort(sortPeople);
+  const assignedIds=new Set();
+  if(supervisors.length){
+    markup+='<section class="online-staff-section"><h3>Supervisores y sus equipos</h3>';
+    for(const supervisor of supervisors){
+      const team=online.filter(user=>Array.isArray(user.supervisor_ids)&&user.supervisor_ids.includes(supervisor.user_id)&&!["boss","admin","cm","supervisor"].includes(roleOf(user)));
+      team.forEach(user=>assignedIds.add(user.user_id));
+      markup+=`<div class="online-supervisor">${person(supervisor)}<div class="online-staff-team">`;
+      for(const [group,title] of [["encargado","Encargados"],["coordinador","Coordinadores"],["vendedor","Vendedores"]]){
+        const members=team.filter(user=>roleOf(user)===group).sort(sortPeople);
+        if(members.length)markup+=`<h4>${title}</h4>${members.map(person).join("")}`;
+      }
+      const otherTeam=team.filter(user=>!["encargado","coordinador","vendedor"].includes(roleOf(user))).sort(sortPeople);
+      if(otherTeam.length)markup+=`<h4>Otros asignados</h4>${otherTeam.map(person).join("")}`;
+      markup+="</div></div>";
+    }
+    markup+="</section>";
+  }
+  const unassignedTeam=online.filter(user=>["encargado","coordinador","vendedor"].includes(roleOf(user))&&!assignedIds.has(user.user_id));
+  if(unassignedTeam.length){
+    markup+='<section class="online-staff-section"><h3>Sin supervisor asignado</h3>';
+    for(const [group,title] of [["encargado","Encargados"],["coordinador","Coordinadores"],["vendedor","Vendedores"]]){
+      const members=unassignedTeam.filter(user=>roleOf(user)===group).sort(sortPeople);
+      if(members.length)markup+=`<h4 class="online-staff-subheading">${title}</h4>${members.map(person).join("")}`;
+    }
+    markup+="</section>";
+  }
+  const departmentGroups=[["administracion","Administración"],["local","Local"],["logistica","Logística"],["reparto","Reparto"]];
+  for(const [group,title] of departmentGroups){
+    const members=online.filter(user=>roleOf(user)===group&&!assignedIds.has(user.user_id));
+    markup+=section(title,members);
+  }
+  const grouped=new Set([...topRoles,"supervisor","encargado","coordinador","vendedor",...departmentGroups.map(x=>x[0])]);
+  const others=online.filter(user=>!grouped.has(roleOf(user))&&!assignedIds.has(user.user_id));
+  markup+=section("Otros",others);
+  list.innerHTML=markup||'<div class="seller-help">No hay integrantes conectados para mostrar.</div>';
+}
+async function refreshOnlineStaffDirectory(){
+  if(!onlineStaffClient)return;
+  const {data,error}=await onlineStaffClient.rpc("get_catalog_staff_directory");
+  if(error){console.warn("Directorio de conectados",error);$("onlineStaffStatus").textContent="No se pudo actualizar la lista de conectados.";return}
+  onlineStaffDirectory=data||[];
+  renderOnlineStaff();
+}
+function stopOnlineStaffPresence(){
+  if(onlineStaffRefreshTimer){clearInterval(onlineStaffRefreshTimer);onlineStaffRefreshTimer=null}
+  const channel=onlineStaffChannel,client=onlineStaffClient;
+  onlineStaffChannel=null;onlineStaffClient=null;onlineStaffDirectory=[];
+  if(channel&&client)client.removeChannel(channel).catch(()=>{});
+  const panel=$("onlineStaffPanel");if(panel)panel.style.display="none";
+}
+async function startOnlineStaffPresence(){
+  stopOnlineStaffPresence();
+  const client=db,panel=$("onlineStaffPanel");
+  if(!client||!panel)return;
+  const {data:sessionData,error:sessionError}=await client.auth.getSession();
+  if(sessionError||!sessionData?.session?.user?.id)return;
+  onlineStaffClient=client;
+  panel.style.display="block";
+  $("onlineStaffStatus").textContent="Conectando…";
+  $("onlineStaffList").innerHTML="";
+  await refreshOnlineStaffDirectory();
+  const channel=client.channel(ONLINE_STAFF_TOPIC,{config:{private:true}});
+  onlineStaffChannel=channel;
+  channel.on("presence",{event:"sync"},renderOnlineStaff).subscribe(async state=>{
+    if(state==="SUBSCRIBED"){
+      const {error}=await channel.track({user_id:sessionData.session.user.id});
+      if(error)$("onlineStaffStatus").textContent="No se pudo registrar la conexión.";
+    }else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT"||state==="CLOSED"){
+      $("onlineStaffStatus").textContent="No se pudo conectar con el panel de personal.";
+    }
+  });
+  onlineStaffRefreshTimer=setInterval(()=>refreshOnlineStaffDirectory(),90000);
+}
 const normalizePhone=v=>String(v??"").replace(/\D/g,"");
 const authEmailFromPhone=phone=>normalizePhone(phone)+"@seller.electrovariety.local";
 const authEmailFromStockPhone=phone=>normalizePhone(phone)+"@stock.electrovariety.local";
@@ -251,6 +380,7 @@ const money=v=>{
 const productTitle=p=>p.subtitle?`${p.name} (${p.subtitle})`:p.name;
 
 function showLogin(message=""){
+  stopOnlineStaffPresence();
   $("tools").style.display="none";
   $("sellerActions").style.display="none";
   currentSeller=null;currentSellerId=null;
@@ -451,6 +581,7 @@ async function startCatalog(seller=null,staffAccess=currentStaffAccess,staffName
   $("sellerTeamButton").style.display=canViewTeam?"":"none";
   if(seller)$("sellerProfileButton").textContent="👤 "+(seller.name||"Mi perfil");
   else if(staffAccess)$("sellerProfileButton").textContent="👤 "+(currentStaffProfileName||"Mi perfil");
+  startOnlineStaffPresence().catch(error=>{console.warn("Presencia de personal",error);$("onlineStaffStatus").textContent="No se pudo conectar con el panel de personal."});
   $("catLogout").style.display="block";
   $("app").innerHTML='<div class="msg">Cargando catálogo…</div>';
   try{
@@ -502,6 +633,7 @@ async function saveSellerName(){
     if(currentSeller)currentSeller={...currentSeller,name:data||name};
     currentStaffProfileName=data||name;
     $("sellerProfileButton").textContent="👤 "+currentStaffProfileName;
+    await refreshOnlineStaffDirectory();
     $("sellerProfileStatus").textContent="✅ Nombre actualizado.";
   }catch(e){$("sellerProfileStatus").textContent="No se pudo guardar el nombre: "+(e.message||e)}
   finally{$("sellerNameSave").disabled=false}

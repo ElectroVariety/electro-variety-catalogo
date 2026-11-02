@@ -1115,11 +1115,13 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     if (!confirm(`¿Guardar el nombre \"${name}\" para este vendedor?`)) return;
 
     try {
-      const { error } = await db.from("seller_profiles")
-        .update({ name })
-        .eq("user_id", userId);
+      const { data, error } = await db.rpc("admin_update_seller_name", {
+        p_user_id: userId,
+        p_name: name
+      });
       if (error) throw error;
-      setStatus("sellerStatus", "✅ Nombre del vendedor actualizado.", "ok");
+      if (data !== name) throw new Error("No se confirmó el nombre actualizado.");
+      setStatus("sellerStatus", "✅ Nombre actualizado.", "ok");
       await loadSellers();
       await loadSellerDevices();
     } catch (error) {
