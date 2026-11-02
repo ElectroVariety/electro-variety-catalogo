@@ -47,7 +47,7 @@ function productCard(product){
   if(product.m_count||product.m_price){
     plans.push(`<section class="plan"><div class="plan-title">Cuotas mensuales</div><div class="field"><span class="field-label">Cantidad</span><span class="field-value">${esc(product.m_count||"—")}</span>${copyButton(product.m_count,"cantidad de cuotas mensuales")}</div><div class="field"><span class="field-label">Valor de cada cuota</span><span class="field-value">${esc(money(product.m_price))}</span>${copyButton(money(product.m_price),"valor de cuota mensual")}</div></section>`);
   }
-  return `<article class="product"><div class="product-head"><div style="flex:1;min-width:0"><h2 class="product-title">${esc(name)}</h2>${description?`<p class="product-description">${esc(description)}</p>`:""}</div>${copyButton(nameAndDescription,"nombre y descripción","copy-name")}</div>${plans.length?`<div class="plan-list">${plans.join("")}</div>":""}</article>`;
+  return `<article class="product"><div class="product-head"><div style="flex:1;min-width:0"><h2 class="product-title">${esc(name)}</h2>${description?`<p class="product-description">${esc(description)}</p>`:""}</div>${copyButton(nameAndDescription,"nombre y descripción","copy-name")}</div>${plans.length?`<div class="plan-list">${plans.join("")}</div>`:""}</article>`;
 }
 function render(){
   const query=$("search").value.trim().toLocaleLowerCase("es");
