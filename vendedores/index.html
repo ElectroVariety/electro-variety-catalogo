@@ -81,7 +81,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 <div id="sellerProfileModal" class="cart-modal seller-modal" aria-hidden="true">
   <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="sellerProfileTitle">
     <div class="cart-head"><h2 id="sellerProfileTitle">👤 Mi perfil</h2><button id="sellerProfileClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
-    <label class="seller-field">Nombre visible<input id="sellerProfileName" maxlength="80" autocomplete="name"></label>
+    <label class="seller-field">Nombre visible<span id="sellerProfileRole" class="profile-role-chip" aria-label="Rol, solo visualización"></span><input id="sellerProfileName" maxlength="80" autocomplete="name"></label>
     <button id="sellerNameSave" class="seller-action-button" type="button">Guardar nombre</button>
     <hr>
     <h3>Cambiar contraseña</h3>
@@ -95,7 +95,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
   <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="firstLoginSetupTitle">
     <h2 id="firstLoginSetupTitle">👋 Configurá tu perfil</h2>
     <p class="seller-help">La primera vez, elegí el nombre con el que te verá el equipo y una contraseña nueva. Después podrás cambiarlos desde “Mi perfil”.</p>
-    <label class="seller-field">Tu nombre<input id="firstLoginName" maxlength="80" autocomplete="name"></label>
+    <label class="seller-field">Tu nombre<span id="firstLoginRole" class="profile-role-chip" aria-label="Rol, solo visualización"></span><input id="firstLoginName" maxlength="80" autocomplete="name"></label>
     <label class="seller-field">Nueva contraseña<input id="firstLoginPassword" type="password" autocomplete="new-password"></label>
     <label class="seller-field">Repetí la contraseña<input id="firstLoginPasswordConfirm" type="password" autocomplete="new-password"></label>
     <div id="firstLoginSetupStatus" class="seller-status" role="status"></div>
@@ -143,6 +143,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .seller-modal .cart-panel{padding-bottom:24px}
 .seller-sales-panel{max-height:90vh}
 .seller-field{display:block;margin:14px 0 8px;font-size:13px;font-weight:900}
+.profile-role-chip{display:inline-block;margin-left:6px;padding:3px 8px;border:1px solid #e5e7eb;border-radius:999px;background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;vertical-align:middle}
 .seller-field input,.seller-field textarea,.seller-search{display:block;width:100%;margin-top:6px;padding:11px;border:1px solid #d1d5db;border-radius:9px;font:inherit;font-size:14px}
 .seller-field textarea{resize:vertical;line-height:1.4}
 .seller-action-button{width:100%;margin:8px 0;border:0;border-radius:9px;background:#2563eb;color:#fff;padding:12px;font-weight:900}
@@ -228,6 +229,13 @@ function retrySessionCheck(mode="restore"){
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+function staffRoleLabel(access=currentStaffAccess,seller=currentSeller){
+  if(access?.role==="admin")return "Admin";
+  if(access?.role==="supervisor")return "Supervisor";
+  if(access?.role==="custom")return access.role_name||"Personalizado";
+  if(seller)return "Vendedor";
+  return "Usuario";
+}
 const normalizePhone=v=>String(v??"").replace(/\D/g,"");
 const authEmailFromPhone=phone=>normalizePhone(phone)+"@seller.electrovariety.local";
 const authEmailFromStockPhone=phone=>normalizePhone(phone)+"@stock.electrovariety.local";
@@ -263,9 +271,10 @@ function showLogin(message=""){
   $("loginPassword").addEventListener("keydown",e=>{if(e.key==="Enter")sellerLogin()});
 }
 
-function requireFirstLoginSetup(name,continueAfter){
+function requireFirstLoginSetup(name,continueAfter,roleLabel=staffRoleLabel()){
   afterFirstLoginSetup=continueAfter;
   $("firstLoginName").value=name||"";
+  $("firstLoginRole").textContent=roleLabel;
   $("firstLoginPassword").value="";
   $("firstLoginPasswordConfirm").value="";
   $("firstLoginSetupStatus").textContent="";
@@ -377,7 +386,7 @@ async function handleSession(session, mode="restore"){
       if(adminProfileError){console.warn("No se pudo verificar el perfil administrador",adminProfileError);retrySessionCheck(mode);return}
       const name=adminProfile?.display_name||seller?.name||"";
       currentStaffProfileName=name;
-      if(adminProfile&&!adminProfile.profile_setup_completed){requireFirstLoginSetup(name,()=>startCatalog(null,currentStaffAccess,name));return}
+      if(adminProfile&&!adminProfile.profile_setup_completed){requireFirstLoginSetup(name,()=>startCatalog(null,currentStaffAccess,name),staffRoleLabel(currentStaffAccess,null));return}
       await startCatalog(null,currentStaffAccess,name);return;
     }
     if(seller){
@@ -404,7 +413,7 @@ async function handleSession(session, mode="restore"){
       deviceRetryTimer=null;deviceRetryDelay=5000;
       startDeviceHeartbeat();
       currentStaffProfileName=seller.name||"";
-      if(!seller.profile_setup_completed){requireFirstLoginSetup(seller.name,()=>startCatalog(seller,currentStaffAccess));return}
+      if(!seller.profile_setup_completed){requireFirstLoginSetup(seller.name,()=>startCatalog(seller,currentStaffAccess),staffRoleLabel(currentStaffAccess,seller));return}
       await startCatalog(seller,currentStaffAccess);
       return;
     }
@@ -416,7 +425,7 @@ async function handleSession(session, mode="restore"){
       const profileName=adminProfile?.display_name||stockProfile?.name||"";
       currentStaffProfileName=profileName;
       const completed=adminProfile?.profile_setup_completed===true||stockProfile?.profile_setup_completed===true;
-      if(!completed){requireFirstLoginSetup(profileName,()=>startCatalog(null,access,profileName));return}
+      if(!completed){requireFirstLoginSetup(profileName,()=>startCatalog(null,access,profileName),staffRoleLabel(access,null));return}
       await startCatalog(null,access,profileName);return;
     }
     await db.auth.signOut();
@@ -473,6 +482,7 @@ function closeSellerModal(id){$(id).style.display="none";$(id).setAttribute("ari
 function openSellerProfile(){
   if(!currentSeller&&!currentStaffAccess)return;
   $("sellerProfileName").value=currentSeller?.name||currentStaffProfileName||"";
+  $("sellerProfileRole").textContent=staffRoleLabel();
   $("sellerProfileStatus").textContent="";
   $("sellerPassword").value="";
   $("sellerPasswordConfirm").value="";
