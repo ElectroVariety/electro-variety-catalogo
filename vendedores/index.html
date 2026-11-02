@@ -172,6 +172,8 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 <script>
 "use strict";
 let db;
+let sellerDb;
+let adminDb;
 let allProducts=[];
 let currentSeller=null;
 let currentSellerId=null;
@@ -369,6 +371,14 @@ async function handleSession(session, mode="restore"){
       if($("catLogout").style.display!=="block")showLogin("Verificando sesión…");
       retrySessionCheck(mode);
       return
+    }
+    if(currentStaffAccess?.role==="admin"){
+      const {data:adminProfile,error:adminProfileError}=await db.from("admin_profiles").select("display_name,profile_setup_completed").eq("user_id",session.user.id).maybeSingle();
+      if(adminProfileError){console.warn("No se pudo verificar el perfil administrador",adminProfileError);retrySessionCheck(mode);return}
+      const name=adminProfile?.display_name||seller?.name||"";
+      currentStaffProfileName=name;
+      if(adminProfile&&!adminProfile.profile_setup_completed){requireFirstLoginSetup(name,()=>startCatalog(null,currentStaffAccess,name));return}
+      await startCatalog(null,currentStaffAccess,name);return;
     }
     if(seller){
       if(!seller.active){
@@ -1047,18 +1057,57 @@ $("catLogout").addEventListener("click",async()=>{
   showLogin("Sesión cerrada.");
 });
 
-db=supabase.createClient(EV_CONFIG.SUPABASE_URL,EV_CONFIG.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storage:window.localStorage,storageKey:"electro-variety-seller-auth-v2"}});
+sellerDb=supabase.createClient(EV_CONFIG.SUPABASE_URL,EV_CONFIG.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storage:window.localStorage,storageKey:"electro-variety-seller-auth-v2"}});
+adminDb=supabase.createClient(EV_CONFIG.SUPABASE_URL,EV_CONFIG.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storage:window.localStorage,storageKey:"electro-variety-admin-auth"}});
+db=sellerDb;
 
-db.auth.onAuthStateChange((event,session)=>{
-  if(event==="SIGNED_OUT"){ if(deviceHeartbeat) clearInterval(deviceHeartbeat); if(deviceRetryTimer)clearTimeout(deviceRetryTimer); deviceRetryTimer=null; showLogin(); }
+sellerDb.auth.onAuthStateChange((event,session)=>{
+  if(event==="SIGNED_OUT"){ if(db!==sellerDb)return; if(deviceHeartbeat) clearInterval(deviceHeartbeat); if(deviceRetryTimer)clearTimeout(deviceRetryTimer); deviceRetryTimer=null; showLogin(); }
   else if(event==="INITIAL_SESSION"||event==="TOKEN_REFRESHED"){
-    if(session)setTimeout(()=>handleSession(session,"restore"),0);
+    if(session)setTimeout(async()=>{
+      try{
+        const {data:adminState}=await adminDb.auth.getSession();
+        if(adminState?.session){
+          const {data:access}=await adminDb.rpc("get_my_staff_access");
+          if(access?.[0]?.role==="admin"){db=adminDb;await handleSession(adminState.session,"restore");return}
+        }
+        db=sellerDb;await handleSession(session,"restore");
+      }catch(error){console.warn("No se pudo restaurar la sesión",error)}
+    },0);
+  }
+});
+
+adminDb.auth.onAuthStateChange((event,session)=>{
+  if(event==="SIGNED_OUT"&&db===adminDb){
+    db=sellerDb;
+    if(deviceHeartbeat)clearInterval(deviceHeartbeat);
+    sellerDb.auth.getSession().then(({data})=>data?.session?handleSession(data.session,"restore"):showLogin("Sesión de administración cerrada."));
+  }else if(session&&["INITIAL_SESSION","SIGNED_IN","TOKEN_REFRESHED"].includes(event)){
+    setTimeout(async()=>{
+      try{
+        const {data,error}=await adminDb.rpc("get_my_staff_access");
+        if(!error&&data?.[0]?.role==="admin"){
+          db=adminDb;
+          await handleSession(session,"restore");
+        }
+      }catch(error){console.warn("No se pudo reutilizar la sesión de administrador",error)}
+    },0);
   }
 });
 
 (async function boot(){
   try{
-    const {data,error}=await db.auth.getSession();
+    const {data:adminSessionData}=await adminDb.auth.getSession();
+    if(adminSessionData?.session){
+      const {data:access,error:accessError}=await adminDb.rpc("get_my_staff_access");
+      if(!accessError&&access?.[0]?.role==="admin"){
+        db=adminDb;
+        await handleSession(adminSessionData.session);
+        return;
+      }
+    }
+    db=sellerDb;
+    const {data,error}=await sellerDb.auth.getSession();
     if(error){
       console.warn("Sesión local no recuperable",error);
       showLogin("No se pudo recuperar la sesión en este momento. Recargá la página o volvé a intentar.");
