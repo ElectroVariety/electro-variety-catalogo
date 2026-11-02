@@ -29,6 +29,10 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 .admin-mobile-bar{display:none}
 .admin-sidebar-backdrop{display:none}
 .admin-panel .card{margin-top:0;margin-bottom:14px}
+.sales-order{border:1px solid #e5e7eb;border-radius:12px;padding:13px;margin-top:10px}
+.sales-order pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:13px;margin:8px 0}
+.supervisor-assignment{border:1px solid #e5e7eb;border-radius:12px;padding:13px;margin:10px 0}
+.supervisor-assignment select{width:100%;min-height:150px;padding:8px;border:1px solid #d1d5db;border-radius:9px;margin-top:6px}
 @media(max-width:800px){
   .admin-shell{display:block}
   .admin-mobile-bar{display:flex;position:sticky;top:0;z-index:50;align-items:center;justify-content:space-between;gap:10px;background:#111827;color:#fff;border-radius:12px;padding:10px 12px;margin-bottom:12px;box-shadow:0 6px 20px rgba(0,0,0,.12)}
@@ -44,7 +48,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <body>
 <header>⚙️ ELECTRO VARIETY · ADMINISTRADOR <button class="red hidden" id="logout" style="float:right" type="button">Cerrar sesión</button></header>
 <div class="card" id="login"><h2>Acceso administrador</h2><label>Email</label><input autocomplete="username" id="email" type="email"/><label style="display:block;margin-top:10px">Contraseña</label><input autocomplete="current-password" id="password" type="password"/><button class="blue" id="loginButton" style="width:100%;margin-top:13px" type="button">🔐 Ingresar</button><div class="small" id="loginMsg" style="margin-top:9px"></div></div>
-<div class="wrap hidden" id="app"><div class="admin-shell"><div class="admin-mobile-bar"><button id="adminMenuButton" type="button">☰ Menú</button><div class="admin-mobile-title" id="adminMobileTitle">📦 Productos</div></div><aside class="admin-sidebar" id="adminSidebar"><div class="side-title">⚙️ ADMINISTRACIÓN</div><nav aria-label="Secciones del administrador" class="admin-nav"><button class="active" data-admin-section="products" type="button">📦 Productos</button><button class="" data-admin-section="stock" type="button">📊 Stock</button><button class="" data-admin-section="clients" type="button">📣 Clientes</button><button class="" data-admin-section="delivery" type="button">📍 Ubicaciones</button><button class="" data-admin-section="devices" type="button">📱 Dispositivos</button><button class="" data-admin-section="sellers" type="button">👥 Vendedores</button></nav></aside><div class="admin-sidebar-backdrop" id="adminSidebarBackdrop"></div><main class="admin-content"><section class="admin-panel active" data-admin-panel="products" id="admin-panel-products"><div class="card"><h2 id="formTitle">Nuevo producto</h2><div class="grid">
+<div class="wrap hidden" id="app"><div class="admin-shell"><div class="admin-mobile-bar"><button id="adminMenuButton" type="button">☰ Menú</button><div class="admin-mobile-title" id="adminMobileTitle">📦 Productos</div></div><aside class="admin-sidebar" id="adminSidebar"><div class="side-title">⚙️ ADMINISTRACIÓN</div><nav aria-label="Secciones del administrador" class="admin-nav"><button class="active" data-admin-section="products" type="button">📦 Productos</button><button class="" data-admin-section="stock" type="button">📊 Stock</button><button class="" data-admin-section="clients" type="button">📣 Clientes</button><button class="" data-admin-section="delivery" type="button">📍 Ubicaciones</button><button class="" data-admin-section="devices" type="button">📱 Dispositivos</button><button class="" data-admin-section="sellers" type="button">👥 Vendedores</button><button class="" data-admin-section="sales" type="button">🧾 Perfiles y pedidos</button></nav></aside><div class="admin-sidebar-backdrop" id="adminSidebarBackdrop"></div><main class="admin-content"><section class="admin-panel active" data-admin-panel="products" id="admin-panel-products"><div class="card"><h2 id="formTitle">Nuevo producto</h2><div class="grid">
 <div class="full"><label>Nombre</label><input id="name"/></div><div><label>Subtítulo</label><input id="subtitle"/></div><div><label>Categoría</label><input id="category"/></div>
 <div><label>Cuota quincenal</label><input id="qprice"/></div><div><label>Cantidad quincenal</label><input id="qcount" min="1" type="number"/></div><div><label>Cuota mensual</label><input id="mprice"/></div><div><label>Cantidad mensual</label><input id="mcount" min="1" type="number"/></div>
 <div class="full"><label>Imagen (obligatoria al crear; opcional al editar)</label><input accept="image/*" id="image" type="file"/></div>
@@ -110,7 +114,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <div><label>Nombre del vendedor</label><input id="sellerName" placeholder="Ej. Juan Pérez"/></div>
 <div><label>Número de WhatsApp / celular</label><input autocomplete="off" id="sellerPhone" inputmode="numeric" placeholder="2224534328" type="tel"/></div>
 <div><label>Contraseña inicial</label><input autocomplete="new-password" id="sellerPassword" placeholder="Mínimo 6 caracteres" type="password"/></div>
-</div><div class="actions"><button class="blue" id="createSellerButton" type="button">➕ Crear vendedor</button></div><div class="small seller-status" id="sellerStatus"></div></div><div id="sellerList" style="margin-top:14px">Cargando…</div></div></section></main></div></div>
+</div><div class="actions"><button class="blue" id="createSellerButton" type="button">➕ Crear vendedor</button></div><div class="small seller-status" id="sellerStatus"></div></div><div id="sellerList" style="margin-top:14px">Cargando…</div></div></section><section class="admin-panel" data-admin-panel="sales" id="admin-panel-sales"><div class="card"><h2>👤 Perfiles de vendedores</h2><div class="small" id="sellerProfilesStatus">Cargando perfiles…</div><div id="sellerProfilesList"></div></div><div class="card"><h2>🧾 Pedidos y ventas</h2><div class="actions"><button class="blue" id="refreshSellerSalesButton" type="button">🔄 Actualizar</button><div class="small" id="sellerSalesAdminStatus"></div></div><div id="sellerSalesAdminList">Cargando pedidos…</div></div><div class="card" id="supervisorManagementCard"><h2>👔 Supervisores</h2><div class="small">Elegí un usuario con perfil de vendedor o de stock para darle el rol de supervisor. Después seleccioná los vendedores que podrá consultar.</div><div class="actions"><select id="supervisorRoleUser" style="flex:1;min-width:240px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir usuario</option></select><button class="blue" id="makeSupervisorButton" type="button">➕ Crear rol de supervisor</button></div><div class="small" id="supervisorRoleStatus" style="margin-top:8px"></div><div id="supervisorManagerList" style="margin-top:12px">Cargando supervisores…</div></div></section></main></div></div>
 <script>
 "use strict";
 
@@ -144,6 +148,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 
   let editing = null;
   let checking = false;
+  let currentAccessRole = null;
   let waProducts = [];
   let waZip = null;
 
@@ -207,16 +212,26 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   }
 
   function showLogin(message = "") {
+    currentAccessRole = null;
+    window.dispatchEvent(new CustomEvent("electro-admin-role", { detail: { role: null } }));
     $("login").classList.remove("hidden");
     $("app").classList.add("hidden");
     $("logout").classList.add("hidden");
     setStatus("loginMsg", message);
   }
 
-  function showApp() {
+  function showApp(role = "admin") {
+    currentAccessRole = role;
     $("login").classList.add("hidden");
     $("app").classList.remove("hidden");
     $("logout").classList.remove("hidden");
+    $("supervisorManagementCard").classList.toggle("hidden", role !== "admin");
+    window.dispatchEvent(new CustomEvent("electro-admin-role", { detail: { role } }));
+    if (role === "supervisor") {
+      loadSellerProfiles();
+      loadAdminSales();
+      return;
+    }
     loadProducts();
     loadSellers();
     loadStockUsers();
@@ -225,6 +240,9 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     loadStockRequests();
     loadClientFeatures();
     loadDeliveryChecks();
+    loadSellerProfiles();
+    loadAdminSales();
+    loadSupervisorManagement();
   }
 
   async function verifyAdmin(session) {
@@ -235,7 +253,6 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         .from("admin_profiles")
         .select("user_id,role")
         .eq("user_id", session.user.id)
-        .eq("role", "admin")
         .maybeSingle();
 
       if (error) {
@@ -246,12 +263,12 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         }, 4000);
         return;
       }
-      if (!data) {
+      if (!data || !["admin", "supervisor"].includes(data.role)) {
         await db.auth.signOut({scope:"local"});
-        showLogin("Esta cuenta no tiene permisos de administrador.");
+        showLogin("Esta cuenta no tiene permisos para entrar a este panel.");
         return;
       }
-      showApp();
+      showApp(data.role);
     } catch (error) {
       console.error(error);
       showLogin("No se pudo verificar el acceso.");
@@ -718,6 +735,153 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         </div>
       </div>
     `).join("");
+  }
+
+  async function loadSellerProfiles() {
+    const box = $("sellerProfilesList");
+    const status = $("sellerProfilesStatus");
+    if (!box) return;
+    box.textContent = "Cargando perfiles…";
+    const { data, error } = await db.from("seller_profiles")
+      .select("user_id,name,phone,active,created_at")
+      .order("name", { ascending: true });
+    if (error) {
+      box.innerHTML = `<div class="small danger">No se pudieron cargar los perfiles: ${esc(error.message)}</div>`;
+      if (status) status.textContent = "";
+      return;
+    }
+    if (status) status.textContent = `${data?.length || 0} perfil(es) visibles para esta cuenta.`;
+    if (!data?.length) {
+      box.innerHTML = '<div class="small">No hay vendedores asignados a este supervisor.</div>';
+      return;
+    }
+    box.innerHTML = data.map(s => `<div class="item"><div class="info"><b>${esc(s.name || "Sin nombre")}</b><div class="small">📱 ${esc(s.phone || "Sin teléfono")} · ${s.active ? "🟢 Activo" : "🔴 Desactivado"}</div><div class="small">Alta: ${s.created_at ? new Date(s.created_at).toLocaleDateString("es-AR") : "—"}</div></div></div>`).join("");
+  }
+
+  function saleStatusName(status) {
+    return ({pending_delivery:"Pendiente de entrega",partially_resolved:"Parcialmente confirmado",delivered:"Entregado",not_delivered:"No entregado",expired:"Vencido"})[status] || status || "—";
+  }
+
+  async function loadAdminSales() {
+    const box = $("sellerSalesAdminList");
+    const status = $("sellerSalesAdminStatus");
+    if (!box) return;
+    box.textContent = "Cargando pedidos…";
+    const { data, error } = await db.from("seller_sales")
+      .select("id,seller_id,seller_name,order_text,status,created_at,expires_at,seller_sale_items(id,product_name,quantity,status,reserved_deposito,reserved_local,deposito_untracked,local_untracked)")
+      .order("created_at", { ascending: false }).limit(300);
+    if (error) {
+      box.innerHTML = `<div class="small danger">No se pudieron cargar los pedidos: ${esc(error.message)}</div>`;
+      if (status) status.textContent = "";
+      return;
+    }
+    const sales = data || [];
+    if (status) status.textContent = `${sales.length} pedido(s) recientes.`;
+    if (!sales.length) {
+      box.innerHTML = '<div class="small">Todavía no hay pedidos.</div>';
+      return;
+    }
+    box.innerHTML = sales.map(sale => {
+      const items = (sale.seller_sale_items || []).map(item => `<li>${esc(item.product_name)} × ${Number(item.quantity)} · ${esc(saleStatusName(item.status))}</li>`).join("");
+      const deleteButton = currentAccessRole === "admin" ? `<button class="red" type="button" data-delete-seller-sale="${esc(sale.id)}">🗑️ Borrar pedido</button>` : "";
+      return `<article class="sales-order"><div class="seller-actions" style="justify-content:space-between"><b>Pedido ${esc(String(sale.id).slice(0,8))} · ${esc(saleStatusName(sale.status))}</b>${deleteButton}</div><div class="small">Vendedor: ${esc(sale.seller_name || "Sin nombre")} · ${sale.created_at ? new Date(sale.created_at).toLocaleString("es-AR") : "—"}</div><ul>${items}</ul><details><summary>Ver texto del pedido</summary><pre>${esc(sale.order_text)}</pre></details></article>`;
+    }).join("");
+  }
+
+  async function loadSupervisorManagement() {
+    const box = $("supervisorManagerList");
+    const select = $("supervisorRoleUser");
+    if (!box || currentAccessRole !== "admin") return;
+    box.textContent = "Cargando supervisores…";
+    const [candidateResult, assignmentResult, sellerResult] = await Promise.all([
+      db.rpc("admin_list_supervisor_candidates"),
+      db.rpc("admin_get_supervisor_assignments"),
+      db.from("seller_profiles").select("user_id,name,phone,active").order("name", { ascending: true })
+    ]);
+    const error = candidateResult.error || assignmentResult.error || sellerResult.error;
+    if (error) {
+      box.innerHTML = `<div class="small danger">No se pudo cargar la gestión de supervisores: ${esc(error.message)}</div>`;
+      return;
+    }
+    const candidates = candidateResult.data || [];
+    if (select) {
+      const eligible = candidates.filter(user => !["admin", "supervisor"].includes(user.role));
+      select.innerHTML = '<option value="">Elegir usuario</option>' + eligible.map(user => `<option value="${esc(user.user_id)}">${esc(user.display_name)} · ${esc(user.phone || "sin teléfono")} · ${esc(user.account_type || "usuario")}</option>`).join("");
+    }
+    const sellers = sellerResult.data || [];
+    const groups = new Map();
+    for (const row of assignmentResult.data || []) {
+      if (!groups.has(row.supervisor_id)) groups.set(row.supervisor_id, {name:row.supervisor_name,phone:row.supervisor_phone,sellerIds:[]});
+      if (row.seller_id) groups.get(row.supervisor_id).sellerIds.push(row.seller_id);
+    }
+    if (!groups.size) {
+      box.innerHTML = '<div class="small">Todavía no hay supervisores. Elegí un usuario arriba para crear el primer rol.</div>';
+      return;
+    }
+    box.innerHTML = [...groups.entries()].map(([supervisorId, group]) => {
+      const assigned = new Set(group.sellerIds);
+      const options = sellers.filter(seller => seller.user_id !== supervisorId).map(seller => `<option value="${esc(seller.user_id)}" ${assigned.has(seller.user_id) ? "selected" : ""}>${esc(seller.name || "Sin nombre")} · ${esc(seller.phone || "sin teléfono")}${seller.active ? "" : " · desactivado"}</option>`).join("");
+      return `<div class="supervisor-assignment"><b>${esc(group.name || "Supervisor")}</b><div class="small">${esc(group.phone || "Sin teléfono")} · ${group.sellerIds.length} vendedor(es) asignados</div><label>Vendedores que podrá consultar<select multiple data-supervisor-members="${esc(supervisorId)}">${options}</select></label><div class="actions"><button class="blue" type="button" data-save-supervisor="${esc(supervisorId)}">💾 Guardar asignación</button><button class="red" type="button" data-remove-supervisor="${esc(supervisorId)}">Quitar rol de supervisor</button></div></div>`;
+    }).join("");
+  }
+
+  async function enableSupervisorRole() {
+    const userId = $("supervisorRoleUser").value;
+    if (!userId) { setStatus("supervisorRoleStatus", "Elegí un usuario.", "warn"); return; }
+    const button = $("makeSupervisorButton");
+    button.disabled = true;
+    try {
+      const { error } = await db.rpc("admin_set_supervisor_role", { p_user_id:userId, p_enabled:true });
+      if (error) throw error;
+      setStatus("supervisorRoleStatus", "✅ Rol de supervisor creado. Ahora asignale sus vendedores.", "ok");
+      await loadSupervisorManagement();
+    } catch (error) {
+      setStatus("supervisorRoleStatus", "No se pudo crear el rol: " + (error.message || error), "danger");
+    } finally { button.disabled = false; }
+  }
+
+  async function saveSupervisorAssignments(button) {
+    const supervisorId = button.dataset.saveSupervisor;
+    const select = document.querySelector(`[data-supervisor-members="${supervisorId}"]`);
+    const sellerIds = [...(select?.selectedOptions || [])].map(option => option.value);
+    button.disabled = true;
+    try {
+      const { error } = await db.rpc("admin_replace_supervisor_sellers", { p_supervisor_id:supervisorId, p_seller_ids:sellerIds });
+      if (error) throw error;
+      setStatus("supervisorRoleStatus", "✅ Vendedores asignados al supervisor.", "ok");
+      await loadSupervisorManagement();
+    } catch (error) {
+      setStatus("supervisorRoleStatus", "No se pudo guardar la asignación: " + (error.message || error), "danger");
+    } finally { button.disabled = false; }
+  }
+
+  async function removeSupervisorRole(button) {
+    const userId = button.dataset.removeSupervisor;
+    if (!confirm("¿Quitar el rol de supervisor? Se eliminarán sus asignaciones; su perfil de vendedor seguirá activo.")) return;
+    button.disabled = true;
+    try {
+      const { error } = await db.rpc("admin_set_supervisor_role", { p_user_id:userId, p_enabled:false });
+      if (error) throw error;
+      setStatus("supervisorRoleStatus", "Rol de supervisor quitado.", "ok");
+      await loadSupervisorManagement();
+    } catch (error) {
+      setStatus("supervisorRoleStatus", "No se pudo quitar el rol: " + (error.message || error), "danger");
+    } finally { button.disabled = false; }
+  }
+
+  async function deleteSellerSale(button) {
+    const saleId = button.dataset.deleteSellerSale;
+    if (currentAccessRole !== "admin") return;
+    if (!confirm("¿Borrar definitivamente este pedido? El stock con cantidad definida de los productos pendientes volverá al inventario. Los productos sin cantidad exacta seguirán sin conteo; el pedido ya no aparecerá en el historial.")) return;
+    button.disabled = true;
+    try {
+      const { error } = await db.rpc("admin_delete_seller_sale", { p_sale_id:saleId });
+      if (error) throw error;
+      setStatus("sellerSalesAdminStatus", "Pedido eliminado. El stock cuantificado pendiente fue devuelto.", "ok");
+      await loadAdminSales();
+    } catch (error) {
+      setStatus("sellerSalesAdminStatus", "No se pudo borrar el pedido: " + (error.message || error), "danger");
+    } finally { button.disabled = false; }
   }
 
   async function createSeller() {
@@ -1561,6 +1725,18 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   $("saveButton").addEventListener("click", save);
   $("resetButton").addEventListener("click", resetForm);
   $("createSellerButton").addEventListener("click", createSeller);
+  $("makeSupervisorButton").addEventListener("click", enableSupervisorRole);
+  $("refreshSellerSalesButton").addEventListener("click", async()=>{await loadSellerProfiles();await loadAdminSales();});
+  $("sellerSalesAdminList").addEventListener("click",event=>{
+    const button=event.target.closest("[data-delete-seller-sale]");
+    if(button)deleteSellerSale(button);
+  });
+  $("supervisorManagerList").addEventListener("click",event=>{
+    const saveButton=event.target.closest("[data-save-supervisor]");
+    if(saveButton){saveSupervisorAssignments(saveButton);return;}
+    const removeButton=event.target.closest("[data-remove-supervisor]");
+    if(removeButton)removeSupervisorRole(removeButton);
+  });
   $("createStockUserButton").addEventListener("click", createStockUser);
   $("analyzeWaButton").addEventListener("click", analyzeWhatsApp);
   $("importWaButton").addEventListener("click", importWhatsApp);
@@ -1607,13 +1783,15 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   const backdrop=document.getElementById('adminSidebarBackdrop');
   const menu=document.getElementById('adminMenuButton');
   const mobileTitle=document.getElementById('adminMobileTitle');
-  const labels={products:'📦 Productos',stock:'📊 Stock',clients:'📣 Clientes',delivery:'📍 Ubicaciones',devices:'📱 Dispositivos',sellers:'👥 Vendedores'};
+  const labels={products:'📦 Productos',stock:'📊 Stock',clients:'📣 Clientes',delivery:'📍 Ubicaciones',devices:'📱 Dispositivos',sellers:'👥 Vendedores',sales:'🧾 Perfiles y pedidos'};
+  let accessRole=null;
   let deliveryRows=[];
   let deliveryDb=null;
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function closeMenu(){if(sidebar) sidebar.classList.remove('open'); if(backdrop) backdrop.classList.remove('open');}
   function showSection(id, save=true){
+    if(accessRole==='supervisor' && id!=='sales') return;
     panels.forEach(p=>p.classList.toggle('active',p.dataset.adminPanel===id));
     buttons.forEach(b=>b.classList.toggle('active',b.dataset.adminSection===id));
     if(mobileTitle) mobileTitle.textContent=labels[id]||'Administración';
@@ -1622,6 +1800,12 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     if(id==='delivery') loadDeliveryChecks();
     window.scrollTo({top:0,behavior:'smooth'});
   }
+  window.addEventListener('electro-admin-role',event=>{
+    accessRole=event.detail?.role||null;
+    const supervisor=accessRole==='supervisor';
+    buttons.forEach(b=>{b.style.display=supervisor&&b.dataset.adminSection!=='sales'?'none':'';});
+    if(supervisor)showSection('sales',false);
+  });
 
   async function getDeliveryDb(){
     if(deliveryDb) return deliveryDb;
