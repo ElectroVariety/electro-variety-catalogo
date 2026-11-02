@@ -1165,7 +1165,7 @@ async function shareProduct(index){
 async function copyProduct(index,button){
   const p=filteredProducts[index];
   if(!p)return;
-  const text=`${productTitle(p)}\n\n${p.q_count} cuotas quincenales de ${money(p.q_price)}\n${p.m_count} cuotas mensuales de ${money(p.m_price)}${p.image_url?`\n\n${p.image_url}`:""}`;
+  const text=`${productTitle(p)}\n\n${p.q_count} cuotas quincenales de ${money(p.q_price)}\n${p.m_count} cuotas mensuales de ${money(p.m_price)}`;
   try{
     if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(text)}
     else{
