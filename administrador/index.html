@@ -163,6 +163,14 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({
     "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
   }[ch]));
+  function accountRoleLabel(user) {
+    const role = String(user?.assigned_role || user?.role || "").toLowerCase();
+    if (role === "admin") return "Admin";
+    if (role === "supervisor") return "Supervisor";
+    if (role === "custom") return user?.assigned_role_name || user?.custom_role_name || "Personalizado";
+    return user?.account_type || "Vendedor";
+  }
+  function nameWithRole(name, role) { return `${String(name || "Sin nombre")} • ${String(role || "Usuario")}`; }
 
   function setStatus(id, text, type = "") {
     const el = $(id);
@@ -735,9 +743,11 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const box = $("sellerList");
     box.textContent = "Cargando vendedores…";
 
-    const { data, error } = await db.from("seller_profiles")
-      .select("user_id,name,phone,active,created_at")
-      .order("created_at", { ascending: false });
+    const [sellerResult, roleResult] = await Promise.all([
+      db.from("seller_profiles").select("user_id,name,phone,active,created_at").order("created_at", { ascending: false }),
+      db.rpc("admin_list_custom_role_candidates")
+    ]);
+    const { data, error } = sellerResult;
 
     if (error) {
       box.textContent = "Error: " + error.message;
@@ -749,10 +759,11 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       return;
     }
 
+    const rolesByUser = new Map((roleResult.data || []).map(user => [user.user_id, user]));
     box.innerHTML = data.map(s => `
       <div class="item">
         <div class="info">
-          <b>${esc(s.name)}</b>
+          <b>${esc(nameWithRole(s.name, accountRoleLabel(rolesByUser.get(s.user_id) || { account_type: "Vendedor" })))}</b>
           <div class="small">📱 ${esc(s.phone || "Sin número")} · ${s.active ? "🟢 Acceso habilitado" : "🔴 Acceso bloqueado"}</div>
         </div>
         <div class="seller-actions">
@@ -770,9 +781,11 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const status = $("sellerProfilesStatus");
     if (!box) return;
     box.textContent = "Cargando perfiles…";
-    const { data, error } = await db.from("seller_profiles")
-      .select("user_id,name,phone,active,created_at")
-      .order("name", { ascending: true });
+    const [sellerResult, roleResult] = await Promise.all([
+      db.from("seller_profiles").select("user_id,name,phone,active,created_at").order("name", { ascending: true }),
+      currentAccessRole === "admin" ? db.rpc("admin_list_custom_role_candidates") : Promise.resolve({ data: [], error: null })
+    ]);
+    const { data, error } = sellerResult;
     if (error) {
       box.innerHTML = `<div class="small danger">No se pudieron cargar los perfiles: ${esc(error.message)}</div>`;
       if (status) status.textContent = "";
@@ -783,7 +796,11 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       box.innerHTML = '<div class="small">No hay vendedores asignados a este supervisor.</div>';
       return;
     }
-    box.innerHTML = data.map(s => `<div class="item"><div class="info"><b>${esc(s.name || "Sin nombre")}</b><div class="small">📱 ${esc(s.phone || "Sin teléfono")} · ${s.active ? "🟢 Activo" : "🔴 Desactivado"}</div><div class="small">Alta: ${s.created_at ? new Date(s.created_at).toLocaleDateString("es-AR") : "—"}</div></div></div>`).join("");
+    const rolesByUser = new Map((roleResult.data || []).map(user => [user.user_id, user]));
+    box.innerHTML = data.map(s => {
+      const role = accountRoleLabel(rolesByUser.get(s.user_id) || { account_type: "Vendedor" });
+      return `<div class="item"><div class="info"><b>${esc(nameWithRole(s.name, role))}</b><div class="small">📱 ${esc(s.phone || "Sin teléfono")} · ${s.active ? "🟢 Activo" : "🔴 Desactivado"}</div><div class="small">Alta: ${s.created_at ? new Date(s.created_at).toLocaleDateString("es-AR") : "—"}</div></div></div>`;
+    }).join("");
   }
 
   function saleStatusName(status) {
@@ -850,7 +867,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const candidates = candidateResult.data || [];
     if (select) {
       const eligible = candidates.filter(user => !["admin", "supervisor", "custom"].includes(user.role));
-      select.innerHTML = '<option value="">Elegir usuario</option>' + eligible.map(user => `<option value="${esc(user.user_id)}">${esc(user.display_name)} · ${esc(user.phone || "sin teléfono")} · ${esc(user.account_type || "usuario")}</option>`).join("");
+      select.innerHTML = '<option value="">Elegir usuario</option>' + eligible.map(user => `<option value="${esc(user.user_id)}">${esc(nameWithRole(user.display_name, accountRoleLabel(user)))} · ${esc(user.phone || "sin teléfono")}</option>`).join("");
     }
     const sellers = sellerResult.data || [];
     const groups = new Map();
@@ -865,7 +882,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     box.innerHTML = [...groups.entries()].map(([supervisorId, group]) => {
       const assigned = new Set(group.sellerIds);
       const options = sellers.filter(seller => seller.user_id !== supervisorId).map(seller => `<label><input type="checkbox" value="${esc(seller.user_id)}" ${assigned.has(seller.user_id) ? "checked" : ""}><span>${esc(seller.name || "Sin nombre")} · ${esc(seller.phone || "sin teléfono")}${seller.active ? "" : " · desactivado"}</span></label>`).join("");
-      return `<div class="supervisor-assignment"><b>${esc(group.name || "Supervisor")}</b><div class="small">${esc(group.phone || "Sin teléfono")} · ${group.sellerIds.length} vendedor(es) asignados</div><div class="small" style="margin-top:9px">Vendedores que podrá consultar</div><div class="assignment-checklist" data-supervisor-members="${esc(supervisorId)}">${options || '<div class="small">No hay vendedores disponibles.</div>'}</div><div class="actions"><button class="blue" type="button" data-save-supervisor="${esc(supervisorId)}">💾 Guardar asignación</button><button class="red" type="button" data-remove-supervisor="${esc(supervisorId)}">Quitar rol de supervisor</button></div></div>`;
+      return `<div class="supervisor-assignment"><b>${esc(nameWithRole(group.name || "Supervisor", "Supervisor"))}</b><div class="small">${esc(group.phone || "Sin teléfono")} · ${group.sellerIds.length} vendedor(es) asignados</div><div class="small" style="margin-top:9px">Vendedores que podrá consultar</div><div class="assignment-checklist" data-supervisor-members="${esc(supervisorId)}">${options || '<div class="small">No hay vendedores disponibles.</div>'}</div><div class="actions"><button class="blue" type="button" data-save-supervisor="${esc(supervisorId)}">💾 Guardar asignación</button><button class="red" type="button" data-remove-supervisor="${esc(supervisorId)}">Quitar rol de supervisor</button></div></div>`;
     }).join("");
   }
 
@@ -892,7 +909,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const roleSelect = $("customRoleChoice");
     const userSelect = $("customRoleUser");
     if (roleSelect) roleSelect.innerHTML = '<option value="">Elegir rol</option>' + roles.map(r => `<option value="${esc(r.id)}">${esc(r.name)}${r.can_view_assigned_sellers ? " · acceso a pedidos asignados" : ""}</option>`).join("");
-    if (userSelect) userSelect.innerHTML = '<option value="">Elegir usuario</option>' + users.map(u => `<option value="${esc(u.user_id)}">${esc(u.display_name)} · ${esc(u.phone || "sin teléfono")} · ${esc(u.account_type || "usuario")}${u.assigned_role_name ? " · rol: " + esc(u.assigned_role_name) : ""}</option>`).join("");
+    if (userSelect) userSelect.innerHTML = '<option value="">Elegir usuario</option>' + users.map(u => `<option value="${esc(u.user_id)}">${esc(nameWithRole(u.display_name, accountRoleLabel(u)))} · ${esc(u.phone || "sin teléfono")}</option>`).join("");
     if (!roles.length && !users.length) {
       assignmentsBox.innerHTML = '<div class="small">Todavía no hay roles ni usuarios disponibles.</div>';
       return;
@@ -912,7 +929,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       const canView = !!role?.can_view_assigned_sellers;
       const selected = new Set(assignments.get(user.user_id) || []);
       const sellerOptions = sellers.filter(s => s.user_id !== user.user_id).map(s => `<label><input type="checkbox" value="${esc(s.user_id)}" ${selected.has(s.user_id) ? "checked" : ""}><span>${esc(s.name || "Sin nombre")} · ${esc(s.phone || "sin teléfono")}${s.active ? "" : " · desactivado"}</span></label>`).join("");
-      return `<div class="supervisor-assignment"><b>${esc(role?.name || user.assigned_role_name || "Rol personalizado")} · ${esc(user.display_name)}</b><div class="small">${esc(user.phone || "Sin teléfono")} · ${esc(user.account_type || "usuario")}</div>${canView ? `<div class="small" style="margin-top:9px">Vendedores que puede consultar</div><div class="assignment-checklist" data-custom-staff-sellers="${esc(user.user_id)}">${sellerOptions || '<div class="small">No hay vendedores disponibles.</div>'}</div><button class="blue" type="button" data-save-custom-staff="${esc(user.user_id)}">💾 Guardar vendedores</button>` : '<div class="small" style="margin-top:8px">Este rol no tiene acceso a pedidos de vendedores.</div>'}<button class="red" type="button" data-remove-custom-staff="${esc(user.user_id)}" style="margin-top:8px">Quitar rol</button></div>`;
+      return `<div class="supervisor-assignment"><b>${esc(nameWithRole(user.display_name, role?.name || user.assigned_role_name || "Personalizado"))}</b><div class="small">${esc(user.phone || "Sin teléfono")} · ${esc(user.account_type || "usuario")}</div>${canView ? `<div class="small" style="margin-top:9px">Vendedores que puede consultar</div><div class="assignment-checklist" data-custom-staff-sellers="${esc(user.user_id)}">${sellerOptions || '<div class="small">No hay vendedores disponibles.</div>'}</div><button class="blue" type="button" data-save-custom-staff="${esc(user.user_id)}">💾 Guardar vendedores</button>` : '<div class="small" style="margin-top:8px">Este rol no tiene acceso a pedidos de vendedores.</div>'}<button class="red" type="button" data-remove-custom-staff="${esc(user.user_id)}" style="margin-top:8px">Quitar rol</button></div>`;
     }).join("");
   }
 
