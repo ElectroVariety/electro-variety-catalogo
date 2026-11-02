@@ -32,7 +32,13 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 .sales-order{border:1px solid #e5e7eb;border-radius:12px;padding:13px;margin-top:10px}
 .sales-order pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:13px;margin:8px 0}
 .supervisor-assignment{border:1px solid #e5e7eb;border-radius:12px;padding:13px;margin:10px 0}
-.supervisor-assignment select{width:100%;min-height:150px;padding:8px;border:1px solid #d1d5db;border-radius:9px;margin-top:6px}
+.assignment-checklist{display:grid;gap:2px;max-height:220px;overflow:auto;padding:7px;border:1px solid #d1d5db;border-radius:9px;margin:7px 0 10px}
+.assignment-checklist label{display:flex;gap:9px;align-items:center;padding:7px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer}
+.assignment-checklist label:hover{background:#f3f4f6}
+.assignment-checklist input[type=checkbox]{width:17px;height:17px;margin:0;flex:0 0 auto}
+.password-reset-backdrop{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(17,24,39,.6)}
+.password-reset-backdrop.open{display:flex}
+.password-reset-dialog{width:min(100%,430px);background:#fff;border-radius:16px;padding:20px;box-shadow:0 18px 50px rgba(0,0,0,.25)}
 @media(max-width:800px){
   .admin-shell{display:block}
   .admin-mobile-bar{display:flex;position:sticky;top:0;z-index:50;align-items:center;justify-content:space-between;gap:10px;background:#111827;color:#fff;border-radius:12px;padding:10px 12px;margin-bottom:12px;box-shadow:0 6px 20px rgba(0,0,0,.12)}
@@ -115,6 +121,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <div><label>Número de WhatsApp / celular</label><input autocomplete="off" id="sellerPhone" inputmode="numeric" placeholder="2224534328" type="tel"/></div>
 <div><label>Contraseña inicial</label><input autocomplete="new-password" id="sellerPassword" placeholder="Mínimo 6 caracteres" type="password"/></div>
 </div><div class="actions"><button class="blue" id="createSellerButton" type="button">➕ Crear vendedor</button></div><div class="small seller-status" id="sellerStatus"></div></div><div id="sellerList" style="margin-top:14px">Cargando…</div></div></section><section class="admin-panel" data-admin-panel="sales" id="admin-panel-sales"><div class="card"><h2>👤 Perfiles de vendedores</h2><div class="small" id="sellerProfilesStatus">Cargando perfiles…</div><div id="sellerProfilesList"></div></div><div class="card"><h2>🧾 Pedidos y ventas</h2><div class="actions"><button class="blue" id="refreshSellerSalesButton" type="button">🔄 Actualizar</button><div class="small" id="sellerSalesAdminStatus"></div></div><div id="sellerSalesAdminList">Cargando pedidos…</div><button class="blue hidden" id="loadMoreSellerSalesButton" type="button" style="margin-top:12px">⬇️ Cargar pedidos anteriores</button></div><div class="card" id="supervisorManagementCard"><h2>👔 Supervisores</h2><div class="small">Elegí un usuario con perfil de vendedor o de stock para darle el rol de supervisor. Después seleccioná los vendedores que podrá consultar.</div><div class="actions"><select id="supervisorRoleUser" style="flex:1;min-width:240px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir usuario</option></select><button class="blue" id="makeSupervisorButton" type="button">➕ Crear rol de supervisor</button></div><div class="small" id="supervisorRoleStatus" style="margin-top:8px"></div><div id="supervisorManagerList" style="margin-top:12px">Cargando supervisores…</div></div><div class="card" id="customRolesManagementCard"><h2>🧩 Roles personalizados</h2><div class="small">Creá roles con nombre propio. Si habilitás el acceso a vendedores asignados, la persona podrá consultar sus perfiles, pedidos y ventas desde su cuenta.</div><div class="seller-form"><div class="actions"><input id="customRoleName" maxlength="40" placeholder="Nombre del rol, por ejemplo Coordinador" style="flex:1;min-width:220px"><label style="display:flex;gap:8px;align-items:center"><input id="customRoleCanViewSales" type="checkbox" checked style="width:auto;margin:0"> Ver pedidos de vendedores asignados</label><button class="blue" id="createCustomRoleButton" type="button">Crear rol</button></div><div id="customRoleStatus" class="small" style="margin-top:8px"></div></div><div class="seller-form"><h3 style="margin-top:0">Asignar rol a usuario</h3><div class="actions"><select id="customRoleUser" style="flex:1;min-width:220px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir usuario</option></select><select id="customRoleChoice" style="flex:1;min-width:220px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir rol</option></select><button class="blue" id="assignCustomRoleButton" type="button">Asignar rol</button></div></div><div id="customRoleAssignments" style="margin-top:12px">Cargando roles…</div></div></section></main></div></div>
+<div class="password-reset-backdrop" id="sellerPasswordResetModal" role="dialog" aria-modal="true" aria-labelledby="sellerPasswordResetTitle"><div class="password-reset-dialog"><h2 id="sellerPasswordResetTitle">🔐 Restablecer contraseña</h2><div class="small" id="sellerPasswordResetName"></div><label style="display:block;margin-top:14px">Nueva contraseña<input id="sellerPasswordResetInput" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo 8 caracteres"></label><label style="display:block;margin-top:10px">Repetir contraseña<input id="sellerPasswordResetRepeat" type="password" autocomplete="new-password" minlength="8" placeholder="Repetí la nueva contraseña"></label><div class="small" id="sellerPasswordResetStatus" style="margin-top:10px"></div><div class="actions"><button class="blue" id="sellerPasswordResetSave" type="button">Guardar contraseña</button><button class="dark" id="sellerPasswordResetCancel" type="button">Cancelar</button></div></div></div>
 <script src="../shared/staff-profile.js"></script><script>
 "use strict";
 
@@ -679,12 +686,13 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       const when = r.created_at ? new Date(r.created_at).toLocaleString("es-AR") : "—";
       const coords = Number.isFinite(Number(r.latitude)) && Number.isFinite(Number(r.longitude))
         ? `<a class="button-link dark" style="padding:7px 9px;font-size:12px" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${encodeURIComponent(`${r.latitude},${r.longitude}`)}">🗺️ Ver mapa</a>` : "";
+      const deleteButton = currentAccessRole === "admin" ? `<button type="button" class="red" data-delete-delivery-check="${esc(r.id)}">🗑️ Borrar consulta</button>` : "";
       return `<div class="item" style="align-items:flex-start"><div class="info">
         <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap"><b>${esc(r.locality || "Localidad no informada")}</b>${deliveryResultBadge(r.zone_category)}</div>
         <div class="small" style="margin-top:5px">📍 Localidad: <b>${esc(r.locality || "No informada")}</b> · Partido: <b>${esc(r.party || "No informado")}</b></div>
         <div class="small">🏠 Dirección exacta: ${esc(r.address || "No disponible")}</div>
         <div class="small">🕒 ${esc(when)} ${r.accuracy_m != null ? `· Precisión aprox.: ${esc(Math.round(Number(r.accuracy_m)))} m` : ""}</div>
-      </div><div class="seller-actions">${coords}</div></div>`;
+      </div><div class="seller-actions">${coords}${deleteButton}</div></div>`;
     }).join("");
   }
 
@@ -706,6 +714,21 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     deliveryChecksCache = Array.isArray(data) ? data : [];
     if (status) status.textContent = `Última actualización: ${new Date().toLocaleString("es-AR")}. Mostrando hasta 500 consultas recientes.`;
     renderDeliveryChecks();
+  }
+
+  async function deleteDeliveryCheck(button) {
+    const checkId = button.dataset.deleteDeliveryCheck;
+    if (!checkId || !confirm("¿Borrar esta consulta de cobertura? Esta acción no se puede deshacer.")) return;
+    button.disabled = true;
+    try {
+      const { error } = await db.rpc("admin_delete_delivery_location_check", { p_check_id: checkId });
+      if (error) throw error;
+      await loadDeliveryChecks();
+      if (window.loadDeliveryChecks) await window.loadDeliveryChecks();
+    } catch (error) {
+      alert("No se pudo borrar la consulta: " + (error.message || "Error desconocido"));
+      button.disabled = false;
+    }
   }
 
   async function loadSellers() {
@@ -734,6 +757,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         </div>
         <div class="seller-actions">
           <button type="button" class="blue" onclick="editSeller('${esc(s.user_id)}',${JSON.stringify(String(s.name || '')).replace(/</g, '\u003c')})">✏️ Editar nombre</button>
+          <button type="button" class="dark" data-reset-seller-password="${esc(s.user_id)}" data-reset-seller-name="${esc(s.name || '')}">🔐 Restablecer contraseña</button>
           <button type="button" class="${s.active ? "red" : "blue"}" onclick="toggleSeller('${esc(s.user_id)}',${s.active})">${s.active ? "Desactivar" : "Activar"}</button>
           <button type="button" class="red" onclick="deleteSeller('${esc(s.user_id)}')">🗑️ Eliminar</button>
         </div>
@@ -840,8 +864,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     }
     box.innerHTML = [...groups.entries()].map(([supervisorId, group]) => {
       const assigned = new Set(group.sellerIds);
-      const options = sellers.filter(seller => seller.user_id !== supervisorId).map(seller => `<option value="${esc(seller.user_id)}" ${assigned.has(seller.user_id) ? "selected" : ""}>${esc(seller.name || "Sin nombre")} · ${esc(seller.phone || "sin teléfono")}${seller.active ? "" : " · desactivado"}</option>`).join("");
-      return `<div class="supervisor-assignment"><b>${esc(group.name || "Supervisor")}</b><div class="small">${esc(group.phone || "Sin teléfono")} · ${group.sellerIds.length} vendedor(es) asignados</div><label>Vendedores que podrá consultar<select multiple data-supervisor-members="${esc(supervisorId)}">${options}</select></label><div class="actions"><button class="blue" type="button" data-save-supervisor="${esc(supervisorId)}">💾 Guardar asignación</button><button class="red" type="button" data-remove-supervisor="${esc(supervisorId)}">Quitar rol de supervisor</button></div></div>`;
+      const options = sellers.filter(seller => seller.user_id !== supervisorId).map(seller => `<label><input type="checkbox" value="${esc(seller.user_id)}" ${assigned.has(seller.user_id) ? "checked" : ""}><span>${esc(seller.name || "Sin nombre")} · ${esc(seller.phone || "sin teléfono")}${seller.active ? "" : " · desactivado"}</span></label>`).join("");
+      return `<div class="supervisor-assignment"><b>${esc(group.name || "Supervisor")}</b><div class="small">${esc(group.phone || "Sin teléfono")} · ${group.sellerIds.length} vendedor(es) asignados</div><div class="small" style="margin-top:9px">Vendedores que podrá consultar</div><div class="assignment-checklist" data-supervisor-members="${esc(supervisorId)}">${options || '<div class="small">No hay vendedores disponibles.</div>'}</div><div class="actions"><button class="blue" type="button" data-save-supervisor="${esc(supervisorId)}">💾 Guardar asignación</button><button class="red" type="button" data-remove-supervisor="${esc(supervisorId)}">Quitar rol de supervisor</button></div></div>`;
     }).join("");
   }
 
@@ -887,8 +911,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       const role = roles.find(item => item.id === user.custom_role_id);
       const canView = !!role?.can_view_assigned_sellers;
       const selected = new Set(assignments.get(user.user_id) || []);
-      const sellerOptions = sellers.filter(s => s.user_id !== user.user_id).map(s => `<option value="${esc(s.user_id)}" ${selected.has(s.user_id) ? "selected" : ""}>${esc(s.name || "Sin nombre")} · ${esc(s.phone || "sin teléfono")}${s.active ? "" : " · desactivado"}</option>`).join("");
-      return `<div class="supervisor-assignment"><b>${esc(role?.name || user.assigned_role_name || "Rol personalizado")} · ${esc(user.display_name)}</b><div class="small">${esc(user.phone || "Sin teléfono")} · ${esc(user.account_type || "usuario")}</div>${canView ? `<label>Vendedores que puede consultar<select multiple data-custom-staff-sellers="${esc(user.user_id)}">${sellerOptions}</select></label><button class="blue" type="button" data-save-custom-staff="${esc(user.user_id)}">💾 Guardar vendedores</button>` : '<div class="small" style="margin-top:8px">Este rol no tiene acceso a pedidos de vendedores.</div>'}<button class="red" type="button" data-remove-custom-staff="${esc(user.user_id)}" style="margin-top:8px">Quitar rol</button></div>`;
+      const sellerOptions = sellers.filter(s => s.user_id !== user.user_id).map(s => `<label><input type="checkbox" value="${esc(s.user_id)}" ${selected.has(s.user_id) ? "checked" : ""}><span>${esc(s.name || "Sin nombre")} · ${esc(s.phone || "sin teléfono")}${s.active ? "" : " · desactivado"}</span></label>`).join("");
+      return `<div class="supervisor-assignment"><b>${esc(role?.name || user.assigned_role_name || "Rol personalizado")} · ${esc(user.display_name)}</b><div class="small">${esc(user.phone || "Sin teléfono")} · ${esc(user.account_type || "usuario")}</div>${canView ? `<div class="small" style="margin-top:9px">Vendedores que puede consultar</div><div class="assignment-checklist" data-custom-staff-sellers="${esc(user.user_id)}">${sellerOptions || '<div class="small">No hay vendedores disponibles.</div>'}</div><button class="blue" type="button" data-save-custom-staff="${esc(user.user_id)}">💾 Guardar vendedores</button>` : '<div class="small" style="margin-top:8px">Este rol no tiene acceso a pedidos de vendedores.</div>'}<button class="red" type="button" data-remove-custom-staff="${esc(user.user_id)}" style="margin-top:8px">Quitar rol</button></div>`;
     }).join("");
   }
 
@@ -922,8 +946,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 
   async function saveCustomRoleSellers(button) {
     const staffId = button.dataset.saveCustomStaff;
-    const select = document.querySelector(`[data-custom-staff-sellers="${staffId}"]`);
-    const sellerIds = [...(select?.selectedOptions || [])].map(option => option.value);
+    const checklist = document.querySelector(`[data-custom-staff-sellers="${staffId}"]`);
+    const sellerIds = [...(checklist?.querySelectorAll('input[type="checkbox"]:checked') || [])].map(input => input.value);
     button.disabled = true;
     try {
       const {error} = await db.rpc("admin_replace_supervisor_sellers", {p_supervisor_id:staffId,p_seller_ids:sellerIds});
@@ -964,8 +988,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 
   async function saveSupervisorAssignments(button) {
     const supervisorId = button.dataset.saveSupervisor;
-    const select = document.querySelector(`[data-supervisor-members="${supervisorId}"]`);
-    const sellerIds = [...(select?.selectedOptions || [])].map(option => option.value);
+    const checklist = document.querySelector(`[data-supervisor-members="${supervisorId}"]`);
+    const sellerIds = [...(checklist?.querySelectorAll('input[type="checkbox"]:checked') || [])].map(input => input.value);
     button.disabled = true;
     try {
       const { error } = await db.rpc("admin_replace_supervisor_sellers", { p_supervisor_id:supervisorId, p_seller_ids:sellerIds });
@@ -1080,6 +1104,50 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       console.error("No se pudo editar el nombre del vendedor", error);
       alert("No se pudo actualizar el nombre del vendedor: " + (error.message || "Error desconocido"));
     }
+  }
+
+  let sellerPasswordResetUserId = null;
+  function openSellerPasswordReset(userId, name) {
+    sellerPasswordResetUserId = userId;
+    $("sellerPasswordResetName").textContent = "Vendedor: " + String(name || "Sin nombre");
+    $("sellerPasswordResetInput").value = "";
+    $("sellerPasswordResetRepeat").value = "";
+    setStatus("sellerPasswordResetStatus", "La nueva contraseña tendrá al menos 8 caracteres.");
+    $("sellerPasswordResetModal").classList.add("open");
+    $("sellerPasswordResetInput").focus();
+  }
+
+  function closeSellerPasswordReset() {
+    $("sellerPasswordResetModal").classList.remove("open");
+    $("sellerPasswordResetInput").value = "";
+    $("sellerPasswordResetRepeat").value = "";
+    sellerPasswordResetUserId = null;
+  }
+
+  async function saveSellerPasswordReset() {
+    const password = $("sellerPasswordResetInput").value;
+    const repeat = $("sellerPasswordResetRepeat").value;
+    if (!sellerPasswordResetUserId) return;
+    if (password.length < 8) { setStatus("sellerPasswordResetStatus", "La contraseña debe tener al menos 8 caracteres.", "warn"); return; }
+    if (password !== repeat) { setStatus("sellerPasswordResetStatus", "Las contraseñas no coinciden.", "warn"); return; }
+    if (!confirm("¿Restablecer la contraseña de este vendedor? Su contraseña actual dejará de funcionar.")) return;
+    const button = $("sellerPasswordResetSave");
+    button.disabled = true;
+    setStatus("sellerPasswordResetStatus", "Actualizando contraseña…");
+    try {
+      const { error } = await db.functions.invoke("reset-seller-password", {
+        body: { user_id: sellerPasswordResetUserId, password }
+      });
+      if (error) {
+        let message = error.message || "Error desconocido";
+        try { const body = await error.context?.json(); if (body?.error) message = body.error; } catch (_) {}
+        throw new Error(message);
+      }
+      closeSellerPasswordReset();
+      setStatus("sellerStatus", "✅ Contraseña restablecida. Compartí la nueva clave con el vendedor de forma segura.", "ok");
+    } catch (error) {
+      setStatus("sellerPasswordResetStatus", "No se pudo restablecer la contraseña: " + (error.message || "Error desconocido"), "danger");
+    } finally { button.disabled = false; }
   }
 
   async function toggleSeller(userId, active) {
@@ -1847,6 +1915,20 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   $("saveButton").addEventListener("click", save);
   $("resetButton").addEventListener("click", resetForm);
   $("createSellerButton").addEventListener("click", createSeller);
+  $("sellerList").addEventListener("click", event => {
+    const button = event.target.closest("[data-reset-seller-password]");
+    if (button) openSellerPasswordReset(button.dataset.resetSellerPassword, button.dataset.resetSellerName);
+  });
+  $("sellerPasswordResetSave").addEventListener("click", saveSellerPasswordReset);
+  $("sellerPasswordResetCancel").addEventListener("click", closeSellerPasswordReset);
+  $("sellerPasswordResetModal").addEventListener("click", event => {
+    if (event.target === $("sellerPasswordResetModal")) closeSellerPasswordReset();
+  });
+  $("sellerPasswordResetRepeat").addEventListener("keydown", event => { if (event.key === "Enter") saveSellerPasswordReset(); });
+  $("deliveryChecksList").addEventListener("click", event => {
+    const button = event.target.closest("[data-delete-delivery-check]");
+    if (button) deleteDeliveryCheck(button);
+  });
   $("makeSupervisorButton").addEventListener("click", enableSupervisorRole);
   $("createCustomRoleButton").addEventListener("click", createCustomRole);
   $("assignCustomRoleButton").addEventListener("click", assignCustomRole);
@@ -1963,7 +2045,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     list.innerHTML=rows.map(r=>{
       const result=r.zone_category==='LLEGAMOS'?'🟢 LLEGAMOS':r.zone_category==='EVALUACION'?'🟡 EVALUACIÓN':'🔴 NO ENTREGA';
       const maps=`https://www.google.com/maps?q=${encodeURIComponent(String(r.latitude))+','+encodeURIComponent(String(r.longitude))}`;
-      return `<div class="item"><div class="info"><b>${result}</b><div class="small">📍 Localidad: ${esc(r.locality||'No informada')} · Partido: ${esc(r.party||'No informado')}</div><div class="small">🏠 Dirección exacta: ${esc(r.address||'No disponible')}</div><div class="small">🕒 ${r.created_at?new Date(r.created_at).toLocaleString('es-AR'):'—'}${r.accuracy_m!=null?' · ±'+Math.round(Number(r.accuracy_m))+' m':''}</div></div><div class="seller-actions"><a class="button-link dark" href="${maps}" target="_blank" rel="noopener">🗺️ Mapa</a></div></div>`;
+      const deleteButton=accessRole==='admin'?`<button type="button" class="red" data-delete-delivery-check="${esc(r.id)}">🗑️ Borrar consulta</button>`:'';
+      return `<div class="item"><div class="info"><b>${result}</b><div class="small">📍 Localidad: ${esc(r.locality||'No informada')} · Partido: ${esc(r.party||'No informado')}</div><div class="small">🏠 Dirección exacta: ${esc(r.address||'No disponible')}</div><div class="small">🕒 ${r.created_at?new Date(r.created_at).toLocaleString('es-AR'):'—'}${r.accuracy_m!=null?' · ±'+Math.round(Number(r.accuracy_m))+' m':''}</div></div><div class="seller-actions"><a class="button-link dark" href="${maps}" target="_blank" rel="noopener">🗺️ Mapa</a>${deleteButton}</div></div>`;
     }).join('');
   }
 
