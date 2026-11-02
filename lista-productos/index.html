@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>Electro Variety — Lista de productos</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eef0f3;color:#111827;font-family:Arial,sans-serif}header{background:#111827;color:#fff;padding:18px 16px}.header-inner{max-width:900px;margin:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}.brand{font-size:18px;font-weight:900;flex:1}.back{color:#fff;text-decoration:none;background:#374151;border-radius:9px;padding:10px 12px;font-size:13px;font-weight:800}.wrap{max-width:900px;margin:18px auto;padding:0 14px}.intro,.product{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 4px 14px rgba(17,24,39,.04)}.intro{padding:18px;margin-bottom:12px}.intro h1{margin:0 0 7px;font-size:22px}.intro p{margin:0;color:#6b7280;font-size:13px;line-height:1.45}.tools{display:flex;gap:10px;align-items:center;margin:14px 0}.search{width:100%;padding:13px 14px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;font:inherit;font-size:15px}.search:focus{outline:2px solid #2563eb55;border-color:#2563eb}.count{color:#6b7280;font-size:12px;white-space:nowrap}.status{min-height:18px;margin:0 0 9px;color:#6b7280;font-size:12px}.list{display:grid;gap:10px}.product{padding:15px}.product-head{display:flex;align-items:flex-start;gap:12px}.product-title{flex:1;min-width:0;margin:0;font-size:17px;line-height:1.3;overflow-wrap:anywhere}.product-description{margin:4px 0 0;color:#6b7280;font-size:13px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}.copy{flex:0 0 auto;min-width:40px;min-height:38px;padding:8px 10px;border:0;border-radius:9px;background:#e5e7eb;color:#111827;font-size:14px;font-weight:900;cursor:pointer}.copy:hover{background:#dbeafe}.copy:active{transform:scale(.97)}.plan-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:14px}.plan{display:grid;gap:8px;padding:11px;border-radius:10px;background:#f9fafb;border:1px solid #e5e7eb}.plan-title{font-size:13px;font-weight:900}.field{display:flex;align-items:center;gap:8px;min-width:0}.field-label{color:#6b7280;font-size:12px;flex:1}.field-value{font-size:14px;font-weight:900;overflow-wrap:anywhere}.field .copy{min-width:36px;min-height:34px;padding:6px 8px}.empty{padding:30px 15px;text-align:center;color:#6b7280;background:#fff;border:1px solid #e5e7eb;border-radius:12px}@media(max-width:600px){header{padding:14px}.wrap{margin:12px auto;padding:0 10px}.intro{padding:14px}.intro h1{font-size:19px}.product{padding:12px}.product-title{font-size:16px}.plan-list{grid-template-columns:1fr}.tools{display:block}.count{display:block;margin-top:8px}.copy-name{font-size:12px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/electro-variety-catalogo/config.js"></script>
+</head>
+<body>
+<header><div class="header-inner"><div class="brand">ELECTRO VARIETY · LISTA DE PRODUCTOS</div><a class="back" href="../vendedores/">Ir al catálogo</a></div></header>
+<main class="wrap">
+  <section class="intro"><h1>Lista de productos</h1><p>Buscá un producto y copiá por separado su nombre y descripción, la cantidad de cuotas o el valor de cada cuota. La lista incluye productos publicados y se actualiza con la base de datos.</p></section>
+  <div class="tools"><input id="search" class="search" type="search" placeholder="🔎 Buscar por nombre o descripción" autocomplete="off"><span id="count" class="count">Cargando…</span></div>
+  <div id="status" class="status" role="status" aria-live="polite"></div>
+  <section id="list" class="list" aria-label="Productos"></section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+const money=value=>{
+  const raw=String(value??"").trim();
+  if(!raw)return "—";
+  const numeric=Number(raw.replace(/\$/g,"").replace(/\./g,"").replace(",","."));
+  return Number.isFinite(numeric)?"$"+Math.round(numeric).toLocaleString("es-AR"):raw;
+};
+let db=null,products=[],realtimeChannel=null,refreshTimer=null,loading=false,refreshQueued=false;
+function productMatches(product,query){
+  const text=`${product.name||""} ${product.subtitle||""}`.toLocaleLowerCase("es");
+  return !query||text.includes(query);
+}
+function copyButton(value,label,extraClass=""){
+  return `<button class="copy ${extraClass}" type="button" data-copy-value="${encodeURIComponent(String(value??""))}" aria-label="Copiar ${esc(label)}" title="Copiar ${esc(label)}">📋</button>`;
+}
+function productCard(product){
+  const name=String(product.name||"Sin nombre").trim();
+  const description=String(product.subtitle||"").trim();
+  const nameAndDescription=description?`${name}\n${description}`:name;
+  const plans=[];
+  if(product.q_count||product.q_price){
+    plans.push(`<section class="plan"><div class="plan-title">Cuotas quincenales</div><div class="field"><span class="field-label">Cantidad</span><span class="field-value">${esc(product.q_count||"—")}</span>${copyButton(product.q_count,"cantidad de cuotas quincenales")}</div><div class="field"><span class="field-label">Valor de cada cuota</span><span class="field-value">${esc(money(product.q_price))}</span>${copyButton(money(product.q_price),"valor de cuota quincenal")}</div></section>`);
+  }
+  if(product.m_count||product.m_price){
+    plans.push(`<section class="plan"><div class="plan-title">Cuotas mensuales</div><div class="field"><span class="field-label">Cantidad</span><span class="field-value">${esc(product.m_count||"—")}</span>${copyButton(product.m_count,"cantidad de cuotas mensuales")}</div><div class="field"><span class="field-label">Valor de cada cuota</span><span class="field-value">${esc(money(product.m_price))}</span>${copyButton(money(product.m_price),"valor de cuota mensual")}</div></section>`);
+  }
+  return `<article class="product"><div class="product-head"><div style="flex:1;min-width:0"><h2 class="product-title">${esc(name)}</h2>${description?`<p class="product-description">${esc(description)}</p>`:""}</div>${copyButton(nameAndDescription,"nombre y descripción","copy-name")}</div>${plans.length?`<div class="plan-list">${plans.join("")}</div>":""}</article>`;
+}
+function render(){
+  const query=$("search").value.trim().toLocaleLowerCase("es");
+  const visible=products.filter(product=>productMatches(product,query));
+  $("count").textContent=`${visible.length} de ${products.length} productos`;
+  $("list").innerHTML=visible.map(productCard).join("")||'<div class="empty">No se encontraron productos.</div>';
+  document.querySelectorAll("[data-copy-value]").forEach(button=>button.addEventListener("click",()=>copyValue(button)));
+}
+async function copyValue(button){
+  let value="";
+  try{value=decodeURIComponent(button.dataset.copyValue||"")}catch{value=button.dataset.copyValue||""}
+  try{
+    if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(value);
+    else{
+      const field=document.createElement("textarea");field.value=value;field.setAttribute("readonly","");field.style.position="fixed";field.style.opacity="0";document.body.appendChild(field);field.select();const copied=document.execCommand("copy");field.remove();if(!copied)throw new Error("No se pudo copiar.");
+    }
+    const previous=button.textContent;button.textContent="✓";button.title="Copiado";$("status").textContent="Copiado al portapapeles.";
+    setTimeout(()=>{if(button.isConnected){button.textContent=previous;button.title=button.getAttribute("aria-label").replace(/^Copiar /,"Copiar ")}},1400);
+    setTimeout(()=>{if($("status").textContent==="Copiado al portapapeles.")$("status").textContent=""},2200);
+  }catch(error){$("status").textContent="No se pudo copiar. Revisá los permisos del portapapeles del navegador."}
+}
+async function loadProducts(){
+  if(loading){refreshQueued=true;return}
+  loading=true;
+  try{
+    const {data,error}=await db.from("products").select("id,name,subtitle,q_count,q_price,m_count,m_price,active").eq("active",true);
+    if(error)throw error;
+    products=(data||[]).sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"es",{numeric:true,sensitivity:"base"}));
+    render();
+    $("status").textContent=`Actualizado: ${new Date().toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}.`;
+  }catch(error){
+    $("count").textContent="";
+    $("list").innerHTML=`<div class="empty">No se pudieron cargar los productos: ${esc(error.message||error)}</div>`;
+    $("status").textContent="Comprobá tu conexión e intentá actualizar la página.";
+  }finally{
+    loading=false;
+    if(refreshQueued){refreshQueued=false;loadProducts()}
+  }
+}
+function scheduleRefresh(){clearTimeout(refreshTimer);refreshTimer=setTimeout(loadProducts,250)}
+try{
+  if(!window.EV_CONFIG?.SUPABASE_URL||!window.EV_CONFIG?.SUPABASE_ANON_KEY)throw new Error("No está disponible la configuración de Supabase.");
+  db=supabase.createClient(EV_CONFIG.SUPABASE_URL,EV_CONFIG.SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  $("search").addEventListener("input",render);
+  loadProducts();
+  realtimeChannel=db.channel("public-product-list").on("postgres_changes",{event:"*",schema:"public",table:"products"},scheduleRefresh).subscribe();
+  setInterval(loadProducts,30000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)loadProducts()});
+}catch(error){$("list").innerHTML=`<div class="empty">${esc(error.message||error)}</div>`}
+</script>
+</body>
+</html>
