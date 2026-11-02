@@ -81,7 +81,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 <div id="sellerProfileModal" class="cart-modal seller-modal" aria-hidden="true">
   <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="sellerProfileTitle">
     <div class="cart-head"><h2 id="sellerProfileTitle">👤 Mi perfil</h2><button id="sellerProfileClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
-    <label class="seller-field">Nombre visible<span id="sellerProfileRole" class="profile-role-chip" aria-label="Rol, solo visualización"></span><input id="sellerProfileName" maxlength="80" autocomplete="name"></label>
+    <label class="seller-field">Nombre visible<div class="profile-name-preview"><input id="sellerProfileName" maxlength="80" autocomplete="name"><input id="sellerProfileRole" type="text" disabled readonly aria-label="Rol, solo visualización"></div></label>
     <button id="sellerNameSave" class="seller-action-button" type="button">Guardar nombre</button>
     <hr>
     <h3>Cambiar contraseña</h3>
@@ -95,7 +95,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
   <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="firstLoginSetupTitle">
     <h2 id="firstLoginSetupTitle">👋 Configurá tu perfil</h2>
     <p class="seller-help">La primera vez, elegí el nombre con el que te verá el equipo y una contraseña nueva. Después podrás cambiarlos desde “Mi perfil”.</p>
-    <label class="seller-field">Tu nombre<span id="firstLoginRole" class="profile-role-chip" aria-label="Rol, solo visualización"></span><input id="firstLoginName" maxlength="80" autocomplete="name"></label>
+    <label class="seller-field">Tu nombre<div class="profile-name-preview"><input id="firstLoginName" maxlength="80" autocomplete="name"><input id="firstLoginRole" type="text" disabled readonly aria-label="Rol, solo visualización"></div></label>
     <label class="seller-field">Nueva contraseña<input id="firstLoginPassword" type="password" autocomplete="new-password"></label>
     <label class="seller-field">Repetí la contraseña<input id="firstLoginPasswordConfirm" type="password" autocomplete="new-password"></label>
     <div id="firstLoginSetupStatus" class="seller-status" role="status"></div>
@@ -143,7 +143,11 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .seller-modal .cart-panel{padding-bottom:24px}
 .seller-sales-panel{max-height:90vh}
 .seller-field{display:block;margin:14px 0 8px;font-size:13px;font-weight:900}
-.profile-role-chip{display:inline-block;margin-left:6px;padding:3px 8px;border:1px solid #e5e7eb;border-radius:999px;background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;vertical-align:middle}
+.profile-name-preview{display:flex;min-width:0;margin-top:6px;border:1px solid #d1d5db;border-radius:9px;overflow:hidden}
+.profile-name-preview:focus-within{border-color:#2563eb;box-shadow:0 0 0 2px #2563eb22}
+.seller-field .profile-name-preview input{margin:0;border:0;border-radius:0}
+.seller-field .profile-name-preview #sellerProfileName,.seller-field .profile-name-preview #firstLoginName{flex:1;min-width:0}
+.seller-field .profile-name-preview #sellerProfileRole,.seller-field .profile-name-preview #firstLoginRole{flex:0 1 42%;min-width:100px;max-width:48%;border-left:1px solid #d1d5db;background:#f3f4f6;color:#6b7280;cursor:not-allowed;opacity:1;font-size:12px;font-weight:700}
 .seller-field input,.seller-field textarea,.seller-search{display:block;width:100%;margin-top:6px;padding:11px;border:1px solid #d1d5db;border-radius:9px;font:inherit;font-size:14px}
 .seller-field textarea{resize:vertical;line-height:1.4}
 .seller-action-button{width:100%;margin:8px 0;border:0;border-radius:9px;background:#2563eb;color:#fff;padding:12px;font-weight:900}
@@ -274,7 +278,7 @@ function showLogin(message=""){
 function requireFirstLoginSetup(name,continueAfter,roleLabel=staffRoleLabel()){
   afterFirstLoginSetup=continueAfter;
   $("firstLoginName").value=name||"";
-  $("firstLoginRole").textContent=roleLabel;
+  $("firstLoginRole").value="• "+roleLabel;
   $("firstLoginPassword").value="";
   $("firstLoginPasswordConfirm").value="";
   $("firstLoginSetupStatus").textContent="";
@@ -482,7 +486,7 @@ function closeSellerModal(id){$(id).style.display="none";$(id).setAttribute("ari
 function openSellerProfile(){
   if(!currentSeller&&!currentStaffAccess)return;
   $("sellerProfileName").value=currentSeller?.name||currentStaffProfileName||"";
-  $("sellerProfileRole").textContent=staffRoleLabel();
+  $("sellerProfileRole").value="• "+staffRoleLabel();
   $("sellerProfileStatus").textContent="";
   $("sellerPassword").value="";
   $("sellerPasswordConfirm").value="";
