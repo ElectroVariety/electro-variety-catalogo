@@ -61,7 +61,10 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <button id="sellerTeamButton" type="button" style="display:none">👥 Ventas del equipo</button>
   </div>
 </header>
-<div id="catalogLayout"><main id="app"><div class="msg">Cargando…</div></main><aside id="onlineStaffPanel" class="online-staff-panel" aria-label="Personal conectado" style="display:none"><div class="online-staff-heading"><h2>👥 Conectados</h2><span id="onlineStaffCount" class="online-staff-count">0</span></div><div id="onlineStaffStatus" class="seller-help" role="status">Conectando…</div><div id="onlineStaffList" aria-live="polite"></div></aside></div>
+<div id="catalogLayout"><main id="app"><div class="msg">Cargando…</div></main></div>
+<button id="onlineStaffToggle" class="online-staff-toggle" type="button" aria-expanded="false" aria-controls="onlineStaffPanel" style="display:none"><span>👥 Conectados</span><span id="onlineStaffToggleCount" class="online-staff-toggle-count">0</span></button>
+<button id="onlineStaffBackdrop" class="online-staff-backdrop" type="button" aria-label="Cerrar personal conectado" tabindex="-1"></button>
+<aside id="onlineStaffPanel" class="online-staff-panel" aria-label="Personal conectado" aria-hidden="true" style="display:none"><div class="online-staff-heading"><h2>👥 Conectados</h2><button id="onlineStaffClose" class="cart-close" type="button" aria-label="Cerrar">×</button><span id="onlineStaffCount" class="online-staff-count">0</span></div><div id="onlineStaffStatus" class="seller-help" role="status">Conectando…</div><div id="onlineStaffList" aria-live="polite"></div></aside>
 <div id="cartBar" class="cartbar"><button id="cartOpenButton" type="button">🛒 Ver carrito</button></div>
 <div id="cartShareModal" class="cart-modal" aria-hidden="true" style="z-index:70">
   <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="cartShareTitle">
@@ -139,9 +142,15 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .seller-actions button,.seller-tabs button{flex:1;min-width:0;border:0;border-radius:8px;padding:9px 7px;font-size:12px;font-weight:900;background:#374151;color:#fff}
 .seller-actions button:active,.seller-tabs button:active{transform:scale(.98)}
 .seller-modal{z-index:80}
-#catalogLayout{display:flex;align-items:flex-start;justify-content:center;gap:14px;max-width:1180px;margin:12px auto;padding:0 12px}
-#catalogLayout #app{flex:1;min-width:0;width:auto;max-width:760px;margin:0}
-.online-staff-panel{flex:0 0 280px;width:280px;max-height:calc(100vh - 28px);position:sticky;top:14px;overflow:auto;padding:14px;background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 5px 18px rgba(17,24,39,.06)}
+#catalogLayout{max-width:760px;margin:12px auto;padding:0}
+#catalogLayout #app{width:100%;max-width:760px;margin:0}
+.online-staff-toggle{position:fixed;right:14px;bottom:92px;z-index:99990;display:flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:12px 15px;background:#111827;color:#fff;box-shadow:0 5px 18px rgba(17,24,39,.28);font-size:13px;font-weight:900;cursor:pointer}
+.online-staff-toggle-count{min-width:22px;padding:3px 6px;border-radius:999px;background:#dcfce7;color:#166534;text-align:center}
+.online-staff-backdrop{position:fixed;inset:0;z-index:100000;display:none;border:0;background:rgba(17,24,39,.42)}
+.online-staff-backdrop.open{display:block}
+.online-staff-panel{position:fixed;z-index:100001;top:0;right:0;width:min(360px,90vw);height:100vh;height:100dvh;overflow:auto;padding:16px;background:#fff;box-shadow:-8px 0 30px rgba(17,24,39,.2);transform:translateX(105%);transition:transform .24s ease;visibility:hidden}
+.online-staff-panel.open{transform:translateX(0);visibility:visible}
+.online-staff-heading #onlineStaffClose{flex:0 0 36px}
 .online-staff-heading{display:flex;align-items:center;gap:9px;border-bottom:1px solid #e5e7eb;padding-bottom:10px}
 .online-staff-heading h2{margin:0;flex:1;font-size:18px}
 .online-staff-count{min-width:25px;padding:4px 7px;border-radius:999px;background:#dcfce7;color:#166534;font-size:12px;font-weight:900;text-align:center}
@@ -155,7 +164,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .online-staff-team{margin:6px 0 0 13px;padding-left:8px;border-left:2px solid #dbeafe}
 .online-staff-team h4{margin:7px 0 2px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
 .online-staff-subheading{margin:7px 0 2px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
-@media(max-width:900px){#catalogLayout{flex-direction:column;margin:10px auto;padding:0 10px}.online-staff-panel{order:-1;position:static;flex:0 0 auto;width:100%;max-width:760px;max-height:300px;margin:0 auto}#catalogLayout #app{width:100%;max-width:760px;margin:0 auto}}
+@media(max-width:900px){#catalogLayout{margin:10px auto;padding:0 10px}#catalogLayout #app{width:100%;max-width:760px;margin:0 auto}.online-staff-toggle{right:10px;bottom:92px;padding:11px 13px}}
 .first-login-setup{z-index:300;align-items:center!important}.first-login-setup .cart-panel{border-radius:18px;width:min(100% - 28px,480px)}
 .seller-modal .cart-panel{padding-bottom:24px}
 .seller-sales-panel{max-height:90vh}
@@ -285,6 +294,7 @@ function renderOnlineStaff(){
   for(const metas of Object.values(onlineStaffChannel.presenceState()||{}))for(const meta of metas||[])if(meta?.user_id&&known.has(meta.user_id))onlineIds.add(meta.user_id);
   const online=[...onlineIds].map(id=>known.get(id));
   if(count)count.textContent=String(online.length);
+  const toggleCount=$("onlineStaffToggleCount");if(toggleCount)toggleCount.textContent=String(online.length);
   if(status)status.textContent=online.length?`${online.length} persona(s) conectada(s).`:"No hay usuarios conectados ahora.";
   const roleRank={boss:0,admin:1,cm:2,supervisor:3,encargado:4,coordinador:5,vendedor:6,administracion:7,local:8,logistica:9,reparto:10,otros:11};
   const collator=new Intl.Collator("es",{sensitivity:"base"});
@@ -332,6 +342,20 @@ function renderOnlineStaff(){
   markup+=section("Otros",others);
   list.innerHTML=markup||'<div class="seller-help">No hay integrantes conectados para mostrar.</div>';
 }
+function closeOnlineStaffPanel(){
+  const panel=$("onlineStaffPanel"),backdrop=$("onlineStaffBackdrop"),toggle=$("onlineStaffToggle");
+  panel?.classList.remove("open");
+  panel?.setAttribute("aria-hidden","true");
+  backdrop?.classList.remove("open");
+  toggle?.setAttribute("aria-expanded","false");
+}
+function toggleOnlineStaffPanel(){
+  const panel=$("onlineStaffPanel"),backdrop=$("onlineStaffBackdrop"),toggle=$("onlineStaffToggle");
+  if(!panel||!backdrop||!toggle)return;
+  const open=!panel.classList.contains("open");
+  if(open){panel.classList.add("open");panel.setAttribute("aria-hidden","false");backdrop.classList.add("open");toggle.setAttribute("aria-expanded","true");$("onlineStaffClose")?.focus()}
+  else{closeOnlineStaffPanel();toggle.focus()}
+}
 async function refreshOnlineStaffDirectory(){
   if(!onlineStaffClient)return;
   const {data,error}=await onlineStaffClient.rpc("get_catalog_staff_directory");
@@ -345,6 +369,8 @@ function stopOnlineStaffPresence(){
   onlineStaffChannel=null;onlineStaffClient=null;onlineStaffDirectory=[];
   if(channel&&client)client.removeChannel(channel).catch(()=>{});
   const panel=$("onlineStaffPanel");if(panel)panel.style.display="none";
+  const toggle=$("onlineStaffToggle");if(toggle)toggle.style.display="none";
+  closeOnlineStaffPanel();
 }
 async function startOnlineStaffPresence(){
   stopOnlineStaffPresence();
@@ -354,6 +380,8 @@ async function startOnlineStaffPresence(){
   if(sessionError||!sessionData?.session?.user?.id)return;
   onlineStaffClient=client;
   panel.style.display="block";
+  panel.setAttribute("aria-hidden","true");
+  $("onlineStaffToggle").style.display="flex";
   $("onlineStaffStatus").textContent="Conectando…";
   $("onlineStaffList").innerHTML="";
   await refreshOnlineStaffDirectory();
@@ -1189,6 +1217,10 @@ $("cartModal").addEventListener("click",e=>{if(e.target===$("cartModal"))closeCa
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeCart();closeCartShareModal();}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeSellerModal("sellerProfileModal");closeSellerModal("sellerSalesModal");}});
 $("sellerProfileButton").addEventListener("click",openSellerProfile);
+$("onlineStaffToggle").addEventListener("click",toggleOnlineStaffPanel);
+$("onlineStaffClose").addEventListener("click",()=>{closeOnlineStaffPanel();$("onlineStaffToggle").focus()});
+$("onlineStaffBackdrop").addEventListener("click",closeOnlineStaffPanel);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("onlineStaffPanel").classList.contains("open")){closeOnlineStaffPanel();$("onlineStaffToggle").focus()}});
 $("sellerProfileClose").addEventListener("click",()=>closeSellerModal("sellerProfileModal"));
 $("sellerProfileModal").addEventListener("click",e=>{if(e.target===$("sellerProfileModal"))closeSellerModal("sellerProfileModal")});
 $("sellerNameSave").addEventListener("click",saveSellerName);
