@@ -31,6 +31,11 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 .admin-panel .card{margin-top:0;margin-bottom:14px}
 .sales-order{border:1px solid #e5e7eb;border-radius:12px;padding:13px;margin-top:10px}
 .sales-order pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:13px;margin:8px 0}
+.seller-list-item{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:10px}
+.seller-list-item>.info{width:100%;max-width:100%;overflow-wrap:anywhere}
+.seller-list-item .seller-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+.seller-list-item .seller-actions button{width:100%;min-width:0;white-space:normal;line-height:1.2}
+@media(max-width:520px){.seller-list-item .seller-actions{grid-template-columns:minmax(0,1fr)}}
 .supervisor-assignment{border:1px solid #e5e7eb;border-radius:12px;padding:13px;margin:10px 0}
 .assignment-checklist{display:grid;gap:2px;max-height:220px;overflow:auto;padding:7px;border:1px solid #d1d5db;border-radius:9px;margin:7px 0 10px}
 .assignment-checklist label{display:flex;gap:9px;align-items:center;padding:7px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer}
@@ -761,7 +766,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 
     const rolesByUser = new Map((roleResult.data || []).map(user => [user.user_id, user]));
     box.innerHTML = data.map(s => `
-      <div class="item">
+      <div class="item seller-list-item">
         <div class="info">
           <b>${esc(nameWithRole(s.name, accountRoleLabel(rolesByUser.get(s.user_id) || { account_type: "Vendedor" })))}</b>
           <div class="small">📱 ${esc(s.phone || "Sin número")} · ${s.active ? "🟢 Acceso habilitado" : "🔴 Acceso bloqueado"}</div>
