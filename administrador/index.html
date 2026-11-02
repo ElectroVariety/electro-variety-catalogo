@@ -114,8 +114,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <div><label>Nombre del vendedor</label><input id="sellerName" placeholder="Ej. Juan Pérez"/></div>
 <div><label>Número de WhatsApp / celular</label><input autocomplete="off" id="sellerPhone" inputmode="numeric" placeholder="2224534328" type="tel"/></div>
 <div><label>Contraseña inicial</label><input autocomplete="new-password" id="sellerPassword" placeholder="Mínimo 6 caracteres" type="password"/></div>
-</div><div class="actions"><button class="blue" id="createSellerButton" type="button">➕ Crear vendedor</button></div><div class="small seller-status" id="sellerStatus"></div></div><div id="sellerList" style="margin-top:14px">Cargando…</div></div></section><section class="admin-panel" data-admin-panel="sales" id="admin-panel-sales"><div class="card"><h2>👤 Perfiles de vendedores</h2><div class="small" id="sellerProfilesStatus">Cargando perfiles…</div><div id="sellerProfilesList"></div></div><div class="card"><h2>🧾 Pedidos y ventas</h2><div class="actions"><button class="blue" id="refreshSellerSalesButton" type="button">🔄 Actualizar</button><div class="small" id="sellerSalesAdminStatus"></div></div><div id="sellerSalesAdminList">Cargando pedidos…</div><button class="blue hidden" id="loadMoreSellerSalesButton" type="button" style="margin-top:12px">⬇️ Cargar pedidos anteriores</button></div><div class="card" id="supervisorManagementCard"><h2>👔 Supervisores</h2><div class="small">Elegí un usuario con perfil de vendedor o de stock para darle el rol de supervisor. Después seleccioná los vendedores que podrá consultar.</div><div class="actions"><select id="supervisorRoleUser" style="flex:1;min-width:240px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir usuario</option></select><button class="blue" id="makeSupervisorButton" type="button">➕ Crear rol de supervisor</button></div><div class="small" id="supervisorRoleStatus" style="margin-top:8px"></div><div id="supervisorManagerList" style="margin-top:12px">Cargando supervisores…</div></div></section></main></div></div>
-<script>
+</div><div class="actions"><button class="blue" id="createSellerButton" type="button">➕ Crear vendedor</button></div><div class="small seller-status" id="sellerStatus"></div></div><div id="sellerList" style="margin-top:14px">Cargando…</div></div></section><section class="admin-panel" data-admin-panel="sales" id="admin-panel-sales"><div class="card"><h2>👤 Perfiles de vendedores</h2><div class="small" id="sellerProfilesStatus">Cargando perfiles…</div><div id="sellerProfilesList"></div></div><div class="card"><h2>🧾 Pedidos y ventas</h2><div class="actions"><button class="blue" id="refreshSellerSalesButton" type="button">🔄 Actualizar</button><div class="small" id="sellerSalesAdminStatus"></div></div><div id="sellerSalesAdminList">Cargando pedidos…</div><button class="blue hidden" id="loadMoreSellerSalesButton" type="button" style="margin-top:12px">⬇️ Cargar pedidos anteriores</button></div><div class="card" id="supervisorManagementCard"><h2>👔 Supervisores</h2><div class="small">Elegí un usuario con perfil de vendedor o de stock para darle el rol de supervisor. Después seleccioná los vendedores que podrá consultar.</div><div class="actions"><select id="supervisorRoleUser" style="flex:1;min-width:240px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir usuario</option></select><button class="blue" id="makeSupervisorButton" type="button">➕ Crear rol de supervisor</button></div><div class="small" id="supervisorRoleStatus" style="margin-top:8px"></div><div id="supervisorManagerList" style="margin-top:12px">Cargando supervisores…</div></div><div class="card" id="customRolesManagementCard"><h2>🧩 Roles personalizados</h2><div class="small">Creá roles con nombre propio. Si habilitás el acceso a vendedores asignados, la persona podrá consultar sus perfiles, pedidos y ventas desde su cuenta.</div><div class="seller-form"><div class="actions"><input id="customRoleName" maxlength="40" placeholder="Nombre del rol, por ejemplo Coordinador" style="flex:1;min-width:220px"><label style="display:flex;gap:8px;align-items:center"><input id="customRoleCanViewSales" type="checkbox" checked style="width:auto;margin:0"> Ver pedidos de vendedores asignados</label><button class="blue" id="createCustomRoleButton" type="button">Crear rol</button></div><div id="customRoleStatus" class="small" style="margin-top:8px"></div></div><div class="seller-form"><h3 style="margin-top:0">Asignar rol a usuario</h3><div class="actions"><select id="customRoleUser" style="flex:1;min-width:220px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir usuario</option></select><select id="customRoleChoice" style="flex:1;min-width:220px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir rol</option></select><button class="blue" id="assignCustomRoleButton" type="button">Asignar rol</button></div></div><div id="customRoleAssignments" style="margin-top:12px">Cargando roles…</div></div></section></main></div></div>
+<script src="../shared/staff-profile.js"></script><script>
 "use strict";
 
 (function () {
@@ -212,6 +212,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   }
 
   function showLogin(message = "") {
+    window.EVStaffProfile?.setActive(false);
     currentAccessRole = null;
     window.dispatchEvent(new CustomEvent("electro-admin-role", { detail: { role: null } }));
     $("login").classList.remove("hidden");
@@ -225,7 +226,9 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     $("login").classList.add("hidden");
     $("app").classList.remove("hidden");
     $("logout").classList.remove("hidden");
+    window.EVStaffProfile?.setActive(true);
     $("supervisorManagementCard").classList.toggle("hidden", role !== "admin");
+    $("customRolesManagementCard").classList.toggle("hidden", role !== "admin");
     window.dispatchEvent(new CustomEvent("electro-admin-role", { detail: { role } }));
     if (role === "supervisor") {
       loadSellerProfiles();
@@ -243,17 +246,14 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     loadSellerProfiles();
     loadAdminSales();
     loadSupervisorManagement();
+    loadCustomRoleManagement();
   }
 
   async function verifyAdmin(session) {
     if (!session || checking) return;
     checking = true;
     try {
-      const { data, error } = await db
-        .from("admin_profiles")
-        .select("user_id,role")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
+      const { data: accessRows, error } = await db.rpc("get_my_staff_access");
 
       if (error) {
         console.warn("Verificación de administrador temporalmente fallida", error);
@@ -263,12 +263,14 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         }, 4000);
         return;
       }
-      if (!data || !["admin", "supervisor"].includes(data.role)) {
+      const access = accessRows?.[0];
+      if (!access || !(access.role === "admin" || access.role === "supervisor" || (access.role === "custom" && access.can_view_assigned_sellers))) {
         await db.auth.signOut({scope:"local"});
         showLogin("Esta cuenta no tiene permisos para entrar a este panel.");
         return;
       }
-      showApp(data.role);
+      showApp(access.role === "admin" ? "admin" : "supervisor");
+      if (window.EVStaffProfile) await window.EVStaffProfile.ensure(db, session, "admin", () => {});
     } catch (error) {
       console.error(error);
       showLogin("No se pudo verificar el acceso.");
@@ -821,7 +823,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     }
     const candidates = candidateResult.data || [];
     if (select) {
-      const eligible = candidates.filter(user => !["admin", "supervisor"].includes(user.role));
+      const eligible = candidates.filter(user => !["admin", "supervisor", "custom"].includes(user.role));
       select.innerHTML = '<option value="">Elegir usuario</option>' + eligible.map(user => `<option value="${esc(user.user_id)}">${esc(user.display_name)} · ${esc(user.phone || "sin teléfono")} · ${esc(user.account_type || "usuario")}</option>`).join("");
     }
     const sellers = sellerResult.data || [];
@@ -839,6 +841,108 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       const options = sellers.filter(seller => seller.user_id !== supervisorId).map(seller => `<option value="${esc(seller.user_id)}" ${assigned.has(seller.user_id) ? "selected" : ""}>${esc(seller.name || "Sin nombre")} · ${esc(seller.phone || "sin teléfono")}${seller.active ? "" : " · desactivado"}</option>`).join("");
       return `<div class="supervisor-assignment"><b>${esc(group.name || "Supervisor")}</b><div class="small">${esc(group.phone || "Sin teléfono")} · ${group.sellerIds.length} vendedor(es) asignados</div><label>Vendedores que podrá consultar<select multiple data-supervisor-members="${esc(supervisorId)}">${options}</select></label><div class="actions"><button class="blue" type="button" data-save-supervisor="${esc(supervisorId)}">💾 Guardar asignación</button><button class="red" type="button" data-remove-supervisor="${esc(supervisorId)}">Quitar rol de supervisor</button></div></div>`;
     }).join("");
+  }
+
+  async function loadCustomRoleManagement() {
+    if (currentAccessRole !== "admin") return;
+    const assignmentsBox = $("customRoleAssignments");
+    if (!assignmentsBox) return;
+    assignmentsBox.textContent = "Cargando roles…";
+    const [rolesResult, usersResult, assignmentsResult, sellersResult] = await Promise.all([
+      db.rpc("admin_list_staff_roles"),
+      db.rpc("admin_list_custom_role_candidates"),
+      db.rpc("admin_get_staff_role_assignments"),
+      db.from("seller_profiles").select("user_id,name,phone,active").order("name", {ascending:true})
+    ]);
+    const error = rolesResult.error || usersResult.error || assignmentsResult.error || sellersResult.error;
+    if (error) {
+      assignmentsBox.innerHTML = `<div class="small danger">No se pudo cargar la gestión de roles: ${esc(error.message)}</div>`;
+      return;
+    }
+    const roles = rolesResult.data || [];
+    const users = usersResult.data || [];
+    const assignmentRows = assignmentsResult.data || [];
+    const sellers = sellersResult.data || [];
+    const roleSelect = $("customRoleChoice");
+    const userSelect = $("customRoleUser");
+    if (roleSelect) roleSelect.innerHTML = '<option value="">Elegir rol</option>' + roles.map(r => `<option value="${esc(r.id)}">${esc(r.name)}${r.can_view_assigned_sellers ? " · acceso a pedidos asignados" : ""}</option>`).join("");
+    if (userSelect) userSelect.innerHTML = '<option value="">Elegir usuario</option>' + users.map(u => `<option value="${esc(u.user_id)}">${esc(u.display_name)} · ${esc(u.phone || "sin teléfono")} · ${esc(u.account_type || "usuario")}${u.assigned_role_name ? " · rol: " + esc(u.assigned_role_name) : ""}</option>`).join("");
+    if (!roles.length && !users.length) {
+      assignmentsBox.innerHTML = '<div class="small">Todavía no hay roles ni usuarios disponibles.</div>';
+      return;
+    }
+    const assignments = new Map();
+    for (const row of assignmentRows) {
+      if (!assignments.has(row.staff_id)) assignments.set(row.staff_id, []);
+      if (row.seller_id) assignments.get(row.staff_id).push(row.seller_id);
+    }
+    const assignedUsers = users.filter(u => u.assigned_role === "custom");
+    if (!assignedUsers.length) {
+      assignmentsBox.innerHTML = '<div class="small">Creá un rol y asignalo a un usuario para administrar sus vendedores.</div>';
+      return;
+    }
+    assignmentsBox.innerHTML = assignedUsers.map(user => {
+      const role = roles.find(item => item.id === user.custom_role_id);
+      const canView = !!role?.can_view_assigned_sellers;
+      const selected = new Set(assignments.get(user.user_id) || []);
+      const sellerOptions = sellers.filter(s => s.user_id !== user.user_id).map(s => `<option value="${esc(s.user_id)}" ${selected.has(s.user_id) ? "selected" : ""}>${esc(s.name || "Sin nombre")} · ${esc(s.phone || "sin teléfono")}${s.active ? "" : " · desactivado"}</option>`).join("");
+      return `<div class="supervisor-assignment"><b>${esc(role?.name || user.assigned_role_name || "Rol personalizado")} · ${esc(user.display_name)}</b><div class="small">${esc(user.phone || "Sin teléfono")} · ${esc(user.account_type || "usuario")}</div>${canView ? `<label>Vendedores que puede consultar<select multiple data-custom-staff-sellers="${esc(user.user_id)}">${sellerOptions}</select></label><button class="blue" type="button" data-save-custom-staff="${esc(user.user_id)}">💾 Guardar vendedores</button>` : '<div class="small" style="margin-top:8px">Este rol no tiene acceso a pedidos de vendedores.</div>'}<button class="red" type="button" data-remove-custom-staff="${esc(user.user_id)}" style="margin-top:8px">Quitar rol</button></div>`;
+    }).join("");
+  }
+
+  async function createCustomRole() {
+    const name = $("customRoleName").value.trim();
+    if (!name) { setStatus("customRoleStatus", "Escribí el nombre del rol.", "warn"); return; }
+    const button = $("createCustomRoleButton");
+    button.disabled = true;
+    try {
+      const {error} = await db.rpc("admin_create_staff_role", {p_name:name,p_can_view_assigned_sellers:$("customRoleCanViewSales").checked});
+      if (error) throw error;
+      $("customRoleName").value = "";
+      setStatus("customRoleStatus", "✅ Rol creado.", "ok");
+      await loadCustomRoleManagement();
+    } catch (error) { setStatus("customRoleStatus", "No se pudo crear el rol: " + (error.message || error), "danger"); }
+    finally { button.disabled = false; }
+  }
+
+  async function assignCustomRole() {
+    const userId = $("customRoleUser").value, roleId = $("customRoleChoice").value;
+    if (!userId || !roleId) { setStatus("customRoleStatus", "Elegí un usuario y un rol.", "warn"); return; }
+    const button = $("assignCustomRoleButton"); button.disabled = true;
+    try {
+      const {error} = await db.rpc("admin_assign_custom_role", {p_user_id:userId,p_role_id:roleId});
+      if (error) throw error;
+      setStatus("customRoleStatus", "✅ Rol asignado. Ahora podés elegir sus vendedores.", "ok");
+      await Promise.all([loadCustomRoleManagement(),loadSupervisorManagement()]);
+    } catch (error) { setStatus("customRoleStatus", "No se pudo asignar el rol: " + (error.message || error), "danger"); }
+    finally { button.disabled = false; }
+  }
+
+  async function saveCustomRoleSellers(button) {
+    const staffId = button.dataset.saveCustomStaff;
+    const select = document.querySelector(`[data-custom-staff-sellers="${staffId}"]`);
+    const sellerIds = [...(select?.selectedOptions || [])].map(option => option.value);
+    button.disabled = true;
+    try {
+      const {error} = await db.rpc("admin_replace_supervisor_sellers", {p_supervisor_id:staffId,p_seller_ids:sellerIds});
+      if (error) throw error;
+      setStatus("customRoleStatus", "✅ Vendedores asignados.", "ok");
+      await loadCustomRoleManagement();
+    } catch (error) { setStatus("customRoleStatus", "No se pudo guardar la asignación: " + (error.message || error), "danger"); }
+    finally { button.disabled = false; }
+  }
+
+  async function removeCustomRole(button) {
+    const userId = button.dataset.removeCustomStaff;
+    if (!confirm("¿Quitar el rol personalizado y sus asignaciones de vendedores?")) return;
+    button.disabled = true;
+    try {
+      const {error} = await db.rpc("admin_remove_custom_role", {p_user_id:userId});
+      if (error) throw error;
+      setStatus("customRoleStatus", "Rol quitado.", "ok");
+      await Promise.all([loadCustomRoleManagement(),loadSupervisorManagement()]);
+    } catch (error) { setStatus("customRoleStatus", "No se pudo quitar el rol: " + (error.message || error), "danger"); }
+    finally { button.disabled = false; }
   }
 
   async function enableSupervisorRole() {
@@ -1742,6 +1846,14 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   $("resetButton").addEventListener("click", resetForm);
   $("createSellerButton").addEventListener("click", createSeller);
   $("makeSupervisorButton").addEventListener("click", enableSupervisorRole);
+  $("createCustomRoleButton").addEventListener("click", createCustomRole);
+  $("assignCustomRoleButton").addEventListener("click", assignCustomRole);
+  $("customRoleAssignments").addEventListener("click",event=>{
+    const saveButton=event.target.closest("[data-save-custom-staff]");
+    if(saveButton){saveCustomRoleSellers(saveButton);return;}
+    const removeButton=event.target.closest("[data-remove-custom-staff]");
+    if(removeButton)removeCustomRole(removeButton);
+  });
   $("refreshSellerSalesButton").addEventListener("click", async()=>{await loadSellerProfiles();await loadAdminSales();});
   $("loadMoreSellerSalesButton").addEventListener("click",()=>loadAdminSales(false));
   $("sellerSalesAdminList").addEventListener("click",event=>{

@@ -58,6 +58,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <button id="sellerProfileButton" type="button">👤 Mi perfil</button>
     <button id="sellerSalesButton" type="button">🧾 Mis ventas</button>
     <button id="sellerNewSaleButton" type="button">➕ Crear pedido</button>
+    <button id="sellerTeamButton" type="button" style="display:none">👥 Ventas del equipo</button>
   </div>
 </header>
 <main id="app"><div class="msg">Cargando…</div></main>
@@ -90,6 +91,27 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <div id="sellerProfileStatus" class="seller-status" role="status"></div>
   </div>
 </div>
+<div id="firstLoginSetupModal" class="cart-modal seller-modal first-login-setup" aria-hidden="true">
+  <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="firstLoginSetupTitle">
+    <h2 id="firstLoginSetupTitle">👋 Configurá tu perfil</h2>
+    <p class="seller-help">La primera vez, elegí el nombre con el que te verá el equipo y una contraseña nueva. Después podrás cambiarlos desde “Mi perfil”.</p>
+    <label class="seller-field">Tu nombre<input id="firstLoginName" maxlength="80" autocomplete="name"></label>
+    <label class="seller-field">Nueva contraseña<input id="firstLoginPassword" type="password" autocomplete="new-password"></label>
+    <label class="seller-field">Repetí la contraseña<input id="firstLoginPasswordConfirm" type="password" autocomplete="new-password"></label>
+    <div id="firstLoginSetupStatus" class="seller-status" role="status"></div>
+    <button id="firstLoginSetupSave" class="seller-action-button" type="button">Guardar y continuar</button>
+  </div>
+</div>
+<div id="sellerTeamModal" class="cart-modal seller-modal" aria-hidden="true">
+  <div class="cart-panel seller-sales-panel" role="dialog" aria-modal="true" aria-labelledby="sellerTeamTitle">
+    <div class="cart-head"><h2 id="sellerTeamTitle">👥 Pedidos de mis vendedores</h2><button id="sellerTeamClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
+    <label class="seller-field">Vendedor<select id="sellerTeamFilter"><option value="">Todos mis vendedores</option></select></label>
+    <button id="sellerTeamRefresh" class="seller-action-button secondary" type="button">Actualizar pedidos</button>
+    <div id="sellerTeamStatus" class="seller-help" role="status"></div>
+    <div id="sellerTeamHistory" class="seller-sales-history">Cargando…</div>
+    <button id="sellerTeamLoadMore" class="seller-action-button secondary" type="button" style="display:none">Cargar pedidos anteriores</button>
+  </div>
+</div>
 <div id="sellerSalesModal" class="cart-modal seller-modal" aria-hidden="true">
   <div class="cart-panel seller-sales-panel" role="dialog" aria-modal="true" aria-labelledby="sellerSalesTitle">
     <div class="cart-head"><h2 id="sellerSalesTitle">🧾 Pedidos y ventas</h2><button id="sellerSalesClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
@@ -117,6 +139,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .seller-actions button,.seller-tabs button{flex:1;min-width:0;border:0;border-radius:8px;padding:9px 7px;font-size:12px;font-weight:900;background:#374151;color:#fff}
 .seller-actions button:active,.seller-tabs button:active{transform:scale(.98)}
 .seller-modal{z-index:80}
+.first-login-setup{z-index:300;align-items:center!important}.first-login-setup .cart-panel{border-radius:18px;width:min(100% - 28px,480px)}
 .seller-modal .cart-panel{padding-bottom:24px}
 .seller-sales-panel{max-height:90vh}
 .seller-field{display:block;margin:14px 0 8px;font-size:13px;font-weight:900}
@@ -152,6 +175,11 @@ let db;
 let allProducts=[];
 let currentSeller=null;
 let currentSellerId=null;
+let currentStaffAccess=null;
+let currentStaffProfileName="";
+let afterFirstLoginSetup=null;
+let teamSellerIds=[];
+let teamSalesOffset=0;
 
 let filteredProducts=[];
 let currentPage=1;
@@ -200,6 +228,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
 const normalizePhone=v=>String(v??"").replace(/\D/g,"");
 const authEmailFromPhone=phone=>normalizePhone(phone)+"@seller.electrovariety.local";
+const authEmailFromStockPhone=phone=>normalizePhone(phone)+"@stock.electrovariety.local";
 const money=v=>{
   const s=String(v??"").trim();
   const n=Number(s.replace(/\$/g,"").replace(/\./g,"").replace(",","."));
@@ -211,8 +240,11 @@ function showLogin(message=""){
   $("tools").style.display="none";
   $("sellerActions").style.display="none";
   currentSeller=null;currentSellerId=null;
+  currentStaffAccess=null;currentStaffProfileName="";afterFirstLoginSetup=null;
   $("sellerProfileModal").style.display="none";$("sellerProfileModal").setAttribute("aria-hidden","true");
   $("sellerSalesModal").style.display="none";$("sellerSalesModal").setAttribute("aria-hidden","true");
+  $("sellerTeamModal").style.display="none";$("sellerTeamModal").setAttribute("aria-hidden","true");
+  $("firstLoginSetupModal").style.display="none";$("firstLoginSetupModal").setAttribute("aria-hidden","true");
   $("counter").textContent="—";
   $("catLogout").style.display="none";
   $("app").innerHTML=`<div class="loginbox">
@@ -229,6 +261,39 @@ function showLogin(message=""){
   $("loginPassword").addEventListener("keydown",e=>{if(e.key==="Enter")sellerLogin()});
 }
 
+function requireFirstLoginSetup(name,continueAfter){
+  afterFirstLoginSetup=continueAfter;
+  $("firstLoginName").value=name||"";
+  $("firstLoginPassword").value="";
+  $("firstLoginPasswordConfirm").value="";
+  $("firstLoginSetupStatus").textContent="";
+  $("firstLoginSetupModal").style.display="flex";
+  $("firstLoginSetupModal").setAttribute("aria-hidden","false");
+}
+
+async function completeFirstLoginSetup(){
+  const name=$("firstLoginName").value.trim();
+  const password=$("firstLoginPassword").value;
+  const confirm=$("firstLoginPasswordConfirm").value;
+  const status=$("firstLoginSetupStatus");
+  if(!name){status.textContent="Escribí tu nombre.";return}
+  if(password.length<8){status.textContent="La contraseña debe tener al menos 8 caracteres.";return}
+  if(password!==confirm){status.textContent="Las contraseñas no coinciden.";return}
+  const button=$("firstLoginSetupSave");button.disabled=true;status.textContent="Guardando tu perfil…";
+  try{
+    const {error:passwordError}=await db.auth.updateUser({password});
+    if(passwordError)throw passwordError;
+    const {data,error}=await db.rpc("complete_my_profile_setup",{p_name:name});
+    if(error)throw error;
+    currentStaffProfileName=data||name;
+    if(currentSeller)currentSeller={...currentSeller,name:data||name};
+    $("firstLoginSetupModal").style.display="none";$("firstLoginSetupModal").setAttribute("aria-hidden","true");
+    const continuation=afterFirstLoginSetup;afterFirstLoginSetup=null;
+    if(continuation)await continuation();
+  }catch(error){status.textContent="No se pudo completar el perfil: "+(error.message||error)}
+  finally{button.disabled=false}
+}
+
 async function sellerLogin(){
   const msg=$("loginMsg");
   const phone=normalizePhone($("loginPhone").value);
@@ -238,9 +303,10 @@ async function sellerLogin(){
   $("loginButton").disabled=true;
   msg.textContent="Ingresando…";
   try{
-    const {data,error}=await db.auth.signInWithPassword({email:authEmailFromPhone(phone),password});
-    if(error||!data?.session){msg.textContent="Número o contraseña incorrectos.";return}
-    await handleSession(data.session,"login");
+    let result=await db.auth.signInWithPassword({email:authEmailFromPhone(phone),password});
+    if(result.error||!result.data?.session)result=await db.auth.signInWithPassword({email:authEmailFromStockPhone(phone),password});
+    if(result.error||!result.data?.session){msg.textContent="Número o contraseña incorrectos.";return}
+    await handleSession(result.data.session,"login");
   }catch(e){
     msg.textContent="No se pudo iniciar sesión. Intentá nuevamente.";
   }finally{
@@ -293,8 +359,11 @@ async function handleSession(session, mode="restore"){
   if(!session||handlingAuth)return;
   handlingAuth=true;
   try{
+    const {data:accessRows,error:accessError}=await db.rpc("get_my_staff_access");
+    if(accessError){console.warn("No se pudo verificar el rol",accessError);retrySessionCheck(mode);return}
+    currentStaffAccess=accessRows?.[0]||null;
     const {data:seller,error:sellerError}=await db.from("seller_profiles")
-      .select("user_id,name,phone,active").eq("user_id",session.user.id).maybeSingle();
+      .select("user_id,name,phone,active,profile_setup_completed").eq("user_id",session.user.id).maybeSingle();
     if(sellerError){
       console.warn("Verificación del vendedor temporalmente fallida",sellerError);
       if($("catLogout").style.display!=="block")showLogin("Verificando sesión…");
@@ -324,23 +393,41 @@ async function handleSession(session, mode="restore"){
       if(deviceRetryTimer)clearTimeout(deviceRetryTimer);
       deviceRetryTimer=null;deviceRetryDelay=5000;
       startDeviceHeartbeat();
-      await startCatalog(seller);
+      currentStaffProfileName=seller.name||"";
+      if(!seller.profile_setup_completed){requireFirstLoginSetup(seller.name,()=>startCatalog(seller,currentStaffAccess));return}
+      await startCatalog(seller,currentStaffAccess);
       return;
     }
-    const {data:admin}=await db.from("admin_profiles")
-      .select("user_id,role").eq("user_id",session.user.id).eq("role","admin").maybeSingle();
-    if(admin){await startCatalog();return;}
+    const access=currentStaffAccess;
+    const canEnter=access&&(access.role==="admin"||access.role==="supervisor"||(access.role==="custom"&&access.can_view_assigned_sellers));
+    if(canEnter){
+      const {data:adminProfile}=await db.from("admin_profiles").select("display_name,profile_setup_completed").eq("user_id",session.user.id).maybeSingle();
+      const {data:stockProfile}=await db.from("stock_profiles").select("name,profile_setup_completed").eq("user_id",session.user.id).maybeSingle();
+      const profileName=adminProfile?.display_name||stockProfile?.name||"";
+      currentStaffProfileName=profileName;
+      const completed=adminProfile?.profile_setup_completed===true||stockProfile?.profile_setup_completed===true;
+      if(!completed){requireFirstLoginSetup(profileName,()=>startCatalog(null,access,profileName));return}
+      await startCatalog(null,access,profileName);return;
+    }
     await db.auth.signOut();
     showLogin("Esta cuenta no tiene acceso al catálogo.");
   }finally{handlingAuth=false}
 }
 
-async function startCatalog(seller=null){
+async function startCatalog(seller=null,staffAccess=currentStaffAccess,staffName=currentStaffProfileName){
   currentSeller=seller;
   currentSellerId=seller?.user_id||null;
+  currentStaffAccess=staffAccess||null;
+  currentStaffProfileName=staffName||seller?.name||"";
   $("tools").style.display="flex";
-  $("sellerActions").style.display=seller?"flex":"none";
+  const canViewTeam=!!(staffAccess?.role==="supervisor"||(staffAccess?.role==="custom"&&staffAccess.can_view_assigned_sellers));
+  $("sellerActions").style.display=(seller||staffAccess)?"flex":"none";
+  $("sellerProfileButton").style.display=(seller||staffAccess)?"":"none";
+  $("sellerSalesButton").style.display=seller?"":"none";
+  $("sellerNewSaleButton").style.display=seller?"":"none";
+  $("sellerTeamButton").style.display=canViewTeam?"":"none";
   if(seller)$("sellerProfileButton").textContent="👤 "+(seller.name||"Mi perfil");
+  else if(staffAccess)$("sellerProfileButton").textContent="👤 "+(currentStaffProfileName||"Mi perfil");
   $("catLogout").style.display="block";
   $("app").innerHTML='<div class="msg">Cargando catálogo…</div>';
   try{
@@ -374,8 +461,8 @@ async function startCatalog(seller=null){
 function openSellerModal(id){$(id).style.display="flex";$(id).setAttribute("aria-hidden","false")}
 function closeSellerModal(id){$(id).style.display="none";$(id).setAttribute("aria-hidden","true")}
 function openSellerProfile(){
-  if(!currentSeller)return;
-  $("sellerProfileName").value=currentSeller.name||"";
+  if(!currentSeller&&!currentStaffAccess)return;
+  $("sellerProfileName").value=currentSeller?.name||currentStaffProfileName||"";
   $("sellerProfileStatus").textContent="";
   $("sellerPassword").value="";
   $("sellerPasswordConfirm").value="";
@@ -388,8 +475,9 @@ async function saveSellerName(){
   try{
     const {data,error}=await db.rpc("update_seller_display_name",{p_name:name});
     if(error)throw error;
-    currentSeller={...currentSeller,name:data||name};
-    $("sellerProfileButton").textContent="👤 "+currentSeller.name;
+    if(currentSeller)currentSeller={...currentSeller,name:data||name};
+    currentStaffProfileName=data||name;
+    $("sellerProfileButton").textContent="👤 "+currentStaffProfileName;
     $("sellerProfileStatus").textContent="✅ Nombre actualizado.";
   }catch(e){$("sellerProfileStatus").textContent="No se pudo guardar el nombre: "+(e.message||e)}
   finally{$("sellerNameSave").disabled=false}
@@ -546,6 +634,33 @@ async function loadSellerSales(){
     .eq("seller_id",currentSellerId).order("created_at",{ascending:false}).limit(100);
   if(error){$("sellerSalesHistory").textContent="No se pudo cargar el historial: "+error.message;return}
   renderSellerSales(data||[]);
+}
+async function openSellerTeam(){
+  if(!(currentStaffAccess?.role==="supervisor"||(currentStaffAccess?.role==="custom"&&currentStaffAccess.can_view_assigned_sellers)))return;
+  openSellerModal("sellerTeamModal");
+  await loadSellerTeam(true);
+}
+async function loadSellerTeam(reset=true){
+  const list=$("sellerTeamHistory"),status=$("sellerTeamStatus"),more=$("sellerTeamLoadMore");
+  const filter=$("sellerTeamFilter").value;
+  if(reset){teamSalesOffset=0;list.textContent="Cargando pedidos…";more.style.display="none"}
+  try{
+    const {data:sellers,error:sellerError}=await db.rpc("get_my_assigned_sellers");
+    if(sellerError)throw sellerError;
+    teamSellerIds=(sellers||[]).map(s=>s.user_id);
+    const select=$("sellerTeamFilter"),selected=filter;
+    select.innerHTML='<option value="">Todos mis vendedores</option>'+(sellers||[]).map(s=>`<option value="${esc(s.user_id)}">${esc(s.name||"Sin nombre")} · ${esc(s.phone||"sin teléfono")}</option>`).join("");
+    if(teamSellerIds.includes(selected))select.value=selected;
+    if(!teamSellerIds.length){list.innerHTML='<div class="seller-help">Todavía no tenés vendedores asignados. Pedile al administrador que configure tu equipo.</div>';status.textContent="";return}
+    let query=db.from("seller_sales").select("id,seller_id,seller_name,order_text,status,created_at,expires_at,seller_sale_items(id,product_name,quantity,status)").in("seller_id",select.value?[select.value]:teamSellerIds).order("created_at",{ascending:false}).range(teamSalesOffset,teamSalesOffset+99);
+    const {data,error}=await query;if(error)throw error;
+    const sales=data||[];
+    const markup=sales.map(sale=>`<article class="seller-sale-card"><h3>${esc(sale.seller_name||"Vendedor")} · Pedido ${esc(String(sale.id).slice(0,8))}</h3><div class="sale-date">${esc(saleStatusLabel(sale.status))} · ${sale.created_at?new Date(sale.created_at).toLocaleString("es-AR"):"—"}</div><div class="sale-order">${esc(sale.order_text).replace(/\n/g,"<br>")}</div><ul>${(sale.seller_sale_items||[]).map(item=>`<li>${esc(item.product_name)} × ${Number(item.quantity)} · ${esc(saleItemStatusLabel(item.status))}</li>`).join("")}</ul></article>`).join("");
+    if(reset)list.innerHTML=markup||'<div class="seller-help">No hay pedidos para mostrar.</div>';else list.insertAdjacentHTML("beforeend",markup);
+    teamSalesOffset+=sales.length;
+    status.textContent=`${teamSalesOffset} pedido(s) cargados de ${select.value?(sellers.find(s=>s.user_id===select.value)?.name||"un vendedor"):"tu equipo"}.`;
+    more.style.display=sales.length===100?"block":"none";
+  }catch(error){list.innerHTML=`<div class="seller-help">No se pudieron cargar los pedidos: ${esc(error.message||error)}</div>`;status.textContent=""}
 }
 async function resolveSellerSaleItem(button){
   const saleId=button.dataset.resolveSale,productId=Number(button.dataset.resolveProduct),delivered=button.dataset.delivered==="true";
@@ -903,8 +1018,14 @@ $("sellerProfileClose").addEventListener("click",()=>closeSellerModal("sellerPro
 $("sellerProfileModal").addEventListener("click",e=>{if(e.target===$("sellerProfileModal"))closeSellerModal("sellerProfileModal")});
 $("sellerNameSave").addEventListener("click",saveSellerName);
 $("sellerPasswordSave").addEventListener("click",saveSellerPassword);
+$("firstLoginSetupSave").addEventListener("click",completeFirstLoginSetup);
 $("sellerSalesButton").addEventListener("click",()=>openSellerSales("history"));
 $("sellerNewSaleButton").addEventListener("click",()=>openSellerSales("new"));
+$("sellerTeamButton").addEventListener("click",openSellerTeam);
+$("sellerTeamClose").addEventListener("click",()=>closeSellerModal("sellerTeamModal"));
+$("sellerTeamRefresh").addEventListener("click",()=>loadSellerTeam(true));
+$("sellerTeamFilter").addEventListener("change",()=>loadSellerTeam(true));
+$("sellerTeamLoadMore").addEventListener("click",()=>loadSellerTeam(false));
 $("sellerSalesClose").addEventListener("click",()=>closeSellerModal("sellerSalesModal"));
 $("sellerSalesModal").addEventListener("click",e=>{if(e.target===$("sellerSalesModal"))closeSellerModal("sellerSalesModal")});
 $("sellerSalesNewTab").addEventListener("click",()=>showSellerSalesTab("new"));
