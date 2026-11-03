@@ -66,7 +66,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
   </div>
 </header>
 <div id="catalogLayout"><main id="app"><div class="msg">Cargando…</div></main></div>
-<button id="onlineStaffToggle" class="online-staff-toggle" type="button" aria-expanded="false" aria-controls="onlineStaffPanel" style="display:none"><span>👥 Conectados</span><span id="onlineStaffToggleCount" class="online-staff-toggle-count">0</span></button>
+<button id="onlineStaffToggle" class="online-staff-toggle" type="button" aria-label="Mostrar personal conectado" title="Arrastrá para mover · tocá para abrir" aria-expanded="false" aria-controls="onlineStaffPanel" style="display:none"><span aria-hidden="true">👥</span><span id="onlineStaffToggleCount" class="online-staff-toggle-count">0</span></button>
 <button id="onlineStaffBackdrop" class="online-staff-backdrop" type="button" aria-label="Cerrar personal conectado" tabindex="-1"></button>
 <aside id="onlineStaffPanel" class="online-staff-panel" aria-label="Personal conectado" aria-hidden="true" style="display:none"><div class="online-staff-heading"><h2>👥 Conectados</h2><button id="onlineStaffClose" class="cart-close" type="button" aria-label="Cerrar">×</button><span id="onlineStaffCount" class="online-staff-count">0</span></div><div id="onlineStaffStatus" class="seller-help" role="status">Conectando…</div><div id="onlineStaffList" aria-live="polite"></div></aside>
 <div id="cartBar" class="cartbar"><button id="cartOpenButton" type="button">🛒 Ver carrito</button></div>
@@ -148,7 +148,8 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .seller-modal{z-index:80}
 #catalogLayout{max-width:760px;margin:12px auto;padding:0}
 #catalogLayout #app{width:100%;max-width:760px;margin:0}
-.online-staff-toggle{position:fixed;right:14px;bottom:92px;z-index:99990;display:flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:12px 15px;background:#111827;color:#fff;box-shadow:0 5px 18px rgba(17,24,39,.28);font-size:13px;font-weight:900;cursor:pointer}
+.online-staff-toggle{position:fixed;right:14px;bottom:92px;z-index:99990;display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;padding:12px 13px;background:#111827;color:#fff;box-shadow:0 5px 18px rgba(17,24,39,.28);font-size:13px;font-weight:900;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.online-staff-toggle:active{cursor:grabbing}
 .online-staff-toggle-count{min-width:22px;padding:3px 6px;border-radius:999px;background:#dcfce7;color:#166534;text-align:center}
 .online-staff-backdrop{position:fixed;inset:0;z-index:100000;display:none;border:0;background:rgba(17,24,39,.42)}
 .online-staff-backdrop.open{display:block}
@@ -360,6 +361,42 @@ function toggleOnlineStaffPanel(){
   if(open){panel.classList.add("open");panel.setAttribute("aria-hidden","false");backdrop.classList.add("open");toggle.setAttribute("aria-expanded","true");$("onlineStaffClose")?.focus()}
   else{closeOnlineStaffPanel();toggle.focus()}
 }
+const ONLINE_STAFF_BUBBLE_POSITION_KEY="electro-variety-online-staff-bubble-v1";
+function setOnlineStaffBubblePosition(x,y,save=false){
+  const bubble=$("onlineStaffToggle");if(!bubble)return;
+  const maxX=Math.max(8,window.innerWidth-bubble.offsetWidth-8),maxY=Math.max(8,window.innerHeight-bubble.offsetHeight-8);
+  const left=Math.min(maxX,Math.max(8,x)),top=Math.min(maxY,Math.max(8,y));
+  bubble.style.left=`${left}px`;bubble.style.top=`${top}px`;bubble.style.right="auto";bubble.style.bottom="auto";
+  if(save){try{localStorage.setItem(ONLINE_STAFF_BUBBLE_POSITION_KEY,JSON.stringify({x:left,y:top}))}catch(error){console.warn("No se pudo guardar la posición de la burbuja",error)}}
+}
+function restoreOnlineStaffBubblePosition(){
+  const bubble=$("onlineStaffToggle");if(!bubble?.offsetWidth)return;
+  try{const saved=JSON.parse(localStorage.getItem(ONLINE_STAFF_BUBBLE_POSITION_KEY)||"null");if(Number.isFinite(saved?.x)&&Number.isFinite(saved?.y))setOnlineStaffBubblePosition(saved.x,saved.y)}catch{}
+}
+function setupOnlineStaffBubbleDrag(){
+  const bubble=$("onlineStaffToggle");if(!bubble)return;
+  restoreOnlineStaffBubblePosition();
+  let pointerId=null,startX=0,startY=0,startLeft=0,startTop=0,moved=false,suppressClick=false;
+  bubble.addEventListener("pointerdown",event=>{
+    if(event.pointerType==="mouse"&&event.button!==0)return;
+    const rect=bubble.getBoundingClientRect();pointerId=event.pointerId;startX=event.clientX;startY=event.clientY;startLeft=rect.left;startTop=rect.top;moved=false;
+    try{bubble.setPointerCapture(pointerId)}catch{}
+  });
+  bubble.addEventListener("pointermove",event=>{
+    if(pointerId!==event.pointerId)return;
+    if(!moved&&Math.hypot(event.clientX-startX,event.clientY-startY)<5)return;
+    moved=true;event.preventDefault();setOnlineStaffBubblePosition(startLeft+event.clientX-startX,startTop+event.clientY-startY);
+  });
+  const finishDrag=event=>{
+    if(pointerId!==event.pointerId)return;
+    if(moved){setOnlineStaffBubblePosition(startLeft+event.clientX-startX,startTop+event.clientY-startY,true);suppressClick=true;setTimeout(()=>{suppressClick=false},0)}
+    pointerId=null;
+  };
+  bubble.addEventListener("pointerup",finishDrag);bubble.addEventListener("pointercancel",event=>{if(pointerId!==event.pointerId)return;if(moved){const rect=bubble.getBoundingClientRect();setOnlineStaffBubblePosition(rect.left,rect.top,true)}pointerId=null});
+  bubble.addEventListener("click",event=>{if(suppressClick){event.preventDefault();event.stopImmediatePropagation();suppressClick=false}},true);
+  window.addEventListener("resize",()=>{const rect=bubble.getBoundingClientRect();if(bubble.style.left)setOnlineStaffBubblePosition(rect.left,rect.top,true)});
+}
+setupOnlineStaffBubbleDrag();
 async function refreshOnlineStaffDirectory(){
   if(!onlineStaffClient)return;
   const {data,error}=await onlineStaffClient.rpc("get_catalog_staff_directory");
@@ -386,6 +423,7 @@ async function startOnlineStaffPresence(){
   panel.style.display="block";
   panel.setAttribute("aria-hidden","true");
   $("onlineStaffToggle").style.display="flex";
+  restoreOnlineStaffBubblePosition();
   $("onlineStaffStatus").textContent="Conectando…";
   $("onlineStaffList").innerHTML="";
   await refreshOnlineStaffDirectory();
