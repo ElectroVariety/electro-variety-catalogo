@@ -125,7 +125,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <div><label>Nombre del vendedor</label><input id="sellerName" placeholder="Ej. Juan Pérez"/></div>
 <div><label>Número de WhatsApp / celular</label><input autocomplete="off" id="sellerPhone" inputmode="numeric" placeholder="2224534328" type="tel"/></div>
 <div><label>Contraseña inicial</label><input autocomplete="new-password" id="sellerPassword" placeholder="Mínimo 6 caracteres" type="password"/></div>
-</div><div class="actions"><button class="blue" id="createSellerButton" type="button">➕ Crear vendedor</button></div><div class="small seller-status" id="sellerStatus"></div></div><div id="sellerList" style="margin-top:14px">Cargando…</div></div></section><section class="admin-panel" data-admin-panel="sales" id="admin-panel-sales"><div class="card"><h2>👤 Perfiles de vendedores</h2><div class="small" id="sellerProfilesStatus">Cargando perfiles…</div><div id="sellerProfilesList"></div></div><div class="card"><h2>🧾 Pedidos y ventas</h2><div class="actions"><button class="blue" id="refreshSellerSalesButton" type="button">🔄 Actualizar</button><div class="small" id="sellerSalesAdminStatus"></div></div><div id="sellerSalesAdminList">Cargando pedidos…</div><button class="blue hidden" id="loadMoreSellerSalesButton" type="button" style="margin-top:12px">⬇️ Cargar pedidos anteriores</button></div><div class="card" id="supervisorManagementCard"><h2>👔 Supervisores</h2><div class="small">Elegí un usuario con perfil de vendedor o de stock para darle el rol de supervisor. Después seleccioná los vendedores que podrá consultar.</div><div class="actions"><select id="supervisorRoleUser" style="flex:1;min-width:240px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir usuario</option></select><button class="blue" id="makeSupervisorButton" type="button">➕ Crear rol de supervisor</button></div><div class="small" id="supervisorRoleStatus" style="margin-top:8px"></div><div id="supervisorManagerList" style="margin-top:12px">Cargando supervisores…</div></div><div class="card" id="customRolesManagementCard"><h2>🧩 Roles personalizados</h2><div class="small">Creá roles con nombre propio. Si habilitás el acceso a vendedores asignados, la persona podrá consultar sus perfiles, pedidos y ventas desde su cuenta.</div><div class="seller-form"><div class="actions"><input id="customRoleName" maxlength="40" placeholder="Nombre del rol, por ejemplo Coordinador" style="flex:1;min-width:220px"><label style="display:flex;gap:8px;align-items:center"><input id="customRoleCanViewSales" type="checkbox" checked style="width:auto;margin:0"> Ver pedidos de vendedores asignados</label><button class="blue" id="createCustomRoleButton" type="button">Crear rol</button></div><div id="customRoleStatus" class="small" style="margin-top:8px"></div></div><div class="seller-form"><h3 style="margin-top:0">Asignar rol a usuario</h3><div class="actions"><select id="customRoleUser" style="flex:1;min-width:220px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir usuario</option></select><select id="customRoleChoice" style="flex:1;min-width:220px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir rol</option></select><button class="blue" id="assignCustomRoleButton" type="button">Asignar rol</button></div></div><div id="customRoleAssignments" style="margin-top:12px">Cargando roles…</div></div></section></main></div></div>
+</div><div class="actions"><button class="blue" id="createSellerButton" type="button">➕ Crear vendedor</button></div><div class="small seller-status" id="sellerStatus"></div></div><div id="sellerList" style="margin-top:14px">Cargando…</div></div></section><section class="admin-panel" data-admin-panel="sales" id="admin-panel-sales"><div class="card"><h2>👤 Perfiles de vendedores</h2><div class="small" id="sellerProfilesStatus">Cargando perfiles…</div><div id="sellerProfilesList"></div></div><div class="card"><h2>🧾 Pedidos y ventas</h2><div class="actions"><button class="blue" id="refreshSellerSalesButton" type="button">🔄 Actualizar</button><div class="small" id="sellerSalesAdminStatus"></div></div><div id="sellerSalesAdminList">Cargando pedidos…</div><button class="blue hidden" id="loadMoreSellerSalesButton" type="button" style="margin-top:12px">⬇️ Cargar pedidos anteriores</button></div><div class="card" id="supervisorManagementCard"><h2>👔 Supervisores</h2><div class="small">Elegí un usuario con perfil de vendedor o de stock para darle el rol de supervisor. Después seleccioná los vendedores que podrá consultar.</div><div class="actions"><select id="supervisorRoleUser" style="flex:1;min-width:240px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir usuario</option></select><button class="blue" id="makeSupervisorButton" type="button">➕ Crear rol de supervisor</button></div><div class="small" id="supervisorRoleStatus" style="margin-top:8px"></div><div id="supervisorManagerList" style="margin-top:12px">Cargando supervisores…</div></div><div class="card" id="customRolesManagementCard"><h2>🧩 Roles personalizados</h2><div class="small">Creá roles y asignales permisos para consultar ventas o editar stock. Las personas usarán su cuenta habitual del catálogo; no hace falta crearles una cuenta de stock.</div><div class="seller-form"><div class="actions"><input id="customRoleName" maxlength="40" placeholder="Nombre del rol, por ejemplo Coordinador" style="flex:1;min-width:220px"><label style="display:flex;gap:8px;align-items:center"><input id="customRoleCanViewSales" type="checkbox" checked style="width:auto;margin:0"> Ver pedidos de vendedores asignados</label><button class="blue" id="createCustomRoleButton" type="button">Crear rol</button></div><div id="customRoleStatus" class="small" style="margin-top:8px"></div></div><div class="seller-form"><h3 style="margin-top:0">Permisos de cada rol</h3><div class="small">Elegí qué puede hacer cada rol. Los cambios de stock se envían para aprobación del administrador.</div><div id="customRolePermissions" style="margin-top:10px">Cargando roles…</div></div><div class="seller-form"><h3 style="margin-top:0">Asignar rol a usuario</h3><div class="actions"><select id="customRoleUser" style="flex:1;min-width:220px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir usuario</option></select><select id="customRoleChoice" style="flex:1;min-width:220px;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="">Elegir rol</option></select><button class="blue" id="assignCustomRoleButton" type="button">Asignar rol</button></div></div><div id="customRoleAssignments" style="margin-top:12px">Cargando roles…</div></div></section></main></div></div>
 <div class="password-reset-backdrop" id="sellerPasswordResetModal" role="dialog" aria-modal="true" aria-labelledby="sellerPasswordResetTitle"><div class="password-reset-dialog"><h2 id="sellerPasswordResetTitle">🔐 Restablecer contraseña</h2><div class="small" id="sellerPasswordResetName"></div><label style="display:block;margin-top:14px">Nueva contraseña<input id="sellerPasswordResetInput" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo 8 caracteres"></label><label style="display:block;margin-top:10px">Repetir contraseña<input id="sellerPasswordResetRepeat" type="password" autocomplete="new-password" minlength="8" placeholder="Repetí la nueva contraseña"></label><div class="small" id="sellerPasswordResetStatus" style="margin-top:10px"></div><div class="actions"><button class="blue" id="sellerPasswordResetSave" type="button">Guardar contraseña</button><button class="dark" id="sellerPasswordResetCancel" type="button">Cancelar</button></div></div></div>
 <script src="../shared/staff-profile.js"></script><script>
 "use strict";
@@ -911,6 +911,10 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const users = usersResult.data || [];
     const assignmentRows = assignmentsResult.data || [];
     const sellers = sellersResult.data || [];
+    const permissionsBox = $("customRolePermissions");
+    if (permissionsBox) {
+      permissionsBox.innerHTML = roles.length ? roles.map(role => `<div class="supervisor-assignment"><b>${esc(role.name)}</b><div class="assignment-checklist role-permission-checklist"><label><input type="checkbox" data-role-permission="sales" ${role.can_view_assigned_sellers ? "checked" : ""}><span>Ver pedidos de vendedores asignados</span></label><label><input type="checkbox" data-role-permission="deposito" ${role.can_manage_deposito_stock ? "checked" : ""}><span>Editar stock de Depósito y enviar solicitud de aprobación</span></label><label><input type="checkbox" data-role-permission="local" ${role.can_manage_local_stock ? "checked" : ""}><span>Editar stock de Local y enviar solicitud de aprobación</span></label></div><button class="blue" type="button" data-save-role-permissions="${esc(role.id)}">💾 Guardar permisos</button></div>`).join("") : '<div class="small">Creá un rol para configurar sus permisos.</div>';
+    }
     const roleSelect = $("customRoleChoice");
     const userSelect = $("customRoleUser");
     if (roleSelect) roleSelect.innerHTML = '<option value="">Elegir rol</option>' + roles.map(r => `<option value="${esc(r.id)}">${esc(r.name)}${r.can_view_assigned_sellers ? " · acceso a pedidos asignados" : ""}</option>`).join("");
@@ -951,6 +955,26 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       await loadCustomRoleManagement();
     } catch (error) { setStatus("customRoleStatus", "No se pudo crear el rol: " + (error.message || error), "danger"); }
     finally { button.disabled = false; }
+  }
+
+  async function saveCustomRolePermissions(button) {
+    const roleId = button.dataset.saveRolePermissions;
+    const card = button.closest(".supervisor-assignment");
+    const permission = key => card?.querySelector(`[data-role-permission="${key}"]`)?.checked === true;
+    button.disabled = true;
+    try {
+      const {error} = await db.rpc("admin_update_staff_role_permissions", {
+        p_role_id: roleId,
+        p_can_view_assigned_sellers: permission("sales"),
+        p_can_manage_deposito_stock: permission("deposito"),
+        p_can_manage_local_stock: permission("local")
+      });
+      if (error) throw error;
+      setStatus("customRoleStatus", "✅ Permisos del rol actualizados.", "ok");
+      await loadCustomRoleManagement();
+    } catch (error) {
+      setStatus("customRoleStatus", "No se pudieron guardar los permisos: " + (error.message || error), "danger");
+    } finally { button.disabled = false; }
   }
 
   async function assignCustomRole() {
@@ -1956,6 +1980,10 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   $("makeSupervisorButton").addEventListener("click", enableSupervisorRole);
   $("createCustomRoleButton").addEventListener("click", createCustomRole);
   $("assignCustomRoleButton").addEventListener("click", assignCustomRole);
+  $("customRolePermissions").addEventListener("click",event=>{
+    const button=event.target.closest("[data-save-role-permissions]");
+    if(button)saveCustomRolePermissions(button);
+  });
   $("customRoleAssignments").addEventListener("click",event=>{
     const saveButton=event.target.closest("[data-save-custom-staff]");
     if(saveButton){saveCustomRoleSellers(saveButton);return;}

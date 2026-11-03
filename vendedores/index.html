@@ -60,6 +60,10 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <button id="sellerNewSaleButton" type="button">➕ Crear pedido</button>
     <button id="sellerTeamButton" type="button" style="display:none">👥 Ventas del equipo</button>
   </div>
+  <div id="sellerStockActions" class="seller-actions" style="display:none">
+    <button id="sellerDepotStockButton" type="button" style="display:none">🏭 Stock Depósito</button>
+    <button id="sellerLocalStockButton" type="button" style="display:none">🏪 Stock Local</button>
+  </div>
 </header>
 <div id="catalogLayout"><main id="app"><div class="msg">Cargando…</div></main></div>
 <button id="onlineStaffToggle" class="online-staff-toggle" type="button" aria-expanded="false" aria-controls="onlineStaffPanel" style="display:none"><span>👥 Conectados</span><span id="onlineStaffToggleCount" class="online-staff-toggle-count">0</span></button>
@@ -535,6 +539,11 @@ async function handleSession(session, mode="restore"){
     const {data:accessRows,error:accessError}=await db.rpc("get_my_staff_access");
     if(accessError){console.warn("No se pudo verificar el rol",accessError);retrySessionCheck(mode);return}
     currentStaffAccess=accessRows?.[0]||null;
+    if(currentStaffAccess?.role==="custom"){
+      const {data:stockPermissions,error:stockPermissionsError}=await db.rpc("get_my_stock_role_permissions");
+      if(stockPermissionsError){console.warn("No se pudieron verificar los permisos de stock",stockPermissionsError);retrySessionCheck(mode);return}
+      Object.assign(currentStaffAccess,Array.isArray(stockPermissions)?(stockPermissions[0]||{}):(stockPermissions||{}));
+    }
     const {data:seller,error:sellerError}=await db.from("seller_profiles")
       .select("user_id,name,phone,active,profile_setup_completed").eq("user_id",session.user.id).maybeSingle();
     if(sellerError){
@@ -580,7 +589,7 @@ async function handleSession(session, mode="restore"){
       return;
     }
     const access=currentStaffAccess;
-    const canEnter=access&&(access.role==="admin"||access.role==="supervisor"||(access.role==="custom"&&access.can_view_assigned_sellers));
+    const canEnter=access&&(access.role==="admin"||access.role==="supervisor"||(access.role==="custom"&&(access.can_view_assigned_sellers||access.can_manage_deposito_stock||access.can_manage_local_stock)));
     if(canEnter){
       const {data:adminProfile}=await db.from("admin_profiles").select("display_name,profile_setup_completed").eq("user_id",session.user.id).maybeSingle();
       const {data:stockProfile}=await db.from("stock_profiles").select("name,profile_setup_completed").eq("user_id",session.user.id).maybeSingle();
@@ -607,6 +616,11 @@ async function startCatalog(seller=null,staffAccess=currentStaffAccess,staffName
   $("sellerSalesButton").style.display=seller?"":"none";
   $("sellerNewSaleButton").style.display=seller?"":"none";
   $("sellerTeamButton").style.display=canViewTeam?"":"none";
+  const canManageDepot=staffAccess?.role==="custom"&&staffAccess.can_manage_deposito_stock;
+  const canManageLocal=staffAccess?.role==="custom"&&staffAccess.can_manage_local_stock;
+  $("sellerDepotStockButton").style.display=canManageDepot?"":"none";
+  $("sellerLocalStockButton").style.display=canManageLocal?"":"none";
+  $("sellerStockActions").style.display=(canManageDepot||canManageLocal)?"flex":"none";
   if(seller)$("sellerProfileButton").textContent="👤 "+(seller.name||"Mi perfil");
   else if(staffAccess)$("sellerProfileButton").textContent="👤 "+(currentStaffProfileName||"Mi perfil");
   startOnlineStaffPresence().catch(error=>{console.warn("Presencia de personal",error);$("onlineStaffStatus").textContent="No se pudo conectar con el panel de personal."});
@@ -1229,6 +1243,8 @@ $("firstLoginSetupSave").addEventListener("click",completeFirstLoginSetup);
 $("sellerSalesButton").addEventListener("click",()=>openSellerSales("history"));
 $("sellerNewSaleButton").addEventListener("click",()=>openSellerSales("new"));
 $("sellerTeamButton").addEventListener("click",openSellerTeam);
+$("sellerDepotStockButton").addEventListener("click",()=>location.href="../deposito/?role=1");
+$("sellerLocalStockButton").addEventListener("click",()=>location.href="../local/?role=1");
 $("sellerTeamClose").addEventListener("click",()=>closeSellerModal("sellerTeamModal"));
 $("sellerTeamRefresh").addEventListener("click",()=>loadSellerTeam(true));
 $("sellerTeamFilter").addEventListener("change",()=>loadSellerTeam(true));
