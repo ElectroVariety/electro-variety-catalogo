@@ -15,6 +15,17 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
 </script><script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script><script src="/electro-variety-catalogo/config.js"></script>
 <style>
+.client-feature-item{border:1px solid #e5e7eb;border-radius:12px;padding:11px;margin-top:9px;background:#fff}
+.client-feature-product-head{display:flex;align-items:center;gap:12px;min-width:0}
+.client-feature-thumb{width:78px;height:78px;flex:0 0 78px;object-fit:contain;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:9px}
+.client-feature-product-info{min-width:0;flex:1}
+.client-feature-product-name{font-weight:900;line-height:1.3}
+.client-feature-flags{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+.client-feature-flags label{display:inline-flex;align-items:center;gap:5px}
+.client-feature-flags input[type=checkbox]{width:auto;margin:0}
+@media(max-width:600px){.client-feature-thumb{width:64px;height:64px;flex-basis:64px}.client-feature-flags{gap:8px}}
+</style>
+<style>
 /* ===== Admin modular navigation ===== */
 .admin-shell{display:flex;gap:0;align-items:stretch;position:relative}
 .admin-sidebar{width:245px;flex:0 0 245px;position:sticky;top:0;height:calc(100vh - 56px);align-self:flex-start;background:#111827;color:#fff;border-radius:16px;padding:14px;box-shadow:0 10px 28px rgba(0,0,0,.12);overflow:auto}
@@ -101,6 +112,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <div class="client-media-preview" id="clientMediaPreview"></div>
 <h3 style="margin:18px 0 6px">⭐ Destacar productos</h3>
 <div class="small">Estas marcas son exclusivas del catálogo para clientes. No cambian los productos, precios ni stock del catálogo de vendedores.</div>
+<div class="actions" style="align-items:center"><input id="clientFeaturesSearch" type="search" placeholder="🔎 Buscar producto por nombre o categoría" style="flex:1;min-width:220px"><span class="small" id="clientFeaturesCount"></span></div>
 <div id="clientFeaturesList" style="margin-top:10px">Cargando…</div>
 <button class="blue" id="saveClientFeaturesButton" style="margin-top:10px" type="button">💾 Guardar destacados</button>
 <div class="small" id="clientFeaturesStatus" style="margin-top:8px"></div>
@@ -1739,7 +1751,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   async function loadClientFeatures(){
     const box=$("clientFeaturesList"); if(!box) return;
     const [{data:products,error:productsError},{data:features,error:featuresError}]=await Promise.all([
-      db.from("products").select("id,name,category,active").eq("active",true).order("id",{ascending:false}),
+      db.from("products").select("id,name,subtitle,category,active,image_url,q_count,q_price,m_count,m_price").eq("active",true).order("id",{ascending:false}),
       db.from("client_product_features").select("product_id,trending,new_entry,coming_soon,notification_open_product,notification_title,notification_body,notification_image_url,notification_whatsapp_mode")
     ]);
     if(productsError){box.innerHTML=`<div class="small danger">No se pudieron cargar los productos: ${esc(productsError.message)}</div>`;return;}
@@ -1751,9 +1763,9 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     box.innerHTML=products.map(p=>{
       const f=map.get(String(p.id))||{};
       const openProduct = f.notification_open_product !== false;
-      return `<div class="item" style="display:block">
-        <b>${esc(p.name)}</b><div class="small">${esc(p.category||"Sin categoría")}</div>
-        <div class="actions" style="margin-top:7px">
+      return `<div class="client-feature-item" data-client-product-card data-client-product-search="${esc([p.name,p.subtitle,p.category].filter(Boolean).join(" "))}">
+        <div class="client-feature-product-head"><img class="client-feature-thumb" src="${esc(p.image_url||"")}" alt="${esc(p.name)}" loading="lazy" onerror="this.hidden=true"><div class="client-feature-product-info"><div class="client-feature-product-name">${esc(p.name)}</div><div class="small">${esc(p.category||"Sin categoría")}</div>${p.subtitle?`<div class="small">${esc(p.subtitle)}</div>`:""}<div class="small">${esc(p.q_count||0)} cuotas quincenales · ${esc(p.q_price||"—")} &nbsp;|&nbsp; ${esc(p.m_count||0)} cuotas mensuales · ${esc(p.m_price||"—")}</div></div></div>
+        <div class="client-feature-flags">
           <label><input type="checkbox" data-client-feature="trending" data-product-id="${p.id}" ${f.trending?"checked":""}> 🔥 Tendencia</label>
           <label><input type="checkbox" data-client-feature="new_entry" data-product-id="${p.id}" ${f.new_entry?"checked":""}> 🆕 Nuevo ingreso</label>
           <label><input type="checkbox" data-client-feature="coming_soon" data-product-id="${p.id}" ${f.coming_soon?"checked":""}> 🔜 Próximamente</label>
@@ -1779,6 +1791,14 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         </div>
       </div>`;
     }).join("");
+    filterClientFeatures();
+  }
+
+  function filterClientFeatures(){
+    const query=String($("clientFeaturesSearch")?.value||"").trim().toLocaleLowerCase("es");
+    const cards=[...document.querySelectorAll("[data-client-product-card]")];let visible=0;
+    for(const card of cards){const matches=!query||card.dataset.clientProductSearch.toLocaleLowerCase("es").includes(query);card.hidden=!matches;if(matches)visible++}
+    const count=$("clientFeaturesCount");if(count)count.textContent=query?`${visible} de ${cards.length} productos`:`${cards.length} productos`;
   }
 
   async function saveClientFeatures(){
@@ -2008,6 +2028,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   $("selectAllWaButton").addEventListener("click", selectAllWa);
   $("importClientMediaButton").addEventListener("click", importClientMediaZip);
   $("saveClientFeaturesButton").addEventListener("click", saveClientFeatures);
+  $("clientFeaturesSearch").addEventListener("input", filterClientFeatures);
   $("sendGeneralPushButton").addEventListener("click", sendGeneralPush);
   $("savePushWhatsAppButton").addEventListener("click", savePushWhatsAppSetting);
   $("saveCatalogProductClickWhatsAppButton").addEventListener("click", saveCatalogProductClickWhatsApp);
