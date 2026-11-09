@@ -43,6 +43,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 .sales-order{border:1px solid #e5e7eb;border-radius:12px;padding:13px;margin-top:10px}
 .sales-order pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:13px;margin:8px 0}
 .customer-sale-request-card{border:1px solid #dbeafe;border-radius:13px;padding:14px;margin:10px 0;background:#fff}.customer-sale-request-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.customer-sale-request-head span{background:#f3f4f6;border-radius:99px;padding:5px 9px;font-size:11px;font-weight:900;color:#374151}.customer-sale-request-items{padding-left:20px;font-size:13px;line-height:1.5}.customer-sale-request-note{font-size:13px;background:#f8fafc;border-radius:9px;padding:10px;margin:9px 0}.customer-sale-review{display:grid;grid-template-columns:minmax(180px,.7fr) minmax(220px,1.3fr) auto;gap:9px;align-items:end;margin-top:11px}.customer-sale-review label{display:grid;gap:5px;font-size:11px;font-weight:900;color:#4b5563}.customer-sale-review select,.customer-sale-review textarea{width:100%;padding:9px;border:1px solid #d1d5db;border-radius:8px;font:inherit}.customer-sale-review button{white-space:nowrap}@media(max-width:640px){.customer-sale-review{grid-template-columns:1fr}.customer-sale-review button{width:100%}}
+.customer-sale-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;padding:10px 12px;margin:9px 0;border:1px solid #e5e7eb;border-radius:10px;background:#fafafa;font-size:12px;line-height:1.45}.customer-sale-docs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.customer-sale-docs button{font-size:12px;padding:8px 10px}.customer-sale-section-title{grid-column:1/-1;margin-top:3px;font-weight:900;color:#374151}.customer-sale-details span{overflow-wrap:anywhere}@media(max-width:640px){.customer-sale-details{grid-template-columns:1fr}.customer-sale-section-title{grid-column:auto}}
 .seller-list-item{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:10px}
 .seller-list-item>.info{width:100%;max-width:100%;overflow-wrap:anywhere}
 .seller-list-item .seller-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
@@ -120,7 +121,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <div class="card" style="margin-top:14px;border:1px solid #dbeafe;background:#f8fbff"><h3 style="margin-top:0">📢 Notificación general</h3><div class="small">Independiente de los productos. Al tocarla, el cliente irá directamente a tu WhatsApp con este mensaje ya preparado.</div><div class="grid" style="margin-top:10px"><div class="full"><label>Título</label><input id="generalPushTitle" maxlength="100" placeholder="🔥 ¡Promoción especial hoy!"></div><div class="full"><label>Mensaje de la notificación</label><input id="generalPushBody" maxlength="240" placeholder="Consultanos por nuestras promociones de hoy."></div><div class="full"><label>Mensaje predeterminado para WhatsApp</label><textarea id="generalPushWhatsAppMessage" maxlength="500" rows="3" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid #d1d5db;border-radius:9px;font:inherit;resize:vertical">Hola, quiero consultar por la promoción que recibí.</textarea><div class="small">Este texto aparecerá escrito en el chat; el cliente decide si lo envía.</div></div><div><label>Imagen opcional</label><input accept="image/*" id="generalPushImage" type="file"></div><div><label>WhatsApp de destino</label><input id="generalPushWhatsApp" inputmode="numeric" placeholder="5491123456789"></div></div><div class="actions"><button class="blue" id="sendGeneralPushButton" type="button">📤 Enviar notificación general</button></div><div class="small" id="generalPushStatus" style="margin-top:8px"></div></div>
 <div class="card" style="margin-top:14px;border:1px solid #dcfce7;background:#f8fff9"><h3 style="margin-top:0">💬 WhatsApp de Electro Variety</h3><div class="small">Número predeterminado para productos con “WhatsApp directo”.</div><div class="actions"><input id="defaultPushWhatsApp" inputmode="numeric" placeholder="5491123456789" style="flex:1"><button class="blue" id="savePushWhatsAppButton" type="button">💾 Guardar número</button></div><div class="small" id="pushWhatsAppStatus" style="margin-top:8px"></div></div><div class="card" style="margin-top:14px;border:1px solid #fef3c7;background:#fffdf5"><h3 style="margin-top:0">🛒 Al tocar cualquier producto del catálogo</h3><div class="small">Esta opción se aplica de una sola vez a <b>todos los productos</b> del catálogo de clientes. El botón “Consultar por WhatsApp” conserva el mismo comportamiento.</div><div class="actions" style="margin-top:10px"><select id="catalogProductClickWhatsAppMode" style="flex:1;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="choose">👤 Elegir contacto (predeterminado)</option><option value="direct">💬 Ir directamente al WhatsApp de Electro Variety</option></select><button class="blue" id="saveCatalogProductClickWhatsAppButton" type="button">💾 Aplicar a todo el catálogo</button></div><div class="small" id="catalogProductClickWhatsAppStatus" style="margin-top:8px"></div></div>
 <div class="actions"><a class="button-link dark" href="../clientes/" rel="noopener" target="_blank">👀 Abrir catálogo de clientes</a><a class="button-link blue" href="../ventas/" rel="noopener" target="_blank">🛍️ Abrir formulario de ventas</a></div>
-</div></section><section class="admin-panel" data-admin-panel="customer-sales" id="admin-panel-customer-sales"><div class="card"><h2>🛍️ Solicitudes de compra de clientes</h2><div class="small">Revisá los productos, planes de pago y datos de contacto. Estos pedidos no modifican ni reservan el stock del catálogo de vendedores.</div><div class="actions" style="margin-top:12px"><input id="customerSaleRequestsSearch" type="search" placeholder="🔎 Buscar por nombre, celular o referencia" style="flex:1;min-width:220px"><button class="blue" id="refreshCustomerSaleRequests" type="button">🔄 Actualizar</button></div><div class="small" id="customerSaleRequestsStatus" style="margin-top:8px"></div><div id="customerSaleRequestsList" style="margin-top:12px">Cargando solicitudes…</div></div></section><section class="admin-panel" data-admin-panel="delivery" id="admin-panel-delivery"><div class="card">
+</div></section><section class="admin-panel" data-admin-panel="customer-sales" id="admin-panel-customer-sales"><div class="card"><h2>🛍️ Solicitudes de compra de clientes</h2><div class="small">Revisá los datos personales, el domicilio, los comprobantes y los productos. Los documentos del DNI se guardan en un espacio privado y solo los administradores pueden abrirlos. Las solicitudes no modifican ni reservan stock.</div><div class="actions" style="margin-top:12px"><input id="customerSaleRequestsSearch" type="search" placeholder="🔎 Buscar por nombre, celular o referencia" style="flex:1;min-width:220px"><button class="blue" id="refreshCustomerSaleRequests" type="button">🔄 Actualizar</button></div><div class="small" id="customerSaleRequestsStatus" style="margin-top:8px"></div><div id="customerSaleRequestsList" style="margin-top:12px">Cargando solicitudes…</div></div></section><section class="admin-panel" data-admin-panel="delivery" id="admin-panel-delivery"><div class="card">
 <h2>📍 Consultas de cobertura</h2>
 <div class="small">Acá podés ver las consultas de ubicación realizadas desde el catálogo de clientes. Se muestran localidad, partido, zona, resultado y fecha. Las coordenadas son visibles solamente dentro del administrador.</div>
 <div class="actions" style="margin-top:12px">
@@ -874,7 +875,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     if (!box) return;
     const query = String($("customerSaleRequestsSearch")?.value || "").trim().toLocaleLowerCase("es");
     const rows = customerSaleRequests.filter(request =>
-      [request.full_name, request.phone, request.tracking_code].some(value => String(value || "").toLocaleLowerCase("es").includes(query))
+      [request.full_name, request.phone, request.alternative_phone, request.dni, request.tracking_code].some(value => String(value || "").toLocaleLowerCase("es").includes(query))
     );
     if (!rows.length) {
       box.innerHTML = `<div class="small">${customerSaleRequests.length ? "No hay solicitudes que coincidan con la búsqueda." : "Todavía no hay solicitudes de compra."}</div>`;
@@ -882,11 +883,22 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     }
     const statusNames = { pending: "Pendiente de contactar", contacted: "Contactado", converted: "Venta confirmada", cancelled: "Cancelada" };
     const money = value => `$${new Intl.NumberFormat("es-AR").format(Number(value) || 0)}`;
+    const yesNo = value => value ? "Sí" : "No";
+    const housingNames = { own: "Vivienda propia", rent_contract: "Alquilo por contrato", rent_verbal: "Alquilo de palabra" };
+    const serviceNames = { edesur: "Edesur", metrogas: "Metrogas", water: "Agua", other: "Otro", none_in_name: "Ninguno a su nombre" };
+    const incomeNames = { formal_job: "Trabajo en blanco", informal_job: "Trabajo en negro", self_employed: "Cuenta propia", business: "Comercio", allowance: "Asignación", retirement: "Jubilación", pension: "Pensión", cooperative: "Cooperativa", other: "Otros ingresos" };
     box.innerHTML = rows.map(request => {
       const items = Array.isArray(request.items) ? request.items : [];
       const itemMarkup = items.map(item => `<li><b>${esc(item.product_name || "Producto")}</b> × ${Number(item.quantity) || 0} · ${esc(item.frequency === "quincenal" ? "Quincenal" : "Mensual")}: ${Number(item.installment_count) || 0} cuotas de ${money(item.installment_amount)} · Total aprox. ${money(item.total_amount)}</li>`).join("");
       const createdAt = request.created_at ? new Date(request.created_at).toLocaleString("es-AR") : "—";
-      return `<article class="customer-sale-request-card"><div class="customer-sale-request-head"><b>Solicitud ${esc(request.tracking_code || String(request.id).slice(0, 8))}</b><span>${esc(statusNames[request.status] || request.status)}</span></div><div class="small">${esc(request.full_name)} · <a href="tel:${esc(request.phone)}">${esc(request.phone)}</a> · ${createdAt}</div>${request.locality || request.address ? `<div class="small">📍 ${esc([request.address, request.locality].filter(Boolean).join(", "))}</div>` : ""}<ul class="customer-sale-request-items">${itemMarkup}</ul>${request.notes ? `<div class="customer-sale-request-note"><b>Comentario del cliente:</b> ${esc(request.notes)}</div>` : ""}<div class="customer-sale-review"><label>Estado<select data-customer-sale-status="${esc(request.id)}"><option value="pending" ${request.status === "pending" ? "selected" : ""}>Pendiente de contactar</option><option value="contacted" ${request.status === "contacted" ? "selected" : ""}>Contactado</option><option value="converted" ${request.status === "converted" ? "selected" : ""}>Venta confirmada</option><option value="cancelled" ${request.status === "cancelled" ? "selected" : ""}>Cancelada</option></select></label><label>Nota interna<textarea data-customer-sale-note="${esc(request.id)}" maxlength="1000" rows="2" placeholder="Nota para el equipo">${esc(request.admin_note || "")}</textarea></label><button class="blue" type="button" data-save-customer-sale="${esc(request.id)}">💾 Guardar revisión</button></div></article>`;
+      const services = (Array.isArray(request.proof_services) ? request.proof_services : []).map(value => serviceNames[value] || value).join(", ") || "—";
+      const incomes = (Array.isArray(request.income_sources) ? request.income_sources : []).map(value => incomeNames[value] || value).join(", ") || "No indicado";
+      const documentButtons = [
+        ["dni_front_path", request.dni_front_path, "Ver frente del DNI"],
+        ["dni_back_path", request.dni_back_path, "Ver dorso del DNI"],
+      ].filter(([, path]) => path).map(([field, , label]) => `<button class="dark" type="button" data-customer-sale-document="${esc(field)}" data-sale-id="${esc(request.id)}">🔒 ${label}</button>`).join("");
+      const detailMarkup = `<div class="customer-sale-details"><b class="customer-sale-section-title">Datos personales</b><span><b>DNI:</b> ${esc(request.dni || "—")}</span><span><b>DNI actualizado:</b> ${yesNo(request.dni_updated)}</span><span><b>Teléfono alternativo:</b> ${esc(request.alternative_phone || "—")}</span><span><b>Vínculo:</b> ${esc(request.alternative_contact_relationship || "—")}</span><span><b>Recomendado:</b> ${yesNo(request.referred_by)}</span><span><b>Cliente de Electro Variety:</b> ${yesNo(request.is_electro_variety_customer)}</span><b class="customer-sale-section-title">Domicilio y comprobantes</b><span><b>Calle y altura:</b> ${esc([request.street, request.street_number].filter(Boolean).join(" ") || "—")}</span><span><b>Entre calles:</b> ${esc(request.between_streets || "—")}</span><span><b>Vivienda:</b> ${esc(housingNames[request.housing_situation] || "—")}</span><span><b>Comprobantes:</b> ${esc(services)}</span><b class="customer-sale-section-title">Situación e ingresos</b><span><b>Deudas actuales:</b> ${yesNo(request.has_debts)}</span><span><b>Trabajo e ingresos:</b> ${esc(incomes)}</span></div>`;
+      return `<article class="customer-sale-request-card"><div class="customer-sale-request-head"><b>Solicitud ${esc(request.tracking_code || String(request.id).slice(0, 8))}</b><span>${esc(statusNames[request.status] || request.status)}</span></div><div class="small">${esc(request.full_name)} · <a href="tel:${esc(request.phone)}">${esc(request.phone)}</a> · ${createdAt}</div><div class="small">📍 ${esc([request.address, request.locality].filter(Boolean).join(", ") || "Domicilio sin indicar")}</div>${detailMarkup}<div class="customer-sale-docs">${documentButtons || '<span class="small">No hay documentos adjuntos.</span>'}</div><ul class="customer-sale-request-items">${itemMarkup}</ul>${request.notes ? `<div class="customer-sale-request-note"><b>Comentario del cliente:</b> ${esc(request.notes)}</div>` : ""}<div class="customer-sale-review"><label>Estado<select data-customer-sale-status="${esc(request.id)}"><option value="pending" ${request.status === "pending" ? "selected" : ""}>Pendiente de contactar</option><option value="contacted" ${request.status === "contacted" ? "selected" : ""}>Contactado</option><option value="converted" ${request.status === "converted" ? "selected" : ""}>Venta confirmada</option><option value="cancelled" ${request.status === "cancelled" ? "selected" : ""}>Cancelada</option></select></label><label>Nota interna<textarea data-customer-sale-note="${esc(request.id)}" maxlength="1000" rows="2" placeholder="Nota para el equipo">${esc(request.admin_note || "")}</textarea></label><button class="blue" type="button" data-save-customer-sale="${esc(request.id)}">💾 Guardar revisión</button></div></article>`;
     }).join("");
   }
   async function loadCustomerSaleRequests() {
@@ -895,7 +907,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     if (!box || currentAccessRole !== "admin") return;
     if (status) status.textContent = "Cargando solicitudes…";
     const { data, error } = await db.from("customer_sale_requests")
-      .select("id,tracking_code,full_name,phone,locality,address,notes,items,status,admin_note,created_at")
+      .select("id,tracking_code,full_name,dni,dni_updated,phone,alternative_phone,alternative_contact_relationship,referred_by,is_electro_variety_customer,locality,address,street,street_number,between_streets,housing_situation,proof_services,has_debts,income_sources,dni_front_path,dni_back_path,notes,items,status,admin_note,created_at")
       .order("created_at", { ascending: false }).limit(500);
     if (error) {
       customerSaleRequests = [];
@@ -906,6 +918,26 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     customerSaleRequests = data || [];
     renderCustomerSaleRequests();
     if (status) status.textContent = `${customerSaleRequests.length} solicitud(es) cargadas.`;
+  }
+  async function openCustomerSaleDocument(button) {
+    if (currentAccessRole !== "admin") return;
+    const request = customerSaleRequests.find(row => row.id === button.dataset.saleId);
+    const path = request?.[button.dataset.customerSaleDocument];
+    if (!path || !String(path).startsWith("dni/")) return;
+    const documentWindow = window.open("about:blank", "_blank");
+    if (!documentWindow) { alert("Permití ventanas emergentes para abrir el DNI en una pestaña temporal."); return; }
+    documentWindow.opener = null;
+    button.disabled = true;
+    try {
+      const { data, error } = await db.storage.from("customer-sale-private").createSignedUrl(path, 300);
+      if (error || !data?.signedUrl) throw error || new Error("No se pudo generar el enlace privado.");
+      documentWindow.location.href = data.signedUrl;
+    } catch (error) {
+      if (documentWindow) documentWindow.close();
+      alert("No se pudo abrir el documento: " + (error.message || error));
+    } finally {
+      button.disabled = false;
+    }
   }
   async function saveCustomerSaleReview(button) {
     if (currentAccessRole !== "admin") return;
@@ -2091,6 +2123,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   $("customerSaleRequestsList").addEventListener("click",event=>{
     const button=event.target.closest("[data-save-customer-sale]");
     if(button)saveCustomerSaleReview(button);
+    const documentButton=event.target.closest("[data-customer-sale-document]");
+    if(documentButton)openCustomerSaleDocument(documentButton);
   });
   $("supervisorManagerList").addEventListener("click",event=>{
     const saveButton=event.target.closest("[data-save-supervisor]");

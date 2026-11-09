@@ -32,6 +32,25 @@
 .summary{background:#fbfdfc;border-color:#e1e9e3}
 .submit{background:#287fbd;border-radius:10px;box-shadow:0 5px 12px #287fbd1c}
 @media(max-width:680px){.panel:not(#pageStatus){padding:17px 15px}.panel h2{margin-bottom:11px}.panel>.hint{margin:-7px 0 9px 0}.field-grid{row-gap:10px}.field label{min-height:22px}.selected-controls label{min-width:100%}.selected-controls input,.selected-controls select{max-width:none}}
+.field select{width:100%;height:46px;padding:10px 12px;border:1px solid #dce5df;border-radius:10px;background:#fbfdfc;color:#172235;font:inherit;font-size:14px;outline:none}
+.field select:focus{border-color:#77a9cc;box-shadow:0 0 0 3px #dceefa}
+.choice-block{min-width:0}.choice-block.full,.file-grid.full,.geo-note.full{grid-column:1/-1}
+.question{text-align:center;color:#4e5968;font-size:12px;font-weight:750;line-height:1.35;margin:2px 0 11px}
+.choice-grid{display:flex;gap:9px;justify-content:flex-start;flex-wrap:wrap}
+.choice-option{display:flex;align-items:center;gap:9px;min-width:60px;min-height:58px;padding:12px;border:1px solid #e0e9e3;border-radius:10px;background:#fff;color:#5f6c66;font-size:12px;cursor:pointer}
+.choice-option:has(input[type="radio"]){justify-content:center}
+.choice-option:has(input:checked){border-color:#9bc7e5;background:#f2f9ff;color:#305e7b}
+.choice-option input{width:15px;height:15px;margin:0;accent-color:#2780bd;flex:0 0 auto}
+.stacked-choices{display:grid;gap:8px}.stacked-choices .choice-option{min-height:52px}
+.check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.check-grid .choice-option{min-height:47px}
+.file-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.file-drop{position:relative;display:flex;align-items:center;justify-content:center;gap:11px;min-height:82px;padding:10px;border:1px dashed #bed4c4;border-radius:11px;background:#fbfdfc;text-align:center;color:#64736a;cursor:pointer;overflow:hidden}
+.file-drop>span:last-child{display:grid;gap:4px}.file-drop b{font-size:11px;font-weight:800}.file-drop small{font-size:10px;color:#83918a}.file-plus{width:32px;height:32px;display:grid;place-items:center;border-radius:9px;background:#e4f2ff;color:#1874bd;font-size:22px;flex:0 0 auto}
+.file-input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.file-drop:focus-within{outline:3px solid #dceefa;border-color:#77a9cc}
+.geo-note{text-align:center;color:#8190a0;font-size:11px;line-height:1.5;margin:0;padding:1px 0 3px}.geo-note a{color:#287fbd}
+@media(max-width:680px){.choice-block.full,.file-grid.full,.geo-note.full{grid-column:auto}.file-grid,.check-grid{grid-template-columns:1fr}.file-drop{min-height:76px}.choice-option{min-height:52px}}
 </style>
 </head>
 <body>
@@ -41,23 +60,58 @@
   <div id="pageStatus" class="panel hint">Cargando productos…</div>
   <form id="saleForm" class="hidden" novalidate>
     <section class="panel">
-      <h2><span class="step-number">01</span>Elegí productos</h2><p class="hint">Podés seleccionar hasta 10 productos y solicitar hasta 10 unidades de cada uno. Los precios y planes se verifican al enviar la solicitud.</p>
+      <h2><span class="step-number">01</span>Datos personales</h2>
+      <div class="field-grid">
+        <div class="field"><label for="fullName">Nombre y apellido *</label><input id="fullName" name="full_name" maxlength="120" autocomplete="name" required></div>
+        <div class="field"><label for="dni">DNI *</label><input id="dni" name="dni" maxlength="14" autocomplete="off" placeholder="Ej.: 12.345.678" required></div>
+        <div class="field"><label for="dniUpdated">¿Tenés el DNI actualizado? *</label><select id="dniUpdated" name="dni_updated" required><option value="">Seleccioná una opción</option><option value="yes">Sí</option><option value="no">No</option></select></div>
+        <div class="field"><label for="phone">Teléfono personal *</label><input id="phone" name="phone" type="tel" maxlength="30" autocomplete="tel" placeholder="Ej.: 11 2345 6789" required></div>
+        <div class="field"><label for="alternativePhone">Teléfono alternativo *</label><input id="alternativePhone" name="alternative_phone" type="tel" maxlength="30" autocomplete="tel" required></div>
+        <div class="field"><label for="alternativeRelationship">Vínculo con el contacto alternativo *</label><input id="alternativeRelationship" name="alternative_contact_relationship" maxlength="100" required></div>
+        <div class="choice-block full"><div class="question">¿Venís recomendado por alguien? *</div><div class="choice-grid"><label class="choice-option"><input type="radio" name="referred_by" value="yes" required><span>Sí</span></label><label class="choice-option"><input type="radio" name="referred_by" value="no" required><span>No</span></label></div></div>
+        <div class="choice-block full"><div class="question">¿Sos cliente de Electro Variety? *</div><div class="choice-grid"><label class="choice-option"><input type="radio" name="is_electro_variety_customer" value="yes" required><span>Sí</span></label><label class="choice-option"><input type="radio" name="is_electro_variety_customer" value="no" required><span>No</span></label></div></div>
+        <div class="file-grid full">
+          <label class="file-drop" for="dniFront"><input class="file-input" id="dniFront" name="dni_front" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><span class="file-plus">＋</span><span><b>Frente de tu DNI *</b><small data-file-name="dniFront">Elegí un archivo de tu dispositivo</small><small>Máximo 5 MB por archivo.</small></span></label>
+          <label class="file-drop" for="dniBack"><input class="file-input" id="dniBack" name="dni_back" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><span class="file-plus">＋</span><span><b>Dorso de tu DNI *</b><small data-file-name="dniBack">Elegí un archivo de tu dispositivo</small><small>Máximo 5 MB por archivo.</small></span></label>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2><span class="step-number">02</span>Domicilio</h2>
+      <div class="field-grid">
+        <div class="field"><label for="locality">Localidad *</label><input id="locality" name="locality" list="georefLocalities" maxlength="120" autocomplete="address-level2" placeholder="Empezá a escribir tu localidad" required><datalist id="georefLocalities"></datalist></div>
+        <div class="field"><label for="street">Calle *</label><input id="street" name="street" list="georefStreets" maxlength="120" autocomplete="address-line1" placeholder="Primero elegí la localidad" required disabled><datalist id="georefStreets"></datalist></div>
+        <div class="field"><label for="streetNumber">Altura del domicilio *</label><input id="streetNumber" name="street_number" maxlength="30" inputmode="numeric" placeholder="Ej.: 1234" required></div>
+        <div class="field"><label for="betweenStreets">Entre calles *</label><input id="betweenStreets" name="between_streets" maxlength="120" required></div>
+        <p class="geo-note full">Sugerencias de ubicación por <a href="https://www.argentina.gob.ar/georef" target="_blank" rel="noopener">Servicio Georef</a>. Podés ingresar los datos manualmente si no aparece una sugerencia.</p>
+        <div class="choice-block full"><div class="question">¿Cuál es tu situación de vivienda? *</div><div class="stacked-choices"><label class="choice-option"><input type="radio" name="housing_situation" value="own" required><span>Vivienda propia</span></label><label class="choice-option"><input type="radio" name="housing_situation" value="rent_contract" required><span>Alquilo por contrato</span></label><label class="choice-option"><input type="radio" name="housing_situation" value="rent_verbal" required><span>Alquilo de palabra</span></label></div></div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2><span class="step-number">03</span>Comprobante de domicilio</h2><p class="hint">Seleccioná los servicios que tengas disponibles.</p>
+      <div class="choice-block"><div class="question">¿Qué servicio o comprobante tenés? *</div><div class="check-grid">
+        <label class="choice-option"><input type="checkbox" name="proof_services" value="edesur"><span>Edesur</span></label><label class="choice-option"><input type="checkbox" name="proof_services" value="metrogas"><span>Metrogas</span></label><label class="choice-option"><input type="checkbox" name="proof_services" value="water"><span>Agua</span></label><label class="choice-option"><input type="checkbox" name="proof_services" value="other"><span>Otro</span></label><label class="choice-option"><input type="checkbox" name="proof_services" value="none_in_name"><span>Ninguno a mi nombre</span></label>
+      </div><div id="proofServicesStatus" class="status" role="status"></div></div>
+    </section>
+    <section class="panel">
+      <h2><span class="step-number">04</span>Situación financiera</h2>
+      <div class="choice-block"><div class="question">¿Tenés deudas actualmente? *</div><div class="choice-grid"><label class="choice-option"><input type="radio" name="has_debts" value="no" required><span>No</span></label><label class="choice-option"><input type="radio" name="has_debts" value="yes" required><span>Sí</span></label></div></div>
+    </section>
+    <section class="panel">
+      <h2><span class="step-number">05</span>Trabajo e ingresos</h2><p class="hint">Podés seleccionar varias fuentes de ingresos.</p>
+      <div class="check-grid">
+        <label class="choice-option"><input type="checkbox" name="income_sources" value="formal_job"><span>Trabajo en blanco</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="informal_job"><span>Trabajo en negro</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="self_employed"><span>Trabajo por cuenta propia</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="business"><span>Tengo un comercio</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="allowance"><span>Cobro una asignación</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="retirement"><span>Cobro una jubilación</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="pension"><span>Cobro una pensión</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="cooperative"><span>Cobro de una cooperativa</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="other"><span>Otros ingresos</span></label>
+      </div>
+    </section>
+    <section class="panel">
+      <h2><span class="step-number">06</span>Elegí los productos</h2><p class="hint">Podés seleccionar hasta 10 productos y solicitar hasta 10 unidades de cada uno. Los precios y planes se verifican al enviar la solicitud.</p>
       <input id="productSearch" class="search" type="search" placeholder="🔎 Buscar por nombre o categoría" aria-label="Buscar producto">
       <div id="productList" class="product-list"></div>
       <div id="selectedProducts" class="selected"></div>
       <div id="selectionStatus" class="status" role="status"></div>
       <div class="summary"><b>Productos seleccionados</b><span id="selectedCount">0</span></div>
-    </section>
-    <section class="panel">
-      <h2><span class="step-number">02</span>Tus datos</h2><p class="hint">Usaremos estos datos únicamente para responder esta solicitud y coordinar la compra.</p>
-      <div class="field-grid">
-        <div class="field"><label for="fullName">Nombre y apellido *</label><input id="fullName" name="full_name" maxlength="120" autocomplete="name" required></div>
-        <div class="field"><label for="phone">Celular / WhatsApp *</label><input id="phone" name="phone" type="tel" maxlength="30" autocomplete="tel" placeholder="Ej.: 11 2345 6789" required></div>
-        <div class="field"><label for="locality">Localidad</label><input id="locality" name="locality" maxlength="120" autocomplete="address-level2"></div>
-        <div class="field"><label for="address">Dirección (opcional)</label><input id="address" name="address" maxlength="200" autocomplete="street-address"></div>
-        <div class="field full"><label for="notes">Comentario para el equipo (opcional)</label><textarea id="notes" name="notes" maxlength="1000" rows="3" placeholder="Por ejemplo, horario para contactarte o una consulta sobre la entrega."></textarea></div>
-      </div>
-      <label class="privacy"><input id="privacyAccepted" type="checkbox" required><span>Acepto que Electro Variety use estos datos para responder esta solicitud y contactarme sobre la compra.</span></label>
+      <div class="field" style="margin-top:15px"><label for="notes">Comentario para el equipo (opcional)</label><textarea id="notes" name="notes" maxlength="1000" rows="3" placeholder="Por ejemplo, horario para contactarte o una consulta sobre el producto."></textarea></div>
+      <label class="privacy"><input id="privacyAccepted" type="checkbox" required><span>Acepto que Electro Variety trate estos datos y documentos para evaluar esta solicitud de compra y contactarme sobre ella. Los archivos del DNI solo estarán disponibles para administradores.</span></label>
       <div id="submitStatus" class="status" role="status" aria-live="polite"></div>
       <button id="submitButton" class="button submit" type="submit">Enviar solicitud de compra</button>
     </section>
@@ -116,6 +170,53 @@
       $("pageStatus").classList.add("error");
     }
   }
+  document.querySelectorAll('input[name="proof_services"]').forEach(input=>input.addEventListener("change",()=>{
+    const boxes=[...document.querySelectorAll('input[name="proof_services"]')];
+    if(input.value==="none_in_name"&&input.checked)boxes.filter(box=>box!==input).forEach(box=>box.checked=false);
+    else if(input.checked){const none=boxes.find(box=>box.value==="none_in_name");if(none)none.checked=false;}
+    $("proofServicesStatus").textContent="";
+  }));
+  ["dniFront","dniBack"].forEach(id=>$(id).addEventListener("change",event=>{
+    const file=event.target.files[0],label=document.querySelector(`[data-file-name="${id}"]`);
+    if(file&&file.size>5*1024*1024){event.target.setCustomValidity("El archivo no puede superar 5 MB.");label.textContent="El archivo supera el máximo de 5 MB.";}
+    else{event.target.setCustomValidity("");if(label)label.textContent=file?`${file.name} · ${(file.size/1024/1024).toFixed(2)} MB`:"Elegí un archivo de tu dispositivo";}
+  }));
+  $("dni").addEventListener("input",()=>$("dni").setCustomValidity(""));
+  const localityOptions=new Map();let localityTimer=0,streetTimer=0,selectedCensusId="";
+  const georef=(resource,params)=>fetch(`https://apis.datos.gob.ar/georef/api/${resource}?${new URLSearchParams(params)}`).then(response=>{if(!response.ok)throw new Error("Georef no disponible");return response.json();});
+  $("locality").addEventListener("input",()=>{
+    selectedCensusId="";$("street").disabled=true;$("street").placeholder="Primero elegí la localidad";$("street").value="";$("georefStreets").replaceChildren();
+    clearTimeout(localityTimer);const query=$("locality").value.trim();
+    if(query.length<3){$("georefLocalities").replaceChildren();localityOptions.clear();return;}
+    localityTimer=setTimeout(async()=>{
+      try{
+        const result=await georef("localidades",{nombre:query,max:"12",campos:"estandar"});
+        localityOptions.clear();
+        $("georefLocalities").replaceChildren(...(result.localidades||[]).map(place=>{
+          const label=[place.nombre,place.departamento?.nombre,place.provincia?.nombre].filter(Boolean).join(", ");
+          localityOptions.set(label,place.localidad_censal?.id||"");
+          const option=document.createElement("option");option.value=label;return option;
+        }));
+      }catch(_){localityOptions.clear();}
+    },250);
+  });
+  $("locality").addEventListener("change",()=>{
+    selectedCensusId=localityOptions.get($("locality").value.trim())||"";
+    $("street").disabled=!$("locality").value.trim();$("street").placeholder=selectedCensusId?"Empezá a escribir tu calle":"Ingresá tu calle manualmente";
+    if(selectedCensusId&&$("street").value.trim().length>=2)loadGeoStreets($("street").value.trim());
+  });
+  async function loadGeoStreets(query){
+    if(!selectedCensusId||query.length<2)return;
+    try{
+      const result=await georef("calles",{nombre:query,localidad_censal:selectedCensusId,max:"15",campos:"estandar"});
+      const names=[...new Set((result.calles||[]).map(street=>street.nombre).filter(Boolean))];
+      $("georefStreets").replaceChildren(...names.map(name=>{const option=document.createElement("option");option.value=name;return option;}));
+    }catch(_){$("georefStreets").replaceChildren();}
+  }
+  $("street").addEventListener("input",()=>{
+    clearTimeout(streetTimer);const query=$("street").value.trim();
+    streetTimer=setTimeout(()=>loadGeoStreets(query),250);
+  });
   $("productSearch").addEventListener("input",renderProducts);
   $("productList").addEventListener("click",event=>{
     const button=event.target.closest("[data-add-product]");if(!button)return;
@@ -146,18 +247,46 @@
     if(!selected.size){status.classList.add("error");status.textContent="Elegí al menos un producto.";return;}
     const submit=$("submitButton");submit.disabled=true;submit.textContent="Enviando solicitud…";
     try{
-      const payload={
+      const proofServices=[...document.querySelectorAll('input[name="proof_services"]:checked')].map(input=>input.value);
+      if(!proofServices.length||(proofServices.includes("none_in_name")&&proofServices.length>1)){
+        status.classList.add("error");status.textContent="Elegí al menos un comprobante. Si no tenés ninguno a tu nombre, marcá solo esa opción.";return;
+      }
+      const dni=$("dni").value.trim().replace(/[.\s-]/g,"").toUpperCase();
+      if(!/^[A-Z]?\d{7,8}$/.test(dni)){$("dni").setCustomValidity("Ingresá un DNI válido de 7 u 8 números, con letra inicial opcional.");$("dni").reportValidity();return;}
+      $("dni").setCustomValidity("");
+      const frontFile=$("dniFront").files[0],backFile=$("dniBack").files[0];
+      if(!frontFile||!backFile){status.classList.add("error");status.textContent="Adjuntá el frente y el dorso de tu DNI.";return;}
+      if(frontFile.size>5*1024*1024||backFile.size>5*1024*1024){status.classList.add("error");status.textContent="Cada archivo del DNI puede pesar hasta 5 MB.";return;}
+      const values={
         full_name:$("fullName").value,
+        dni,
+        dni_updated:$("dniUpdated").value,
         phone:$("phone").value,
+        alternative_phone:$("alternativePhone").value,
+        alternative_contact_relationship:$("alternativeRelationship").value,
+        referred_by:document.querySelector('input[name="referred_by"]:checked')?.value||"",
+        is_electro_variety_customer:document.querySelector('input[name="is_electro_variety_customer"]:checked')?.value||"",
         locality:$("locality").value,
-        address:$("address").value,
+        street:$("street").value,
+        street_number:$("streetNumber").value,
+        between_streets:$("betweenStreets").value,
+        housing_situation:document.querySelector('input[name="housing_situation"]:checked')?.value||"",
+        proof_services:proofServices,
+        has_debts:document.querySelector('input[name="has_debts"]:checked')?.value||"",
+        income_sources:[...document.querySelectorAll('input[name="income_sources"]:checked')].map(input=>input.value),
         notes:$("notes").value,
         privacy_accepted:$("privacyAccepted").checked,
         website:"",
         items:[...selected.values()].map(item=>({product_id:Number(item.product.id),quantity:item.quantity,frequency:item.frequency}))
       };
+      const formData=new FormData();
+      for(const [key,value] of Object.entries(values))formData.append(key,Array.isArray(value)?JSON.stringify(value):String(value));
+      formData.delete("proof_services");formData.delete("income_sources");
+      values.proof_services.forEach(value=>formData.append("proof_services",value));
+      values.income_sources.forEach(value=>formData.append("income_sources",value));
+      formData.set("dni_front",frontFile);formData.set("dni_back",backFile);
       const response=await fetch(`${EV_CONFIG.SUPABASE_URL}/functions/v1/submit-customer-sale-request`,{
-        method:"POST",headers:{"Content-Type":"application/json","apikey":EV_CONFIG.SUPABASE_ANON_KEY},body:JSON.stringify(payload)
+        method:"POST",headers:{"apikey":EV_CONFIG.SUPABASE_ANON_KEY},body:formData
       });
       const result=await response.json().catch(()=>({}));
       if(!response.ok||result.success!==true)throw new Error(result.error||"No pudimos enviar la solicitud.");
@@ -165,6 +294,7 @@
       status.className="status success";
       status.innerHTML=`<b>✅ Solicitud enviada.</b><br>El equipo revisará los productos y te contactará para confirmar la compra. Referencia: <b>${esc(ref)}</b>. Guardá este código por si necesitás mencionarlo al comunicarte con nosotros.`;
       selected.clear();$("saleForm").reset();renderSelected();
+      document.querySelectorAll("[data-file-name]").forEach(label=>label.textContent="Elegí un archivo de tu dispositivo");
       status.scrollIntoView({behavior:"smooth",block:"center"});
     }catch(error){
       console.error("Solicitud de compra",error);status.className="status error";status.textContent=error.message||"No se pudo enviar la solicitud.";
