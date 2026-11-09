@@ -18,6 +18,20 @@
   };
   const label = labels[app] || "📲 Instalar Electro Variety";
 
+  const isInstalled = () => window.matchMedia?.("(display-mode: standalone)").matches || navigator.standalone === true;
+
+  async function install() {
+    if (isInstalled()) return { outcome: "installed" };
+    if (!deferredPrompt) return { outcome: "manual" };
+    const promptEvent = deferredPrompt;
+    deferredPrompt = null;
+    try {
+      promptEvent.prompt();
+      return await promptEvent.userChoice;
+    }
+    catch (_) { return { outcome: "manual" }; }
+  }
+
   function makeButton() {
     if (document.getElementById("evInstallPwa")) return;
     const b = document.createElement("button");
@@ -45,8 +59,11 @@
   window.addEventListener("beforeinstallprompt", e => {
     e.preventDefault();
     deferredPrompt = e;
-    const b = makeButton();
-    if (b) b.style.display = "block";
+    window.dispatchEvent(new CustomEvent("ev-pwa-install-available"));
+    if (app !== "clientes") {
+      const b = makeButton();
+      if (b) b.style.display = "block";
+    }
   });
 
   window.addEventListener("appinstalled", () => {
@@ -55,5 +72,5 @@
     deferredPrompt = null;
   });
 
-  window.ElectroVarietyPWA = { app, label };
+  window.ElectroVarietyPWA = { app, label, install, isInstalled };
 })();

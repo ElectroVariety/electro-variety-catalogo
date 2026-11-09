@@ -90,6 +90,8 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
 .delivery-cta{background:#fff;border:1px solid #dbeafe;border-radius:18px;padding:16px;margin:0 0 16px;box-shadow:0 4px 14px rgba(0,0,0,.05)}
 .delivery-cta h2{margin:0 0 7px;font-size:19px;font-weight:1000}.delivery-cta p{margin:0 0 12px;color:#6b7280;font-size:13px;line-height:1.4}
 .delivery-btn{width:100%;border:0;border-radius:999px;background:#2563eb;color:#fff;padding:13px 16px;font-size:14px;font-weight:1000;cursor:pointer}
+.welcome-promo{position:relative;overflow:hidden;background:linear-gradient(125deg,#111827 0%,#1e3a8a 62%,#2563eb 100%);color:#fff;border-radius:22px;padding:22px;margin:0 0 16px;box-shadow:0 12px 28px rgba(30,58,138,.22)}.welcome-promo:before{content:"";position:absolute;width:210px;height:210px;border-radius:50%;background:rgba(255,255,255,.07);right:-70px;top:-105px}.welcome-promo-head,.welcome-promo-grid{position:relative;z-index:1}.welcome-promo-badge{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.1);border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;letter-spacing:.4px}.welcome-promo h2{font-size:23px;line-height:1.12;margin:12px 0 7px}.welcome-promo-intro{max-width:700px;margin:0;color:#e5e7eb;font-size:14px;line-height:1.45}.welcome-promo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:11px;margin-top:17px}.promo-action{min-width:0;background:#fff;color:#111827;border-radius:16px;padding:15px}.promo-action h3{font-size:16px;margin:0 0 6px}.promo-action p{font-size:12px;line-height:1.4;color:#5b6472;margin:0 0 11px}.promo-action button{width:100%;border:0;border-radius:11px;padding:12px 10px;font-size:13px;font-weight:1000;cursor:pointer}.promo-install-button{background:#16a34a;color:#fff}.promo-push-button{background:#2563eb;color:#fff}.promo-help{font-size:12px;line-height:1.45;color:#374151;background:#f3f4f6;border-radius:10px;padding:10px;margin:10px 0 0}.promo-help[hidden]{display:none!important}.promo-push-copy{font-size:12px;line-height:1.4;color:#5b6472;margin:0 0 11px}.promo-push-copy b{display:block;color:#111827;font-size:16px;margin-bottom:6px}
+@media(max-width:620px){.welcome-promo{padding:18px}.welcome-promo h2{font-size:21px}.welcome-promo-grid{grid-template-columns:1fr;gap:9px}.promo-action{padding:13px}}
 .delivery-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:100;display:none;align-items:center;justify-content:center;padding:12px}
 .delivery-modal{width:100%;max-width:620px;max-height:92vh;overflow:auto;background:#fff;border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.35);padding:16px}
 .delivery-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.delivery-head h2{margin:0;font-size:20px}.delivery-close{border:0;background:#eef0f3;border-radius:50%;width:38px;height:38px;font-size:24px;cursor:pointer}
@@ -106,12 +108,26 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
 <main class="wrap">
 <section id="productDetail" class="detail-wrap" style="display:none"></section>
 <div id="catalogContent">
-<div id="pushNotice" style="display:none;margin:0 0 12px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:13px 14px;box-shadow:0 4px 14px rgba(0,0,0,.05)">
-  <div style="display:flex;align-items:center;gap:10px">
-    <div style="font-size:24px">🔔</div><div style="flex:1"><b>Recibí novedades de Electro Variety</b><div class="small">Te avisaremos cuando haya nuevos ingresos, tendencias o próximos productos.</div></div>
-    <button id="enablePush" type="button" style="border:0;border-radius:999px;background:#111827;color:#fff;padding:10px 13px;font-weight:900">Activar</button>
+<section class="welcome-promo" aria-labelledby="welcomePromoTitle">
+  <div class="welcome-promo-head">
+    <span class="welcome-promo-badge">🚀 MÁS FÁCIL DESDE TU CELULAR</span>
+    <h2 id="welcomePromoTitle">Llevá Electro Variety a tu pantalla de inicio</h2>
+    <p class="welcome-promo-intro">Instalá el catálogo para abrirlo con un toque y, si querés, activá las notificaciones para enterarte de nuevos ingresos, tendencias y próximos productos.</p>
   </div>
-</div>
+  <div class="welcome-promo-grid">
+    <div id="installPromo" class="promo-action">
+      <h3>📲 Instalá el catálogo</h3>
+      <p>Agregalo a la pantalla de inicio y encontralo como una aplicación cuando lo necesites.</p>
+      <button id="installCatalog" class="promo-install-button" type="button">Instalar en pantalla de inicio</button>
+      <p id="installHelp" class="promo-help" hidden>Si no aparece la instalación automática: en Android, abrí el menú ⋮ y elegí «Instalar aplicación» o «Agregar a pantalla principal». En iPhone, tocá Compartir en Safari y elegí «Agregar a pantalla de inicio». En computadora, buscá «Instalar» en el menú del navegador.</p>
+    </div>
+    <div id="pushNotice" class="promo-action" style="display:none">
+      <div class="promo-push-copy"><b>🔔 Recibí las novedades</b>Activá los avisos de nuevos ingresos, tendencias y próximos productos. Podés cambiar este permiso desde tu dispositivo.</div>
+      <button id="enablePush" class="promo-push-button" type="button">Permitir notificaciones</button>
+      <p id="pushHelp" class="promo-help" hidden></p>
+    </div>
+  </div>
+</section>
   <section class="delivery-cta">
     <h2>📍 ¿Llegamos a tu domicilio?</h2>
     <p>Usá tu ubicación para comprobar si hacemos entregas en tu zona. Al continuar, autorizás guardar la ubicación de esta consulta.</p>
@@ -656,16 +672,21 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     const notice=document.getElementById("pushNotice");
     const btn=document.getElementById("enablePush");
     if(!notice||!btn) return;
-    if(!window.isSecureContext || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return;
-
-    const ROOT="/electro-variety-catalogo/";
-    const SW_URL="/electro-variety-catalogo/clientes/sw.js";
-    const SW_SCOPE="/electro-variety-catalogo/clientes/";
-
+    const help=document.getElementById("pushHelp");
+    const showHelp=text=>{if(help){help.textContent=text;help.hidden=false;}};
     const showNotice=(show,label)=>{
       notice.style.display=show?"block":"none";
       if(label) btn.textContent=label;
     };
+    if(!window.isSecureContext || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)){
+      showNotice(true,"Ver cómo activar avisos");
+      btn.onclick=()=>showHelp("Este navegador no permite notificaciones web. Probá con un navegador actualizado; en iPhone, primero agregá el catálogo a la pantalla de inicio y abrilo desde su ícono.");
+      return;
+    }
+
+    const ROOT="/electro-variety-catalogo/";
+    const SW_URL="/electro-variety-catalogo/clientes/sw.js";
+    const SW_SCOPE="/electro-variety-catalogo/clientes/";
 
     try{
       // Only remove the obsolete root registration. Never remove the current
@@ -691,7 +712,8 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
         const permission=Notification.permission;
 
         if(permission==="denied"){
-          showNotice(false);
+          showNotice(true,"Cómo activarlas");
+          showHelp("El navegador ya tiene bloqueado este permiso. Abrí los ajustes del sitio desde el ícono junto a la dirección web, entrá en Notificaciones y seleccioná Permitir. Después volvé al catálogo.");
           return false;
         }
 
@@ -717,13 +739,22 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
       await sync();
 
       btn.onclick=async()=>{
+        if(Notification.permission==="denied"){
+          showHelp("Abrí los ajustes del sitio desde el ícono junto a la dirección web, entrá en Notificaciones y seleccioná Permitir. Después volvé al catálogo.");
+          return;
+        }
         btn.disabled=true;
         btn.textContent="Activando…";
         try{
           if(Notification.permission!=="granted"){
             const permission=await Notification.requestPermission();
             if(permission!=="granted"){
-              showNotice(false);
+              if(permission==="denied"){
+                showNotice(true,"Cómo activarlas");
+                showHelp("El navegador bloqueó este permiso. Abrí los ajustes del sitio desde el ícono junto a la dirección web, entrá en Notificaciones y seleccioná Permitir. Después volvé al catálogo.");
+              }else{
+                showNotice(true,"Permitir notificaciones");
+              }
               return;
             }
           }
@@ -832,6 +863,28 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
   $("closeCart").addEventListener("click",closeCart);
   $("shareCart").addEventListener("click",shareCartByWhatsApp);
   $("cartBackdrop").addEventListener("click",e=>{if(e.target.id==="cartBackdrop")closeCart();});
+  const installButton=$("installCatalog");
+  const installHelp=$("installHelp");
+  const isStandalone=()=>window.matchMedia?.("(display-mode: standalone)").matches||navigator.standalone===true;
+  const updateInstallCard=()=>{
+    if(isStandalone()){
+      $("installPromo").style.display="none";
+      return;
+    }
+    $("installPromo").style.display="block";
+  };
+  installButton.addEventListener("click",async()=>{
+    const result=await window.ElectroVarietyPWA?.install?.();
+    if(result?.outcome==="accepted"){
+      installHelp.hidden=true;
+      installButton.textContent="Instalando…";
+      return;
+    }
+    if(result?.outcome!=="dismissed") installHelp.hidden=false;
+  });
+  window.addEventListener("ev-pwa-install-available",()=>{installButton.textContent="📲 Instalar ahora";});
+  window.addEventListener("appinstalled",()=>{ $("installPromo").style.display="none"; });
+  updateInstallCard();
   updateCartBar();
   window.addEventListener("popstate",renderProductDetail);
   load();
