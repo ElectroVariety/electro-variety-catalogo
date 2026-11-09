@@ -94,7 +94,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
 .delivery-modal{width:100%;max-width:620px;max-height:92vh;overflow:auto;background:#fff;border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.35);padding:16px}
 .delivery-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.delivery-head h2{margin:0;font-size:20px}.delivery-close{border:0;background:#eef0f3;border-radius:50%;width:38px;height:38px;font-size:24px;cursor:pointer}
 #deliveryMap{height:330px;border-radius:16px;overflow:hidden;margin-top:12px;background:#e5e7eb}.delivery-status{margin-top:12px;border-radius:12px;padding:11px 12px;font-size:13px;line-height:1.4;background:#f8fafc;color:#374151}
-.delivery-result{margin-top:12px;border-radius:16px;padding:15px;text-align:center}.delivery-ok{background:#dcfce7;color:#166534}.delivery-eval{background:#ffedd5;color:#9a3412}.delivery-no{background:#fee2e2;color:#991b1b}.delivery-result strong{display:block;font-size:20px;margin-bottom:5px}.delivery-address{margin-top:8px;font-size:12px;opacity:.9}.delivery-attribution{font-size:10px;color:#6b7280;margin-top:7px}.delivery-actions{display:flex;gap:8px;margin-top:12px}.delivery-actions button{flex:1;border:0;border-radius:999px;padding:11px;font-weight:900;cursor:pointer}.delivery-primary{background:#2563eb;color:#fff}.delivery-secondary{background:#eef0f3;color:#111827}
+.delivery-result{margin-top:12px;border-radius:16px;padding:15px;text-align:center}.delivery-ok{background:#dcfce7;color:#166534}.delivery-eval{background:#ffedd5;color:#9a3412}.delivery-no{background:#fee2e2;color:#991b1b}.delivery-result strong{display:block;font-size:20px;margin-bottom:5px}.delivery-address{margin-top:8px;font-size:12px;opacity:.9}.delivery-attribution{font-size:10px;color:#6b7280;margin-top:7px}.delivery-actions{display:flex;gap:8px;margin-top:12px}.delivery-actions button{flex:1;border:0;border-radius:999px;padding:11px;font-weight:900;cursor:pointer}.delivery-primary{background:#2563eb;color:#fff}.delivery-secondary{background:#eef0f3;color:#111827}.delivery-whatsapp{display:block;width:100%;margin-top:12px;border:0;border-radius:12px;padding:12px;background:#16a34a;color:#fff;font-weight:900;cursor:pointer}.delivery-whatsapp:hover{background:#15803d}
 @media(max-width:480px){#deliveryMap{height:280px}.delivery-modal{padding:13px}}
 </style>
 </head>
@@ -531,7 +531,18 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
       : evaluation
         ? "La entrega en esta localidad requiere una evaluación previa."
         : "No realizamos entregas en esta localidad.";
-    $("deliveryResult").innerHTML=`<div class="delivery-result ${cls}"><strong>${title}</strong><div>${text}</div>${locality?`<div class="delivery-address"><b>Localidad:</b> ${esc(locality)}</div>`:""}${party?`<div class="delivery-address"><b>Partido:</b> ${esc(party)}</div>`:""}</div>`;
+    const canAskWhatsApp=!ok && ["NO_ENTREGA","EVALUACION"].includes(status) && catalogWhatsAppNumber;
+    $("deliveryResult").innerHTML=`<div class="delivery-result ${cls}"><strong>${title}</strong><div>${text}</div>${locality?`<div class="delivery-address"><b>Localidad:</b> ${esc(locality)}</div>`:""}${party?`<div class="delivery-address"><b>Partido:</b> ${esc(party)}</div>`:""}${canAskWhatsApp?'<button id="deliveryWhatsApp" class="delivery-whatsapp" type="button">📲 Consultar por WhatsApp</button>':""}</div>`;
+    const whatsappButton=$("deliveryWhatsApp");
+    if(whatsappButton){
+      whatsappButton.addEventListener("click",()=>{
+        const outcome=evaluation?"sujeta a evaluación":"sin cobertura de entrega";
+        const details=[locality&&`Localidad: ${locality}`,party&&`Partido: ${party}`].filter(Boolean).join("\n");
+        const message=["Hola, quería consultar por una entrega.",`La consulta de cobertura para mi ubicación indicó que está ${outcome}.`,details].filter(Boolean).join("\n\n");
+        const url=`https://wa.me/${catalogWhatsAppNumber}?text=${encodeURIComponent(message)}`;
+        window.open(url,"_blank","noopener,noreferrer");
+      });
+    }
   }
   function getDeliveryVisitorId(){
     const key="ev_delivery_visitor_id";
