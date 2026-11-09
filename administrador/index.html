@@ -42,6 +42,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 .admin-panel .card{margin-top:0;margin-bottom:14px}
 .sales-order{border:1px solid #e5e7eb;border-radius:12px;padding:13px;margin-top:10px}
 .sales-order pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:13px;margin:8px 0}
+.customer-sale-request-card{border:1px solid #dbeafe;border-radius:13px;padding:14px;margin:10px 0;background:#fff}.customer-sale-request-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.customer-sale-request-head span{background:#f3f4f6;border-radius:99px;padding:5px 9px;font-size:11px;font-weight:900;color:#374151}.customer-sale-request-items{padding-left:20px;font-size:13px;line-height:1.5}.customer-sale-request-note{font-size:13px;background:#f8fafc;border-radius:9px;padding:10px;margin:9px 0}.customer-sale-review{display:grid;grid-template-columns:minmax(180px,.7fr) minmax(220px,1.3fr) auto;gap:9px;align-items:end;margin-top:11px}.customer-sale-review label{display:grid;gap:5px;font-size:11px;font-weight:900;color:#4b5563}.customer-sale-review select,.customer-sale-review textarea{width:100%;padding:9px;border:1px solid #d1d5db;border-radius:8px;font:inherit}.customer-sale-review button{white-space:nowrap}@media(max-width:640px){.customer-sale-review{grid-template-columns:1fr}.customer-sale-review button{width:100%}}
 .seller-list-item{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:10px}
 .seller-list-item>.info{width:100%;max-width:100%;overflow-wrap:anywhere}
 .seller-list-item .seller-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
@@ -70,7 +71,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <body>
 <header>⚙️ ELECTRO VARIETY · ADMINISTRADOR <button class="red hidden" id="logout" style="float:right" type="button">Cerrar sesión</button></header>
 <div class="card" id="login"><h2>Acceso administrador</h2><label>Email</label><input autocomplete="username" id="email" type="email"/><label style="display:block;margin-top:10px">Contraseña</label><input autocomplete="current-password" id="password" type="password"/><button class="blue" id="loginButton" style="width:100%;margin-top:13px" type="button">🔐 Ingresar</button><div class="small" id="loginMsg" style="margin-top:9px"></div></div>
-<div class="wrap hidden" id="app"><div id="adminQuickAccess" class="card hidden" style="gap:8px;flex-wrap:wrap;align-items:center"><b style="margin-right:auto">Accesos rápidos</b><a class="button-link blue" href="../vendedores/">🛍️ Catálogo de vendedores</a><a class="button-link blue" href="../lista-productos/">📋 Lista de productos</a><a class="button-link blue" href="../deposito/?admin=1">🏭 Stock Depósito</a><a class="button-link blue" href="../local/?admin=1">🏪 Stock Local</a></div><div class="admin-shell"><div class="admin-mobile-bar"><button id="adminMenuButton" type="button">☰ Menú</button><div class="admin-mobile-title" id="adminMobileTitle">📦 Productos</div></div><aside class="admin-sidebar" id="adminSidebar"><div class="side-title">⚙️ ADMINISTRACIÓN</div><nav aria-label="Secciones del administrador" class="admin-nav"><button class="active" data-admin-section="products" type="button">📦 Productos</button><button class="" data-admin-section="stock" type="button">📊 Stock</button><button class="" data-admin-section="clients" type="button">📣 Clientes</button><button class="" data-admin-section="delivery" type="button">📍 Ubicaciones</button><button class="" data-admin-section="devices" type="button">📱 Dispositivos</button><button class="" data-admin-section="sellers" type="button">👥 Vendedores</button><button class="" data-admin-section="sales" type="button">🧾 Perfiles y pedidos</button></nav></aside><div class="admin-sidebar-backdrop" id="adminSidebarBackdrop"></div><main class="admin-content"><section class="admin-panel active" data-admin-panel="products" id="admin-panel-products"><div class="card"><h2 id="formTitle">Nuevo producto</h2><div class="grid">
+<div class="wrap hidden" id="app"><div id="adminQuickAccess" class="card hidden" style="gap:8px;flex-wrap:wrap;align-items:center"><b style="margin-right:auto">Accesos rápidos</b><a class="button-link blue" href="../vendedores/">🛍️ Catálogo de vendedores</a><a class="button-link blue" href="../lista-productos/">📋 Lista de productos</a><a class="button-link blue" href="../deposito/?admin=1">🏭 Stock Depósito</a><a class="button-link blue" href="../local/?admin=1">🏪 Stock Local</a></div><div class="admin-shell"><div class="admin-mobile-bar"><button id="adminMenuButton" type="button">☰ Menú</button><div class="admin-mobile-title" id="adminMobileTitle">📦 Productos</div></div><aside class="admin-sidebar" id="adminSidebar"><div class="side-title">⚙️ ADMINISTRACIÓN</div><nav aria-label="Secciones del administrador" class="admin-nav"><button class="active" data-admin-section="products" type="button">📦 Productos</button><button class="" data-admin-section="stock" type="button">📊 Stock</button><button class="" data-admin-section="clients" type="button">📣 Clientes</button><button class="" data-admin-section="delivery" type="button">📍 Ubicaciones</button><button class="" data-admin-section="devices" type="button">📱 Dispositivos</button><button class="" data-admin-section="sellers" type="button">👥 Vendedores</button><button class="" data-admin-section="sales" type="button">🧾 Perfiles y pedidos</button><button class="" data-admin-section="customer-sales" type="button">🛍️ Solicitudes de compra</button></nav></aside><div class="admin-sidebar-backdrop" id="adminSidebarBackdrop"></div><main class="admin-content"><section class="admin-panel active" data-admin-panel="products" id="admin-panel-products"><div class="card"><h2 id="formTitle">Nuevo producto</h2><div class="grid">
 <div class="full"><label>Nombre</label><input id="name"/></div><div><label>Subtítulo</label><input id="subtitle"/></div><div><label>Categoría</label><input id="category"/></div>
 <div><label>Cuota quincenal</label><input id="qprice"/></div><div><label>Cantidad quincenal</label><input id="qcount" min="1" type="number"/></div><div><label>Cuota mensual</label><input id="mprice"/></div><div><label>Cantidad mensual</label><input id="mcount" min="1" type="number"/></div>
 <div class="full"><label>Imagen (obligatoria al crear; opcional al editar)</label><input accept="image/*" id="image" type="file"/></div>
@@ -118,8 +119,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <div class="small" id="clientFeaturesStatus" style="margin-top:8px"></div>
 <div class="card" style="margin-top:14px;border:1px solid #dbeafe;background:#f8fbff"><h3 style="margin-top:0">📢 Notificación general</h3><div class="small">Independiente de los productos. Al tocarla, el cliente irá directamente a tu WhatsApp con este mensaje ya preparado.</div><div class="grid" style="margin-top:10px"><div class="full"><label>Título</label><input id="generalPushTitle" maxlength="100" placeholder="🔥 ¡Promoción especial hoy!"></div><div class="full"><label>Mensaje de la notificación</label><input id="generalPushBody" maxlength="240" placeholder="Consultanos por nuestras promociones de hoy."></div><div class="full"><label>Mensaje predeterminado para WhatsApp</label><textarea id="generalPushWhatsAppMessage" maxlength="500" rows="3" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid #d1d5db;border-radius:9px;font:inherit;resize:vertical">Hola, quiero consultar por la promoción que recibí.</textarea><div class="small">Este texto aparecerá escrito en el chat; el cliente decide si lo envía.</div></div><div><label>Imagen opcional</label><input accept="image/*" id="generalPushImage" type="file"></div><div><label>WhatsApp de destino</label><input id="generalPushWhatsApp" inputmode="numeric" placeholder="5491123456789"></div></div><div class="actions"><button class="blue" id="sendGeneralPushButton" type="button">📤 Enviar notificación general</button></div><div class="small" id="generalPushStatus" style="margin-top:8px"></div></div>
 <div class="card" style="margin-top:14px;border:1px solid #dcfce7;background:#f8fff9"><h3 style="margin-top:0">💬 WhatsApp de Electro Variety</h3><div class="small">Número predeterminado para productos con “WhatsApp directo”.</div><div class="actions"><input id="defaultPushWhatsApp" inputmode="numeric" placeholder="5491123456789" style="flex:1"><button class="blue" id="savePushWhatsAppButton" type="button">💾 Guardar número</button></div><div class="small" id="pushWhatsAppStatus" style="margin-top:8px"></div></div><div class="card" style="margin-top:14px;border:1px solid #fef3c7;background:#fffdf5"><h3 style="margin-top:0">🛒 Al tocar cualquier producto del catálogo</h3><div class="small">Esta opción se aplica de una sola vez a <b>todos los productos</b> del catálogo de clientes. El botón “Consultar por WhatsApp” conserva el mismo comportamiento.</div><div class="actions" style="margin-top:10px"><select id="catalogProductClickWhatsAppMode" style="flex:1;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="choose">👤 Elegir contacto (predeterminado)</option><option value="direct">💬 Ir directamente al WhatsApp de Electro Variety</option></select><button class="blue" id="saveCatalogProductClickWhatsAppButton" type="button">💾 Aplicar a todo el catálogo</button></div><div class="small" id="catalogProductClickWhatsAppStatus" style="margin-top:8px"></div></div>
-<div class="actions"><a class="button-link dark" href="../clientes/" rel="noopener" target="_blank">👀 Abrir catálogo de clientes</a></div>
-</div></section><section class="admin-panel" data-admin-panel="delivery" id="admin-panel-delivery"><div class="card">
+<div class="actions"><a class="button-link dark" href="../clientes/" rel="noopener" target="_blank">👀 Abrir catálogo de clientes</a><a class="button-link blue" href="../ventas/" rel="noopener" target="_blank">🛍️ Abrir formulario de ventas</a></div>
+</div></section><section class="admin-panel" data-admin-panel="customer-sales" id="admin-panel-customer-sales"><div class="card"><h2>🛍️ Solicitudes de compra de clientes</h2><div class="small">Revisá los productos, planes de pago y datos de contacto. Estos pedidos no modifican ni reservan el stock del catálogo de vendedores.</div><div class="actions" style="margin-top:12px"><input id="customerSaleRequestsSearch" type="search" placeholder="🔎 Buscar por nombre, celular o referencia" style="flex:1;min-width:220px"><button class="blue" id="refreshCustomerSaleRequests" type="button">🔄 Actualizar</button></div><div class="small" id="customerSaleRequestsStatus" style="margin-top:8px"></div><div id="customerSaleRequestsList" style="margin-top:12px">Cargando solicitudes…</div></div></section><section class="admin-panel" data-admin-panel="delivery" id="admin-panel-delivery"><div class="card">
 <h2>📍 Consultas de cobertura</h2>
 <div class="small">Acá podés ver las consultas de ubicación realizadas desde el catálogo de clientes. Se muestran localidad, partido, zona, resultado y fecha. Las coordenadas son visibles solamente dentro del administrador.</div>
 <div class="actions" style="margin-top:12px">
@@ -279,6 +280,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     loadDeliveryChecks();
     loadSellerProfiles();
     loadAdminSales();
+    loadCustomerSaleRequests();
     loadSupervisorManagement();
     loadCustomRoleManagement();
   }
@@ -865,6 +867,74 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       moreButton.disabled = false;
     }
   }
+
+  let customerSaleRequests = [];
+  function renderCustomerSaleRequests() {
+    const box = $("customerSaleRequestsList");
+    if (!box) return;
+    const query = String($("customerSaleRequestsSearch")?.value || "").trim().toLocaleLowerCase("es");
+    const rows = customerSaleRequests.filter(request =>
+      [request.full_name, request.phone, request.tracking_code].some(value => String(value || "").toLocaleLowerCase("es").includes(query))
+    );
+    if (!rows.length) {
+      box.innerHTML = `<div class="small">${customerSaleRequests.length ? "No hay solicitudes que coincidan con la búsqueda." : "Todavía no hay solicitudes de compra."}</div>`;
+      return;
+    }
+    const statusNames = { pending: "Pendiente de contactar", contacted: "Contactado", converted: "Venta confirmada", cancelled: "Cancelada" };
+    const money = value => `$${new Intl.NumberFormat("es-AR").format(Number(value) || 0)}`;
+    box.innerHTML = rows.map(request => {
+      const items = Array.isArray(request.items) ? request.items : [];
+      const itemMarkup = items.map(item => `<li><b>${esc(item.product_name || "Producto")}</b> × ${Number(item.quantity) || 0} · ${esc(item.frequency === "quincenal" ? "Quincenal" : "Mensual")}: ${Number(item.installment_count) || 0} cuotas de ${money(item.installment_amount)} · Total aprox. ${money(item.total_amount)}</li>`).join("");
+      const createdAt = request.created_at ? new Date(request.created_at).toLocaleString("es-AR") : "—";
+      return `<article class="customer-sale-request-card"><div class="customer-sale-request-head"><b>Solicitud ${esc(request.tracking_code || String(request.id).slice(0, 8))}</b><span>${esc(statusNames[request.status] || request.status)}</span></div><div class="small">${esc(request.full_name)} · <a href="tel:${esc(request.phone)}">${esc(request.phone)}</a> · ${createdAt}</div>${request.locality || request.address ? `<div class="small">📍 ${esc([request.address, request.locality].filter(Boolean).join(", "))}</div>` : ""}<ul class="customer-sale-request-items">${itemMarkup}</ul>${request.notes ? `<div class="customer-sale-request-note"><b>Comentario del cliente:</b> ${esc(request.notes)}</div>` : ""}<div class="customer-sale-review"><label>Estado<select data-customer-sale-status="${esc(request.id)}"><option value="pending" ${request.status === "pending" ? "selected" : ""}>Pendiente de contactar</option><option value="contacted" ${request.status === "contacted" ? "selected" : ""}>Contactado</option><option value="converted" ${request.status === "converted" ? "selected" : ""}>Venta confirmada</option><option value="cancelled" ${request.status === "cancelled" ? "selected" : ""}>Cancelada</option></select></label><label>Nota interna<textarea data-customer-sale-note="${esc(request.id)}" maxlength="1000" rows="2" placeholder="Nota para el equipo">${esc(request.admin_note || "")}</textarea></label><button class="blue" type="button" data-save-customer-sale="${esc(request.id)}">💾 Guardar revisión</button></div></article>`;
+    }).join("");
+  }
+  async function loadCustomerSaleRequests() {
+    const box = $("customerSaleRequestsList");
+    const status = $("customerSaleRequestsStatus");
+    if (!box || currentAccessRole !== "admin") return;
+    if (status) status.textContent = "Cargando solicitudes…";
+    const { data, error } = await db.from("customer_sale_requests")
+      .select("id,tracking_code,full_name,phone,locality,address,notes,items,status,admin_note,created_at")
+      .order("created_at", { ascending: false }).limit(500);
+    if (error) {
+      customerSaleRequests = [];
+      box.innerHTML = `<div class="small danger">No se pudieron cargar las solicitudes: ${esc(error.message)}</div>`;
+      if (status) status.textContent = "";
+      return;
+    }
+    customerSaleRequests = data || [];
+    renderCustomerSaleRequests();
+    if (status) status.textContent = `${customerSaleRequests.length} solicitud(es) cargadas.`;
+  }
+  async function saveCustomerSaleReview(button) {
+    if (currentAccessRole !== "admin") return;
+    const id = button.dataset.saveCustomerSale;
+    const status = document.querySelector(`[data-customer-sale-status="${CSS.escape(id)}"]`)?.value;
+    const note = document.querySelector(`[data-customer-sale-note="${CSS.escape(id)}"]`)?.value || "";
+    const allowed = ["pending", "contacted", "converted", "cancelled"];
+    if (!allowed.includes(status)) return;
+    const { data: userData } = await db.auth.getUser();
+    if (!userData?.user) { alert("La sesión de administrador expiró. Volvé a ingresar."); return; }
+    button.disabled = true;
+    try {
+      const { error } = await db.from("customer_sale_requests").update({
+        status,
+        admin_note: String(note).trim().slice(0, 1000),
+        reviewed_by: userData.user.id,
+        reviewed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }).eq("id", id);
+      if (error) throw error;
+      if ($("customerSaleRequestsStatus")) $("customerSaleRequestsStatus").textContent = "✅ Revisión guardada.";
+      await loadCustomerSaleRequests();
+    } catch (error) {
+      alert("No se pudo guardar la revisión: " + (error.message || error));
+    } finally {
+      button.disabled = false;
+    }
+  }
+  window.loadCustomerSaleRequests = loadCustomerSaleRequests;
 
   async function loadSupervisorManagement() {
     const box = $("supervisorManagerList");
@@ -2016,6 +2086,12 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const button=event.target.closest("[data-delete-seller-sale]");
     if(button)deleteSellerSale(button);
   });
+  $("refreshCustomerSaleRequests").addEventListener("click",loadCustomerSaleRequests);
+  $("customerSaleRequestsSearch").addEventListener("input",renderCustomerSaleRequests);
+  $("customerSaleRequestsList").addEventListener("click",event=>{
+    const button=event.target.closest("[data-save-customer-sale]");
+    if(button)saveCustomerSaleReview(button);
+  });
   $("supervisorManagerList").addEventListener("click",event=>{
     const saveButton=event.target.closest("[data-save-supervisor]");
     if(saveButton){saveSupervisorAssignments(saveButton);return;}
@@ -2069,7 +2145,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   const backdrop=document.getElementById('adminSidebarBackdrop');
   const menu=document.getElementById('adminMenuButton');
   const mobileTitle=document.getElementById('adminMobileTitle');
-  const labels={products:'📦 Productos',stock:'📊 Stock',clients:'📣 Clientes',delivery:'📍 Ubicaciones',devices:'📱 Dispositivos',sellers:'👥 Vendedores',sales:'🧾 Perfiles y pedidos'};
+  const labels={products:'📦 Productos',stock:'📊 Stock',clients:'📣 Clientes',delivery:'📍 Ubicaciones',devices:'📱 Dispositivos',sellers:'👥 Vendedores',sales:'🧾 Perfiles y pedidos','customer-sales':'🛍️ Solicitudes de compra'};
   let accessRole=null;
   let deliveryRows=[];
   let deliveryDb=null;
@@ -2084,6 +2160,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     if(save){try{localStorage.setItem('electro_admin_section',id)}catch(_){}}
     closeMenu();
     if(id==='delivery') loadDeliveryChecks();
+    if(id==='customer-sales') window.loadCustomerSaleRequests?.();
     window.scrollTo({top:0,behavior:'smooth'});
   }
   window.addEventListener('electro-admin-role',event=>{

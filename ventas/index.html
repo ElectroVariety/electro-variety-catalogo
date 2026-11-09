@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>Electro Variety · Solicitud de compra</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eef0f3;color:#111827;font-family:Arial,sans-serif}header{background:#111827;color:#fff;padding:15px 18px}.top{max-width:1000px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-weight:1000;letter-spacing:.3px}.top a{color:#fff;text-decoration:none;background:#374151;border-radius:10px;padding:10px 13px;font-size:13px;font-weight:900}.wrap{width:min(1000px,100%);margin:auto;padding:18px}.hero{background:linear-gradient(125deg,#111827,#1e3a8a,#2563eb);color:#fff;border-radius:22px;padding:25px;margin-bottom:16px;box-shadow:0 12px 28px #1e3a8a33}.badge{display:inline-block;padding:6px 10px;background:#ffffff20;border:1px solid #ffffff40;border-radius:99px;font-size:11px;font-weight:900}.hero h1{font-size:29px;line-height:1.1;margin:12px 0 7px}.hero p{max-width:700px;font-size:14px;line-height:1.5;color:#e5e7eb;margin:0}.panel{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:19px;margin-bottom:15px;box-shadow:0 5px 18px #1118270a}.panel h2{margin:0 0 6px;font-size:20px}.hint{font-size:13px;line-height:1.45;color:#6b7280;margin:0 0 13px}.search{width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:11px;font:inherit;margin:8px 0 10px}.product-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;max-height:460px;overflow:auto;padding:1px}.product{display:flex;align-items:center;gap:10px;border:1px solid #e5e7eb;border-radius:13px;padding:10px;min-width:0}.product img{width:58px;height:58px;object-fit:contain;border-radius:9px;background:#f3f4f6;flex:0 0 58px}.product-info{flex:1;min-width:0}.product-name{font-size:13px;font-weight:900;line-height:1.3}.product-meta{font-size:11px;color:#6b7280;line-height:1.35;margin-top:4px}.button{border:0;border-radius:10px;padding:11px 13px;font-weight:900;cursor:pointer}.button:disabled{opacity:.55;cursor:wait}.add{background:#2563eb;color:#fff;white-space:nowrap}.remove{background:#fee2e2;color:#991b1b}.selected{display:grid;gap:9px;margin-top:12px}.selected-item{border:1px solid #dbeafe;background:#f8fbff;border-radius:13px;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}.selected-name{font-weight:900;font-size:14px}.selected-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.selected-controls label{font-size:12px;font-weight:800;color:#4b5563}.selected-controls input,.selected-controls select{padding:9px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font:inherit;max-width:130px}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:grid;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:12px;font-weight:900}.field input,.field textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit}.field textarea{resize:vertical}.privacy{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:#4b5563;line-height:1.4;margin:13px 0}.privacy input{margin-top:2px}.summary{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:12px 0;padding:12px;background:#f3f4f6;border-radius:10px;font-size:13px}.submit{width:100%;background:#16a34a;color:#fff;padding:15px;font-size:15px}.status{font-size:13px;line-height:1.45;margin-top:10px}.error{color:#991b1b}.success{background:#dcfce7;border:1px solid #86efac;color:#166534;border-radius:12px;padding:13px}.empty{text-align:center;color:#6b7280;padding:20px;font-size:13px}.foot{text-align:center;color:#6b7280;font-size:11px;padding:6px 0 20px}.hidden{display:none!important}
+@media(max-width:680px){.wrap{padding:12px}.hero{padding:20px}.hero h1{font-size:24px}.panel{padding:15px}.product-list{grid-template-columns:1fr;max-height:380px}.selected-item{grid-template-columns:1fr}.field-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.selected-controls{justify-content:space-between}}
+</style>
+</head>
+<body>
+<header><div class="top"><div class="brand">ELECTRO VARIETY · SOLICITUD DE COMPRA</div><a href="../clientes/">Volver al catálogo</a></div></header>
+<main class="wrap">
+  <section class="hero"><span class="badge">🛍️ FORMULARIO DE VENTAS</span><h1>Solicitá tus productos</h1><p>Elegí los productos, cantidades y forma de pago. El equipo revisará tu solicitud y se comunicará con vos para confirmar disponibilidad y coordinar la compra.</p></section>
+  <div id="pageStatus" class="panel hint">Cargando productos…</div>
+  <form id="saleForm" class="hidden" novalidate>
+    <section class="panel">
+      <h2>1. Elegí productos</h2><p class="hint">Podés seleccionar hasta 10 productos y solicitar hasta 10 unidades de cada uno. Los precios y planes se verifican al enviar la solicitud.</p>
+      <input id="productSearch" class="search" type="search" placeholder="🔎 Buscar por nombre o categoría" aria-label="Buscar producto">
+      <div id="productList" class="product-list"></div>
+      <div id="selectedProducts" class="selected"></div>
+      <div id="selectionStatus" class="status" role="status"></div>
+      <div class="summary"><b>Productos seleccionados</b><span id="selectedCount">0</span></div>
+    </section>
+    <section class="panel">
+      <h2>2. Tus datos</h2><p class="hint">Usaremos estos datos únicamente para responder esta solicitud y coordinar la compra.</p>
+      <div class="field-grid">
+        <div class="field"><label for="fullName">Nombre y apellido *</label><input id="fullName" name="full_name" maxlength="120" autocomplete="name" required></div>
+        <div class="field"><label for="phone">Celular / WhatsApp *</label><input id="phone" name="phone" type="tel" maxlength="30" autocomplete="tel" placeholder="Ej.: 11 2345 6789" required></div>
+        <div class="field"><label for="locality">Localidad</label><input id="locality" name="locality" maxlength="120" autocomplete="address-level2"></div>
+        <div class="field"><label for="address">Dirección (opcional)</label><input id="address" name="address" maxlength="200" autocomplete="street-address"></div>
+        <div class="field full"><label for="notes">Comentario para el equipo (opcional)</label><textarea id="notes" name="notes" maxlength="1000" rows="3" placeholder="Por ejemplo, horario para contactarte o una consulta sobre la entrega."></textarea></div>
+      </div>
+      <label class="privacy"><input id="privacyAccepted" type="checkbox" required><span>Acepto que Electro Variety use estos datos para responder esta solicitud y contactarme sobre la compra.</span></label>
+      <div id="submitStatus" class="status" role="status" aria-live="polite"></div>
+      <button id="submitButton" class="button submit" type="submit">Enviar solicitud de compra</button>
+    </section>
+  </form>
+  <div class="foot">Enviar esta solicitud no confirma una venta ni reserva stock. La compra se confirma cuando el equipo se comunique con vos.</div>
+</main>
+<script>
+"use strict";
+(()=>{
+  const db=supabase.createClient(EV_CONFIG.SUPABASE_URL,EV_CONFIG.SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+  const $=id=>document.getElementById(id);
+  const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const money=value=>{const digits=String(value??"").replace(/\D/g,"");return digits?new Intl.NumberFormat("es-AR").format(Number(digits)):"—";};
+  let products=[];
+  const selected=new Map();
+  function plans(product){
+    const available=[];
+    if(Number(product.q_count)>0&&String(product.q_price||"").replace(/\D/g,""))available.push({frequency:"quincenal",count:Number(product.q_count),price:money(product.q_price)});
+    if(Number(product.m_count)>0&&String(product.m_price||"").replace(/\D/g,""))available.push({frequency:"mensual",count:Number(product.m_count),price:money(product.m_price)});
+    return available;
+  }
+  function formatPlan(product){return plans(product).map(p=>`${p.count} ${p.frequency} · $${p.price}`).join(" | ")||"Consultar plan de pago";}
+  function renderProducts(){
+    const query=$("productSearch").value.trim().toLocaleLowerCase("es");
+    const shown=products.filter(p=>`${p.name||""} ${p.category||""} ${p.subtitle||""}`.toLocaleLowerCase("es").includes(query)).slice(0,80);
+    $("productList").innerHTML=shown.length?shown.map(p=>{
+      const inSelection=selected.has(Number(p.id));
+      const stockText=Number(p.stock)===-1?"Disponibilidad a confirmar":`Stock visible: ${Number(p.stock)}`;
+      return `<article class="product"><img src="${esc(p.image_url||"")}" alt="" loading="lazy" onerror="this.hidden=true"><div class="product-info"><div class="product-name">${esc(p.name)}</div><div class="product-meta">${esc(p.category||"Producto")} · ${esc(stockText)}<br>${esc(formatPlan(p))}</div></div><button class="button add" type="button" data-add-product="${Number(p.id)}" ${inSelection?"disabled":""}>${inSelection?"Agregado ✓":"Agregar"}</button></article>`;
+    }).join(""):'<div class="empty">No encontramos productos con esa búsqueda.</div>';
+  }
+  function renderSelected(){
+    const items=[...selected.values()];
+    $("selectedCount").textContent=String(items.reduce((sum,item)=>sum+item.quantity,0));
+    $("selectedProducts").innerHTML=items.map(item=>{
+      const p=item.product, options=plans(p);
+      const max=Number(p.stock)>0?Math.min(10,Number(p.stock)):10;
+      return `<article class="selected-item"><div class="selected-name">${esc(p.name)}<div class="product-meta">${esc(formatPlan(p))}</div></div><div class="selected-controls"><label>Cantidad <input type="number" min="1" max="${max}" step="1" value="${item.quantity}" inputmode="numeric" data-item-quantity="${Number(p.id)}" aria-label="Cantidad de ${esc(p.name)}"></label><label>Pago <select data-item-frequency="${Number(p.id)}" aria-label="Plan de pago para ${esc(p.name)}">${options.map(plan=>`<option value="${plan.frequency}" ${item.frequency===plan.frequency?"selected":""}>${plan.frequency==="quincenal"?"Quincenal":"Mensual"} · ${plan.count} cuotas de $${plan.price}</option>`).join("")}</select></label><button class="button remove" type="button" data-remove-product="${Number(p.id)}">Quitar</button></div></article>`;
+    }).join("");
+    renderProducts();
+  }
+  async function loadProducts(){
+    try{
+      const {data,error}=await db.from("products").select("id,name,subtitle,category,image_url,stock,q_count,q_price,m_count,m_price,active,sort_order").eq("active",true).order("sort_order",{ascending:true,nullsFirst:false}).order("id",{ascending:true});
+      if(error)throw error;
+      products=(data||[]).filter(p=>Number(p.stock)===-1||Number(p.stock)>0);
+      $("pageStatus").classList.add("hidden");
+      $("saleForm").classList.remove("hidden");
+      if(!products.length){$("productList").innerHTML='<div class="empty">No hay productos disponibles para solicitar en este momento.</div>';return;}
+      renderProducts();
+      const preselected=new URLSearchParams(location.search).get("producto");
+      if(preselected){const p=products.find(product=>Number(product.id)===Number(preselected));if(p){selected.set(Number(p.id),{product:p,quantity:1,frequency:plans(p)[0]?.frequency||"quincenal"});renderSelected();$("selectedProducts").scrollIntoView({block:"nearest"});}}
+    }catch(error){
+      console.error("Solicitud de compra: carga de productos",error);
+      $("pageStatus").textContent="No se pudieron cargar los productos. Revisá tu conexión y volvé a intentar.";
+      $("pageStatus").classList.add("error");
+    }
+  }
+  $("productSearch").addEventListener("input",renderProducts);
+  $("productList").addEventListener("click",event=>{
+    const button=event.target.closest("[data-add-product]");if(!button)return;
+    const product=products.find(p=>Number(p.id)===Number(button.dataset.addProduct));if(!product)return;
+    if(selected.size>=10&&!selected.has(Number(product.id))){$("selectionStatus").textContent="Podés elegir hasta 10 productos distintos.";return;}
+    selected.set(Number(product.id),{product,quantity:1,frequency:plans(product)[0]?.frequency||"quincenal"});
+    $("selectionStatus").textContent="";renderSelected();
+  });
+  $("selectedProducts").addEventListener("click",event=>{
+    const button=event.target.closest("[data-remove-product]");if(!button)return;
+    selected.delete(Number(button.dataset.removeProduct));renderSelected();
+  });
+  $("selectedProducts").addEventListener("input",event=>{
+    const input=event.target.closest("[data-item-quantity]");if(!input)return;
+    const item=selected.get(Number(input.dataset.itemQuantity));if(!item)return;
+    const max=Number(item.product.stock)>0?Math.min(10,Number(item.product.stock)):10;
+    item.quantity=Math.min(max,Math.max(1,Math.floor(Number(input.value)||1)));
+    input.value=String(item.quantity);$("selectedCount").textContent=String([...selected.values()].reduce((sum,value)=>sum+value.quantity,0));
+  });
+  $("selectedProducts").addEventListener("change",event=>{
+    const input=event.target.closest("[data-item-frequency]");if(!input)return;
+    const item=selected.get(Number(input.dataset.itemFrequency));if(item)item.frequency=input.value;
+  });
+  $("saleForm").addEventListener("submit",async event=>{
+    event.preventDefault();
+    const status=$("submitStatus");status.className="status";status.textContent="";
+    if(!$("saleForm").reportValidity())return;
+    if(!selected.size){status.classList.add("error");status.textContent="Elegí al menos un producto.";return;}
+    const submit=$("submitButton");submit.disabled=true;submit.textContent="Enviando solicitud…";
+    try{
+      const payload={
+        full_name:$("fullName").value,
+        phone:$("phone").value,
+        locality:$("locality").value,
+        address:$("address").value,
+        notes:$("notes").value,
+        privacy_accepted:$("privacyAccepted").checked,
+        website:"",
+        items:[...selected.values()].map(item=>({product_id:Number(item.product.id),quantity:item.quantity,frequency:item.frequency}))
+      };
+      const response=await fetch(`${EV_CONFIG.SUPABASE_URL}/functions/v1/submit-customer-sale-request`,{
+        method:"POST",headers:{"Content-Type":"application/json","apikey":EV_CONFIG.SUPABASE_ANON_KEY},body:JSON.stringify(payload)
+      });
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok||result.success!==true)throw new Error(result.error||"No pudimos enviar la solicitud.");
+      const ref=String(result.tracking_code||"");
+      status.className="status success";
+      status.innerHTML=`<b>✅ Solicitud enviada.</b><br>El equipo revisará los productos y te contactará para confirmar la compra. Referencia: <b>${esc(ref)}</b>. Guardá este código por si necesitás mencionarlo al comunicarte con nosotros.`;
+      selected.clear();$("saleForm").reset();renderSelected();
+      status.scrollIntoView({behavior:"smooth",block:"center"});
+    }catch(error){
+      console.error("Solicitud de compra",error);status.className="status error";status.textContent=error.message||"No se pudo enviar la solicitud.";
+    }finally{submit.disabled=false;submit.textContent="Enviar solicitud de compra";}
+  });
+  loadProducts();
+})();
+</script>
+</body>
+</html>
