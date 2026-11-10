@@ -62,6 +62,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <button id="sellerSalesButton" type="button">🧾 Mis ventas</button>
     <button id="sellerNewSaleButton" type="button">➕ Crear pedido</button>
     <button id="sellerTeamButton" type="button" style="display:none">👥 Ventas del equipo</button>
+    <button id="sellerActivityButton" type="button" style="display:none">🕘 Actividad del equipo</button>
     <button id="customerSaleRequestsButton" type="button" style="display:none">🛍️ Mis solicitudes</button>
   </div>
   <div id="sellerStockActions" class="seller-actions" style="display:none">
@@ -122,6 +123,15 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <div id="sellerTeamStatus" class="seller-help" role="status"></div>
     <div id="sellerTeamHistory" class="seller-sales-history">Cargando…</div>
     <button id="sellerTeamLoadMore" class="seller-action-button secondary" type="button" style="display:none">Cargar pedidos anteriores</button>
+  </div>
+</div>
+<div id="sellerActivityModal" class="cart-modal seller-modal" aria-hidden="true">
+  <div class="cart-panel seller-sales-panel" role="dialog" aria-modal="true" aria-labelledby="sellerActivityTitle">
+    <div class="cart-head"><h2 id="sellerActivityTitle">🕘 Actividad de mis vendedores</h2><button id="sellerActivityClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
+    <p class="seller-help">Sesiones del catálogo de vendedores de las personas asignadas a tu equipo. El tiempo de sesiones cerradas inesperadamente se estima hasta la última señal registrada.</p>
+    <button id="sellerActivityRefresh" class="seller-action-button secondary" type="button">Actualizar actividad</button>
+    <div id="sellerActivityStatus" class="seller-help" role="status"></div>
+    <div id="sellerActivityList" class="seller-sales-history">Cargando…</div>
   </div>
 </div>
 <div id="customerSaleRequestsModal" class="cart-modal seller-modal" aria-hidden="true">
@@ -248,6 +258,9 @@ let onlineStaffChannel=null;
 let onlineStaffClient=null;
 let onlineStaffDirectory=[];
 let onlineStaffRefreshTimer=null;
+let catalogActivitySessionId=null;
+let catalogActivityUserId=null;
+let catalogActivityHeartbeat=null;
 
 let filteredProducts=[];
 let currentPage=1;
@@ -443,6 +456,44 @@ function stopOnlineStaffPresence(){
   const toggle=$("onlineStaffToggle");if(toggle)toggle.style.display="none";
   closeOnlineStaffPanel();
 }
+async function endCatalogActivitySession(){
+  if(catalogActivityHeartbeat){clearInterval(catalogActivityHeartbeat);catalogActivityHeartbeat=null}
+  const sessionId=catalogActivitySessionId,client=db;
+  catalogActivitySessionId=null;catalogActivityUserId=null;
+  if(sessionId&&client){try{const {error}=await client.rpc("end_catalog_staff_session",{p_session_id:sessionId});if(error)console.warn("No se pudo cerrar la sesión de actividad",error)}catch(error){console.warn("No se pudo cerrar la sesión de actividad",error)}}
+}
+async function heartbeatCatalogActivity(){
+  if(!catalogActivitySessionId||!db)return;
+  try{const {error}=await db.rpc("heartbeat_catalog_staff_session",{p_session_id:catalogActivitySessionId});if(error)console.warn("No se pudo guardar la actividad",error)}catch(error){console.warn("No se pudo guardar la actividad",error)}
+}
+async function startCatalogActivitySession(){
+  if(!db||!currentUserId)return;
+  if(catalogActivitySessionId&&catalogActivityUserId===currentUserId)return;
+  await endCatalogActivitySession();
+  const sessionId=crypto.randomUUID();
+  const {error}=await db.rpc("start_catalog_staff_session",{p_session_id:sessionId});
+  if(error){console.warn("No se pudo iniciar el registro de actividad",error);return}
+  catalogActivitySessionId=sessionId;catalogActivityUserId=currentUserId;
+  if(catalogActivityHeartbeat)clearInterval(catalogActivityHeartbeat);
+  catalogActivityHeartbeat=setInterval(heartbeatCatalogActivity,60000);
+}
+function activityDuration(seconds){
+  const value=Math.max(0,Number(seconds)||0),hours=Math.floor(value/3600),minutes=Math.floor(value%3600/60),secs=Math.floor(value%60);
+  return hours?`${hours} h ${minutes} min`:`${minutes} min ${secs} s`;
+}
+async function loadSellerActivity(){
+  const list=$("sellerActivityList"),status=$("sellerActivityStatus");
+  list.textContent="Cargando actividad…";status.textContent="";
+  const {data,error}=await db.rpc("supervisor_list_assigned_catalog_activity",{p_limit:500});
+  if(error){list.textContent="No se pudo cargar la actividad: "+error.message;return}
+  const rows=data||[];
+  list.innerHTML=rows.length?rows.map(row=>{
+    const start=new Date(row.started_at),last=new Date(row.last_seen_at),end=row.ended_at?new Date(row.ended_at):null;
+    const online=!end&&(Date.now()-last.getTime()<180000);
+    return `<article class="seller-sale-card"><h3>${catalogVerifiedName(row.display_name||"Sin nombre",row.user_id)} · ${esc(row.role_label||"Usuario")}</h3><div class="sale-date">${start.toLocaleDateString("es-AR")} · Inicio ${start.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}${end?" · Fin "+end.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"}):""}</div><div class="sale-date">${online?"🟢 En línea":"⚪ Sesión cerrada"} · Tiempo conectado: ${activityDuration(row.duration_seconds)}</div></article>`
+  }).join(""):'<div class="seller-help">No hay actividad registrada para tus vendedores asignados.</div>';
+  status.textContent=`${rows.length} sesión(es) cargadas.`;
+}
 async function startOnlineStaffPresence(){
   stopOnlineStaffPresence();
   const client=db,panel=$("onlineStaffPanel");
@@ -480,6 +531,7 @@ const money=v=>{
 const productTitle=p=>p.subtitle?`${p.name} (${p.subtitle})`:p.name;
 
 function showLogin(message=""){
+  void endCatalogActivitySession();
   stopOnlineStaffPresence();
   $("tools").style.display="none";
   $("sellerActions").style.display="none";
@@ -488,6 +540,7 @@ function showLogin(message=""){
   $("sellerProfileModal").style.display="none";$("sellerProfileModal").setAttribute("aria-hidden","true");
   $("sellerSalesModal").style.display="none";$("sellerSalesModal").setAttribute("aria-hidden","true");
   $("sellerTeamModal").style.display="none";$("sellerTeamModal").setAttribute("aria-hidden","true");
+  $("sellerActivityModal").style.display="none";$("sellerActivityModal").setAttribute("aria-hidden","true");
   $("firstLoginSetupModal").style.display="none";$("firstLoginSetupModal").setAttribute("aria-hidden","true");
   $("counter").textContent="—";
   $("catLogout").style.display="none";
@@ -691,6 +744,9 @@ async function startCatalog(seller=null,staffAccess=currentStaffAccess,staffName
   $("sellerSalesButton").style.display=seller?"":"none";
   $("sellerNewSaleButton").style.display=seller?"":"none";
   $("sellerTeamButton").style.display=canViewTeam?"":"none";
+  const canViewTeamActivity=staffAccess?.role==="supervisor";
+  $("sellerActivityButton").style.display=canViewTeamActivity?"":"none";
+  if(currentUserId)startCatalogActivitySession().catch(error=>console.warn("No se pudo iniciar la actividad",error));
   const canSeeCustomerRequests=!!(staffAccess?.role==="admin"||currentSalesVerified);
   $("customerSaleRequestsButton").style.display=canSeeCustomerRequests?"":"none";
   $("customerSaleRequestsButton").textContent=canViewTeam?"🛍️ Solicitudes del equipo":"🛍️ Mis solicitudes";
@@ -1027,6 +1083,11 @@ async function openSellerTeam(){
   if(!(currentStaffAccess?.role==="supervisor"||(currentStaffAccess?.role==="custom"&&currentStaffAccess.can_view_assigned_sellers)))return;
   openSellerModal("sellerTeamModal");
   await loadSellerTeam(true);
+}
+async function openSellerActivity(){
+  if(currentStaffAccess?.role!=="supervisor")return;
+  openSellerModal("sellerActivityModal");
+  await loadSellerActivity();
 }
 async function loadSellerTeam(reset=true){
   const list=$("sellerTeamHistory"),status=$("sellerTeamStatus"),more=$("sellerTeamLoadMore");
@@ -1420,6 +1481,7 @@ $("cartClear").addEventListener("click",()=>{cartIds.clear();updateCartButtons()
 $("cartModal").addEventListener("click",e=>{if(e.target===$("cartModal"))closeCart();});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeCart();closeCartShareModal();}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeSellerModal("sellerProfileModal");closeSellerModal("sellerSalesModal");}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSellerModal("sellerActivityModal")});
 $("sellerProfileButton").addEventListener("click",openSellerProfile);
 $("onlineStaffToggle").addEventListener("click",toggleOnlineStaffPanel);
 $("onlineStaffClose").addEventListener("click",()=>{closeOnlineStaffPanel();$("onlineStaffToggle").focus()});
@@ -1434,6 +1496,11 @@ $("firstLoginSetupSave").addEventListener("click",completeFirstLoginSetup);
 $("sellerSalesButton").addEventListener("click",()=>openSellerSales("history"));
 $("sellerNewSaleButton").addEventListener("click",()=>openSellerSales("new"));
 $("sellerTeamButton").addEventListener("click",openSellerTeam);
+$("sellerActivityButton").addEventListener("click",openSellerActivity);
+$("sellerActivityClose").addEventListener("click",()=>closeSellerModal("sellerActivityModal"));
+$("sellerActivityModal").addEventListener("click",e=>{if(e.target===$("sellerActivityModal"))closeSellerModal("sellerActivityModal")});
+$("sellerActivityRefresh").addEventListener("click",loadSellerActivity);
+window.addEventListener("pagehide",()=>{void endCatalogActivitySession()});
 $("customerSaleRequestsButton").addEventListener("click",openCatalogCustomerSaleRequests);
 $("customerSaleRequestsClose").addEventListener("click",()=>closeSellerModal("customerSaleRequestsModal"));
 $("customerSaleRequestsModal").addEventListener("click",e=>{if(e.target===$("customerSaleRequestsModal"))closeSellerModal("customerSaleRequestsModal")});
@@ -1465,6 +1532,7 @@ $("sellerSalesHistory").addEventListener("click",e=>{
 });
 $("catLogout").addEventListener("click",async()=>{
   if(deviceHeartbeat) clearInterval(deviceHeartbeat);
+  await endCatalogActivitySession();
   await db.auth.signOut({scope:"local"});
   showLogin("Sesión cerrada.");
 });
