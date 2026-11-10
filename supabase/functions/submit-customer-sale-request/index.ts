@@ -12,7 +12,6 @@ const MAX_BODY_BYTES = 26_500_000;
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_TOTAL_FILE_BYTES = 25 * 1024 * 1024;
 const MAX_FILES = 12;
-const MAX_QUANTITY = 10;
 const proofServiceOptions = new Set(["edesur", "metrogas", "water", "other", "none_in_name"]);
 const incomeOptions = new Set([
   "formal_job", "informal_job", "self_employed", "business", "allowance",
@@ -206,13 +205,14 @@ Deno.serve(async (request: Request) => {
     return respond({ error: "Revisá los datos obligatorios, el DNI, teléfonos, domicilio y comprobantes." }, 400, origin);
   }
   const requiredDetails: string[] = [];
-  const hasUtilityProof = proofServices.some(value => value !== "none_in_name");
+  const hasUtilityProof = proofServices.some(value => ["edesur", "metrogas", "water"].includes(value));
+  const noNamedService = proofServices.includes("none_in_name");
   if (!customerOnly && referredBy) requiredDetails.push("referrer_full_name", "referrer_phone", "referrer_relationship");
   if (hasUtilityProof) requiredDetails.push("service_owner");
   if (!customerOnly && hasUtilityProof && !["yes", "no"].includes(conditionalDetails.service_owner ?? "")) {
     return respond({ error: "Indicá si el comprobante está a tu nombre." }, 400, origin);
   }
-  if (!customerOnly && conditionalDetails.service_owner === "no") requiredDetails.push("service_holder_name", "service_holder_dni", "service_holder_relationship");
+  if (!customerOnly && (noNamedService || conditionalDetails.service_owner === "no")) requiredDetails.push("service_holder_name", "service_holder_dni", "service_holder_relationship");
   if (!customerOnly && hasDebts) requiredDetails.push("debt_reason", "debt_amount");
   for (const source of customerOnly ? [] : incomeSources) {
     requiredDetails.push(`income_${source}`);
@@ -258,10 +258,12 @@ Deno.serve(async (request: Request) => {
   };
   const requiredAttachments: string[] = [];
   if (!customerOnly && housingSituation === "rent_contract") requiredAttachments.push("rental_contract");
-  if (!customerOnly && hasUtilityProof) requiredAttachments.push("utility_bill");
-  if (!customerOnly && hasUtilityProof && conditionalDetails.service_owner === "no") requiredAttachments.push("service_holder_dni_front", "service_holder_dni_back");
+  if (!customerOnly && proofServices.length > 0) requiredAttachments.push("utility_bill");
+  if (!customerOnly && (noNamedService || (hasUtilityProof && conditionalDetails.service_owner === "no"))) requiredAttachments.push("service_holder_dni_front", "service_holder_dni_back");
   if (!customerOnly && incomeSources.includes("formal_job")) requiredAttachments.push("salary_receipt");
   if (!customerOnly && incomeSources.includes("informal_job")) requiredAttachments.push("wallet_statement");
+  if (!customerOnly && incomeSources.includes("self_employed")) requiredAttachments.push("income_proof_self_employed");
+  if (!customerOnly && incomeSources.includes("business")) requiredAttachments.push("business_photos", "business_video");
   for (const source of ["allowance", "retirement", "pension", "cooperative"]) {
     if (!customerOnly && incomeSources.includes(source)) requiredAttachments.push(`income_proof_${source}`);
   }
@@ -299,22 +301,25 @@ Deno.serve(async (request: Request) => {
   } catch {
     return respond({ error: "No pudimos leer los productos seleccionados." }, 400, origin);
   }
-  const productLimit = customerOnly ? 3 : 1;
-  if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > productLimit) {
-    return respond({ error: `Esta solicitud permite elegir entre 1 y ${productLimit} producto${productLimit === 1 ? "" : "s"}.` }, 400, origin);
+  const unitLimit = customerOnly ? 3 : 1;
+  if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > unitLimit) {
+    return respond({ error: `Esta solicitud permite elegir entre 1 y ${unitLimit} unidad${unitLimit === 1 ? "" : "es"}.` }, 400, origin);
   }
   const requestedItems: Array<{ productId: number; quantity: number; frequency: "quincenal" | "mensual" }> = [];
   const seen = new Set<number>();
+  let totalUnits = 0;
   for (const raw of rawItems) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return respond({ error: "Hay un producto con datos inválidos." }, 400, origin);
     const item = raw as Record<string, unknown>;
     const productId = Number(item.product_id);
     const quantity = Number(item.quantity);
     const frequency = item.frequency;
-    if (!Number.isSafeInteger(productId) || productId <= 0 || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY ||
+    if (!Number.isSafeInteger(productId) || productId <= 0 || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > unitLimit ||
         (frequency !== "quincenal" && frequency !== "mensual") || seen.has(productId)) {
       return respond({ error: "Revisá los productos, cantidades y planes elegidos." }, 400, origin);
     }
+    totalUnits += quantity;
+    if (totalUnits > unitLimit) return respond({ error: `Esta solicitud permite elegir hasta ${unitLimit} unidad${unitLimit === 1 ? "" : "es"} en total.` }, 400, origin);
     seen.add(productId);
     requestedItems.push({ productId, quantity, frequency });
   }
