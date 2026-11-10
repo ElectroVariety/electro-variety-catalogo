@@ -184,6 +184,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .online-staff-person{display:flex;align-items:center;gap:7px;padding:6px 7px;border-bottom:1px solid #f3f4f6;font-size:13px}
 .online-staff-dot{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px #dcfce7}
 .online-staff-person-name{min-width:0;overflow-wrap:anywhere;font-weight:700}
+.verified-user-mark{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:4px;border-radius:50%;background:#1877f2;color:#fff;font-size:10px;line-height:1;font-weight:900;vertical-align:middle;box-shadow:0 0 0 1px #fff}
 .online-staff-person-role{margin-left:auto;color:#6b7280;font-size:11px;white-space:nowrap}
 .online-staff-team{margin:6px 0 0 13px;padding-left:8px;border-left:2px solid #dbeafe}
 .online-staff-team h4{margin:7px 0 2px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
@@ -238,6 +239,7 @@ let currentSeller=null;
 let currentSellerId=null;
 let currentStaffAccess=null;
 let currentSalesVerified=false;
+let currentUserId=null;
 let currentStaffProfileName="";
 let afterFirstLoginSetup=null;
 let teamSellerIds=[];
@@ -292,6 +294,10 @@ function retrySessionCheck(mode="restore"){
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+function isCatalogVerified(userId){return onlineStaffDirectory.find(user=>user.user_id===userId)?.is_verified===true||(userId&&userId===currentUserId&&currentSalesVerified)}
+function catalogVerifiedMark(userId){return isCatalogVerified(userId)?'<span class="verified-user-mark" title="Usuario verificado" aria-label="Verificado">✓</span>':""}
+function catalogVerifiedName(name,userId){return `${esc(name||"Sin nombre")}${catalogVerifiedMark(userId)}`}
+function catalogVerifiedText(name,userId){return `${esc(name||"Sin nombre")}${isCatalogVerified(userId)?" 🔵":""}`}
 function staffRoleLabel(access=currentStaffAccess,seller=currentSeller){
   if(access?.role==="admin")return "Admin";
   if(access?.role==="supervisor")return "Supervisor";
@@ -329,7 +335,7 @@ function renderOnlineStaff(){
   const collator=new Intl.Collator("es",{sensitivity:"base"});
   const roleOf=user=>onlineRoleGroup(user.role_label);
   const sortPeople=(a,b)=>(roleRank[roleOf(a)]-roleRank[roleOf(b)])||collator.compare(a.display_name||"",b.display_name||"");
-  const person=user=>`<div class="online-staff-person"><span class="online-staff-dot" aria-label="Conectado"></span><span class="online-staff-person-name">${esc(user.display_name||"Sin nombre")}</span><span class="online-staff-person-role">${esc(user.role_label||"Usuario")}</span></div>`;
+  const person=user=>`<div class="online-staff-person"><span class="online-staff-dot" aria-label="Conectado"></span><span class="online-staff-person-name">${catalogVerifiedName(user.display_name,user.user_id)}</span><span class="online-staff-person-role">${esc(user.role_label||"Usuario")}</span></div>`;
   const section=(title,people)=>people.length?`<section class="online-staff-section"><h3>${esc(title)}</h3>${people.sort(sortPeople).map(person).join("")}</section>`:"";
   let markup="";
   const topRoles=["boss","admin","cm"];
@@ -478,7 +484,7 @@ function showLogin(message=""){
   $("tools").style.display="none";
   $("sellerActions").style.display="none";
   currentSeller=null;currentSellerId=null;
-  currentStaffAccess=null;currentSalesVerified=false;currentStaffProfileName="";afterFirstLoginSetup=null;
+  currentStaffAccess=null;currentSalesVerified=false;currentUserId=null;currentStaffProfileName="";afterFirstLoginSetup=null;
   $("sellerProfileModal").style.display="none";$("sellerProfileModal").setAttribute("aria-hidden","true");
   $("sellerSalesModal").style.display="none";$("sellerSalesModal").setAttribute("aria-hidden","true");
   $("sellerTeamModal").style.display="none";$("sellerTeamModal").setAttribute("aria-hidden","true");
@@ -601,6 +607,7 @@ async function handleSession(session, mode="restore"){
     const {data:accessRows,error:accessError}=await db.rpc("get_my_staff_access");
     if(accessError){console.warn("No se pudo verificar el rol",accessError);retrySessionCheck(mode);return}
     currentStaffAccess=accessRows?.[0]||null;
+    currentUserId=session.user.id;
     currentSalesVerified=currentStaffAccess?.role==="admin";
     if(!currentSalesVerified){
       const {data:verification,error:verificationError}=await db.from("staff_sales_verifications").select("is_verified").eq("user_id",session.user.id).maybeSingle();
@@ -692,8 +699,8 @@ async function startCatalog(seller=null,staffAccess=currentStaffAccess,staffName
   $("sellerDepotStockButton").style.display=canManageDepot?"":"none";
   $("sellerLocalStockButton").style.display=canManageLocal?"":"none";
   $("sellerStockActions").style.display=(canManageDepot||canManageLocal)?"flex":"none";
-  if(seller)$("sellerProfileButton").textContent="👤 "+(seller.name||"Mi perfil");
-  else if(staffAccess)$("sellerProfileButton").textContent="👤 "+(currentStaffProfileName||"Mi perfil");
+  if(seller)$("sellerProfileButton").innerHTML="👤 "+catalogVerifiedName(seller.name||"Mi perfil",seller.user_id);
+  else if(staffAccess)$("sellerProfileButton").innerHTML="👤 "+catalogVerifiedName(currentStaffProfileName||"Mi perfil",currentUserId);
   startOnlineStaffPresence().catch(error=>{console.warn("Presencia de personal",error);$("onlineStaffStatus").textContent="No se pudo conectar con el panel de personal."});
   $("catLogout").style.display="block";
   $("app").innerHTML='<div class="msg">Cargando catálogo…</div>';
@@ -733,7 +740,7 @@ const catalogCreditResults=new Map();
 let catalogCustomerSaleRequests=[];
 let catalogCustomerSaleRequestsSelectedId=null;
 function renderCatalogCustomerSaleRequests(){
-  const list=$("customerSaleRequestsCatalogList"),supervisor=currentStaffAccess?.role==="supervisor";
+  const list=$("customerSaleRequestsCatalogList"),supervisor=currentStaffAccess?.role==="supervisor",showSeller=supervisor||(currentStaffAccess?.role==="custom"&&currentStaffAccess.can_view_assigned_sellers);
   const filter=$("customerSaleRequestsFilter")?.value||"pending",query=String($("customerSaleRequestsSearch")?.value||"").trim().toLocaleLowerCase("es");
   const rows=catalogCustomerSaleRequests.filter(request=>{
     const statusMatch=filter==="all"||(filter==="contacted"?(request.status==="contacted"||(request.status==="pending"&&request.credit_assessment==="needs_review")):(filter==="pending"?request.status==="pending"&&request.credit_assessment!=="needs_review":request.status===filter));
@@ -762,10 +769,10 @@ function renderCatalogCustomerSaleRequests(){
     const creditResult=catalogCreditResults.get(request.id),creditPanel=creditResult?renderSaleCreditResult(creditResult):"";
     const review=supervisor?`<div class="customer-request-review"><div class="seller-field"><label>Estado<select data-customer-request-status="${esc(request.id)}">${Object.entries(customerRequestStatuses).map(([key,label])=>`<option value="${key}" ${request.status===key?"selected":""}>${label}</option>`).join("")}</select></label><label>Situación crediticia<select data-customer-request-credit="${esc(request.id)}">${Object.entries(customerCreditLabels).map(([key,label])=>`<option value="${key}" ${request.credit_assessment===key?"selected":""}>${label}</option>`).join("")}</select></label><label>Nota interna<textarea data-customer-request-note="${esc(request.id)}" maxlength="1000" rows="2" placeholder="Nota interna para el equipo">${esc(request.admin_note||"")}</textarea></label><div class="customer-request-decision"><button class="seller-action-button secondary" type="button" data-check-sale-credit="${esc(request.id)}">🔎 Consultar situación crediticia</button><button class="seller-action-button" type="button" data-customer-request-decision="approved" data-request-id="${esc(request.id)}">✅ Aprobar solicitud</button><button class="seller-action-button secondary" type="button" data-customer-request-decision="rejected" data-request-id="${esc(request.id)}">❌ Rechazar solicitud</button><button class="seller-action-button secondary" type="button" data-save-customer-request="${esc(request.id)}">💾 Guardar revisión</button></div>${creditPanel}<small>La consulta es informativa y no aprueba ni rechaza automáticamente la solicitud. El resultado no se almacena.</small></div></div>`:`<div class="seller-help">Solo lectura · Tu supervisor revisa la solicitud.</div>`;
     const credit=customerCreditLabels[request.credit_assessment]||customerCreditLabels.not_reviewed;
-    return `<article class="customer-request-card"><div class="customer-request-top"><h3>Solicitud ${esc(request.tracking_code||String(request.id).slice(0,8))}</h3><span class="customer-request-status">${esc(customerRequestStatuses[request.status]||request.status)}</span></div><div class="customer-request-meta">${supervisor?`👤 Vendedor: <b>${esc(request.seller_name||"—")}</b> · `:""}${date} · Crédito: ${esc(credit)}</div><div class="customer-request-section"><h4>Cliente</h4><div class="customer-request-data"><span><b>${esc(request.full_name||"—")}</b></span><span><a href="tel:${esc(request.phone||"")}">${esc(request.phone||"—")}</a> · DNI ${esc(request.dni||"—")}</span><span class="wide">📍 ${esc([request.address||[request.street,request.street_number].filter(Boolean).join(" "),request.locality].filter(Boolean).join(", ")||"Domicilio sin indicar")}</span></div></div><div class="customer-request-section"><h4>Productos</h4><ul>${items||"<li>No hay productos informados.</li>"}</ul></div>${form}<div class="customer-request-actions">${documentButtons||'<span class="seller-help">No hay documentos adjuntos.</span>'}<button class="seller-action-button secondary" type="button" data-print-customer-request="${esc(request.id)}">📄 Ver solicitud como PDF (con adjuntos)</button></div>${request.notes?`<div class="customer-request-section"><b>Comentario:</b> ${esc(request.notes)}</div>`:""}${review}</article>`;
+    return `<article class="customer-request-card"><div class="customer-request-top"><h3>Solicitud ${esc(request.tracking_code||String(request.id).slice(0,8))}</h3><span class="customer-request-status">${esc(customerRequestStatuses[request.status]||request.status)}</span></div><div class="customer-request-meta">${showSeller?`👤 Vendedor: <b>${catalogVerifiedName(request.seller_name||"—",request.seller_id)}</b> · `:""}${date} · Crédito: ${esc(credit)}</div><div class="customer-request-section"><h4>Cliente</h4><div class="customer-request-data"><span><b>${esc(request.full_name||"—")}</b></span><span><a href="tel:${esc(request.phone||"")}">${esc(request.phone||"—")}</a> · DNI ${esc(request.dni||"—")}</span><span class="wide">📍 ${esc([request.address||[request.street,request.street_number].filter(Boolean).join(" "),request.locality].filter(Boolean).join(", ")||"Domicilio sin indicar")}</span></div></div><div class="customer-request-section"><h4>Productos</h4><ul>${items||"<li>No hay productos informados.</li>"}</ul></div>${form}<div class="customer-request-actions">${documentButtons||'<span class="seller-help">No hay documentos adjuntos.</span>'}<button class="seller-action-button secondary" type="button" data-print-customer-request="${esc(request.id)}">📄 Ver solicitud como PDF (con adjuntos)</button></div>${request.notes?`<div class="customer-request-section"><b>Comentario:</b> ${esc(request.notes)}</div>`:""}${review}</article>`;
   });
   const selected=rows.find(request=>request.id===catalogCustomerSaleRequestsSelectedId)||rows[0],selectedCard=cards[rows.indexOf(selected)];
-  const listRows=rows.map(request=>{const date=request.created_at?new Date(request.created_at).toLocaleDateString("es-AR"):"—",count=Array.isArray(request.items)?request.items.length:0;return `<button type="button" class="customer-request-inbox-row ${request.id===selected.id?"selected":""}" data-select-customer-request="${esc(request.id)}"><b>${esc(request.full_name||"Cliente sin nombre")}</b><small>${supervisor?`👤 ${esc(request.seller_name||"Vendedor")} · `:""}Solicitud ${esc(request.tracking_code||String(request.id).slice(0,8))} · ${date}</small><small>${count} producto(s) · ${esc(customerRequestStatuses[request.status]||request.status)}</small></button>`}).join("");
+  const listRows=rows.map(request=>{const date=request.created_at?new Date(request.created_at).toLocaleDateString("es-AR"):"—",count=Array.isArray(request.items)?request.items.length:0;return `<button type="button" class="customer-request-inbox-row ${request.id===selected.id?"selected":""}" data-select-customer-request="${esc(request.id)}"><b>${esc(request.full_name||"Cliente sin nombre")}</b><small>${showSeller?`👤 ${catalogVerifiedName(request.seller_name||"Vendedor",request.seller_id)} · `:""}Solicitud ${esc(request.tracking_code||String(request.id).slice(0,8))} · ${date}</small><small>${count} producto(s) · ${esc(customerRequestStatuses[request.status]||request.status)}</small></button>`}).join("");
   list.innerHTML=`<div class="customer-request-inbox"><aside class="customer-request-inbox-list"><h3>Listado de solicitudes · ${rows.length}</h3>${listRows}</aside><section class="customer-request-inbox-detail">${selectedCard}</section></div>`;
 }
 async function loadCatalogCustomerSaleRequests(){
@@ -832,7 +839,7 @@ async function saveSellerName(){
     if(error)throw error;
     if(currentSeller)currentSeller={...currentSeller,name:data||name};
     currentStaffProfileName=data||name;
-    $("sellerProfileButton").textContent="👤 "+currentStaffProfileName;
+    $("sellerProfileButton").innerHTML="👤 "+catalogVerifiedName(currentStaffProfileName,currentUserId);
     await refreshOnlineStaffDirectory();
     $("sellerProfileStatus").textContent="✅ Nombre actualizado.";
   }catch(e){$("sellerProfileStatus").textContent="No se pudo guardar el nombre: "+(e.message||e)}
@@ -1030,13 +1037,13 @@ async function loadSellerTeam(reset=true){
     if(sellerError)throw sellerError;
     teamSellerIds=(sellers||[]).map(s=>s.user_id);
     const select=$("sellerTeamFilter"),selected=filter;
-    select.innerHTML='<option value="">Todos mis vendedores</option>'+(sellers||[]).map(s=>`<option value="${esc(s.user_id)}">${esc(s.name||"Sin nombre")} · ${esc(s.phone||"sin teléfono")}</option>`).join("");
+    select.innerHTML='<option value="">Todos mis vendedores</option>'+(sellers||[]).map(s=>`<option value="${esc(s.user_id)}">${catalogVerifiedText(s.name||"Sin nombre",s.user_id)} · ${esc(s.phone||"sin teléfono")}</option>`).join("");
     if(teamSellerIds.includes(selected))select.value=selected;
     if(!teamSellerIds.length){list.innerHTML='<div class="seller-help">Todavía no tenés vendedores asignados. Pedile al administrador que configure tu equipo.</div>';status.textContent="";return}
     let query=db.from("seller_sales").select("id,seller_id,seller_name,order_text,status,created_at,expires_at,seller_sale_items(id,product_name,quantity,status)").in("seller_id",select.value?[select.value]:teamSellerIds).order("created_at",{ascending:false}).range(teamSalesOffset,teamSalesOffset+99);
     const {data,error}=await query;if(error)throw error;
     const sales=data||[];
-    const markup=sales.map(sale=>`<article class="seller-sale-card"><h3>${esc(sale.seller_name||"Vendedor")} · Pedido ${esc(String(sale.id).slice(0,8))}</h3><div class="sale-date">${esc(saleStatusLabel(sale.status))} · ${sale.created_at?new Date(sale.created_at).toLocaleString("es-AR"):"—"}</div><div class="sale-order">${esc(sale.order_text).replace(/\n/g,"<br>")}</div><ul>${(sale.seller_sale_items||[]).map(item=>`<li>${esc(item.product_name)} × ${Number(item.quantity)} · ${esc(saleItemStatusLabel(item.status))}</li>`).join("")}</ul></article>`).join("");
+    const markup=sales.map(sale=>`<article class="seller-sale-card"><h3>${catalogVerifiedName(sale.seller_name||"Vendedor",sale.seller_id)} · Pedido ${esc(String(sale.id).slice(0,8))}</h3><div class="sale-date">${esc(saleStatusLabel(sale.status))} · ${sale.created_at?new Date(sale.created_at).toLocaleString("es-AR"):"—"}</div><div class="sale-order">${esc(sale.order_text).replace(/\n/g,"<br>")}</div><ul>${(sale.seller_sale_items||[]).map(item=>`<li>${esc(item.product_name)} × ${Number(item.quantity)} · ${esc(saleItemStatusLabel(item.status))}</li>`).join("")}</ul></article>`).join("");
     if(reset)list.innerHTML=markup||'<div class="seller-help">No hay pedidos para mostrar.</div>';else list.insertAdjacentHTML("beforeend",markup);
     teamSalesOffset+=sales.length;
     status.textContent=`${teamSalesOffset} pedido(s) cargados de ${select.value?(sellers.find(s=>s.user_id===select.value)?.name||"un vendedor"):"tu equipo"}.`;

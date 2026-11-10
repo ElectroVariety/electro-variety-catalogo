@@ -177,6 +177,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   let editing = null;
   let checking = false;
   let currentAccessRole = null;
+  let salesVerificationUsers = [];
+  let salesVerificationByUser = new Map();
   let waProducts = [];
   let waZip = null;
 
@@ -192,6 +194,10 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     return user?.account_type || "Vendedor";
   }
   function nameWithRole(name, role) { return `${String(name || "Sin nombre")} • ${String(role || "Usuario")}`; }
+  function verificationBadge(userId) { return salesVerificationByUser.get(userId) === true ? '<span title="Usuario verificado" aria-label="Verificado" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-left:4px;border-radius:50%;background:#1877f2;color:white;font-size:11px;line-height:1;font-weight:900;vertical-align:middle">✓</span>' : ""; }
+  function verifiedName(name, userId) { return `${esc(name || "Sin nombre")}${verificationBadge(userId)}`; }
+  function verifiedRoleName(name, role, userId) { return `${verifiedName(name, userId)} · ${esc(role || "Usuario")}`; }
+  function verifiedNameText(name, userId) { return `${String(name || "Sin nombre")}${salesVerificationByUser.get(userId) === true ? " 🔵" : ""}`; }
 
   function setStatus(id, text, type = "") {
     const el = $(id);
@@ -257,7 +263,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     setStatus("loginMsg", message);
   }
 
-  function showApp(role = "admin") {
+  async function showApp(role = "admin") {
     currentAccessRole = role;
     $("login").classList.add("hidden");
     $("app").classList.remove("hidden");
@@ -269,10 +275,13 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     $("customRolesManagementCard").classList.toggle("hidden", role !== "admin");
     window.dispatchEvent(new CustomEvent("electro-admin-role", { detail: { role } }));
     if (role === "supervisor") {
+      const {data:directory,error:directoryError}=await db.rpc("get_catalog_staff_directory");
+      if(!directoryError){salesVerificationByUser=new Map((directory||[]).map(user=>[user.user_id,user.is_verified===true]))}
       loadSellerProfiles();
       loadAdminSales();
       return;
     }
+    await loadSalesVerificationUsers();
     loadProducts();
     loadSellers();
     loadStockUsers();
@@ -286,7 +295,6 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     loadCustomerSaleRequests();
     loadSupervisorManagement();
     loadCustomRoleManagement();
-    loadSalesVerificationUsers();
   }
 
   async function verifyAdmin(session) {
@@ -309,7 +317,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         showLogin("Esta cuenta no tiene permisos para entrar a este panel.");
         return;
       }
-      showApp(access.role === "admin" ? "admin" : "supervisor");
+      await showApp(access.role === "admin" ? "admin" : "supervisor");
       if (window.EVStaffProfile) await window.EVStaffProfile.ensure(db, session, "admin", () => {});
     } catch (error) {
       console.error(error);
@@ -786,7 +794,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     box.innerHTML = data.map(s => `
       <div class="item seller-list-item">
         <div class="info">
-          <b>${esc(nameWithRole(s.name, accountRoleLabel(rolesByUser.get(s.user_id) || { account_type: "Vendedor" })))}</b>
+          <b>${verifiedRoleName(s.name, accountRoleLabel(rolesByUser.get(s.user_id) || { account_type: "Vendedor" }), s.user_id)}</b>
           <div class="small">📱 ${esc(s.phone || "Sin número")} · ${s.active ? "🟢 Acceso habilitado" : "🔴 Acceso bloqueado"}</div>
         </div>
         <div class="seller-actions">
@@ -822,7 +830,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const rolesByUser = new Map((roleResult.data || []).map(user => [user.user_id, user]));
     box.innerHTML = data.map(s => {
       const role = accountRoleLabel(rolesByUser.get(s.user_id) || { account_type: "Vendedor" });
-      return `<div class="item"><div class="info"><b>${esc(nameWithRole(s.name, role))}</b><div class="small">📱 ${esc(s.phone || "Sin teléfono")} · ${s.active ? "🟢 Activo" : "🔴 Desactivado"}</div><div class="small">Alta: ${s.created_at ? new Date(s.created_at).toLocaleDateString("es-AR") : "—"}</div></div></div>`;
+      return `<div class="item"><div class="info"><b>${verifiedRoleName(s.name, role, s.user_id)}</b><div class="small">📱 ${esc(s.phone || "Sin teléfono")} · ${s.active ? "🟢 Activo" : "🔴 Desactivado"}</div><div class="small">Alta: ${s.created_at ? new Date(s.created_at).toLocaleDateString("es-AR") : "—"}</div></div></div>`;
     }).join("");
   }
 
@@ -860,7 +868,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const markup = sales.map(sale => {
       const items = (sale.seller_sale_items || []).map(item => `<li>${esc(item.product_name)} × ${Number(item.quantity)} · ${esc(saleStatusName(item.status))}</li>`).join("");
       const deleteButton = currentAccessRole === "admin" ? `<button class="red" type="button" data-delete-seller-sale="${esc(sale.id)}">🗑️ Borrar pedido</button>` : "";
-      return `<article class="sales-order"><div class="seller-actions" style="justify-content:space-between"><b>Pedido ${esc(String(sale.id).slice(0,8))} · ${esc(saleStatusName(sale.status))}</b>${deleteButton}</div><div class="small">Vendedor: ${esc(sale.seller_name || "Sin nombre")} · ${sale.created_at ? new Date(sale.created_at).toLocaleString("es-AR") : "—"}</div><ul>${items}</ul><details><summary>Ver texto del pedido</summary><pre>${esc(sale.order_text)}</pre></details></article>`;
+      return `<article class="sales-order"><div class="seller-actions" style="justify-content:space-between"><b>Pedido ${esc(String(sale.id).slice(0,8))} · ${esc(saleStatusName(sale.status))}</b>${deleteButton}</div><div class="small">Vendedor: ${verifiedName(sale.seller_name || "Sin nombre",sale.seller_id)} · ${sale.created_at ? new Date(sale.created_at).toLocaleString("es-AR") : "—"}</div><ul>${items}</ul><details><summary>Ver texto del pedido</summary><pre>${esc(sale.order_text)}</pre></details></article>`;
     }).join("");
     if (reset) box.innerHTML = markup;
     else box.insertAdjacentHTML("beforeend", markup);
@@ -914,7 +922,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       const conditionalMarkup = Object.entries(details).filter(([, value]) => String(value || "").trim()).map(([key, value]) => `<span><b>${esc(conditionalLabels[key] || `Información adicional · ${key.replaceAll("_", " ")}`)}:</b> ${esc(key === "service_owner" || key === "customer_only" ? (value === "yes" || value === "true" ? "Sí" : "No") : value)}</span>`).join("");
       const detailMarkup = `<div class="customer-sale-details"><b class="customer-sale-section-title">Datos personales</b><span><b>DNI:</b> ${esc(request.dni || "—")}</span>${customerOnly ? `<span><b>Tipo:</b> Cliente Electro Variety · datos básicos</span>` : `<span><b>DNI actualizado:</b> ${yesNo(request.dni_updated)}</span><span><b>Teléfono alternativo:</b> ${esc(request.alternative_phone || "—")}</span><span><b>Vínculo:</b> ${esc(request.alternative_contact_relationship || "—")}</span><span><b>Recomendado:</b> ${yesNo(request.referred_by)}</span><span><b>Cliente de Electro Variety:</b> ${yesNo(request.is_electro_variety_customer)}</span><b class="customer-sale-section-title">Domicilio y comprobantes</b><span><b>Calle y altura:</b> ${esc([request.street, request.street_number].filter(Boolean).join(" ") || "—")}</span><span><b>Entre calles:</b> ${esc(request.between_streets || "—")}</span><span><b>Vivienda:</b> ${esc(housingNames[request.housing_situation] || "—")}</span><span><b>Comprobantes:</b> ${esc(services)}</span><b class="customer-sale-section-title">Situación e ingresos</b><span><b>Deudas actuales:</b> ${yesNo(request.has_debts)}</span><span><b>Trabajo e ingresos:</b> ${esc(incomes)}</span>${conditionalMarkup ? `<b class="customer-sale-section-title">Información adicional</b>${conditionalMarkup}` : ""}`}</div>`;
       const creditResult=customerSaleCreditResults.get(request.id),creditPanel=creditResult?renderCustomerSaleCreditResult(creditResult):"";
-      return `<article class="customer-sale-request-card"><div class="customer-sale-request-head"><b>Solicitud ${esc(request.tracking_code || String(request.id).slice(0, 8))}</b><span>${esc(statusNames[request.status] || request.status)}</span></div><div class="small">${esc(request.full_name)} · <a href="tel:${esc(request.phone)}">${esc(request.phone)}</a> · ${createdAt}</div><div class="small">📍 ${esc([request.address, request.locality].filter(Boolean).join(", ") || "Domicilio sin indicar")}</div>${detailMarkup}<div class="customer-sale-docs">${documentButtons || '<span class="small">No hay documentos adjuntos.</span>'}</div><ul class="customer-sale-request-items">${itemMarkup}</ul>${request.notes ? `<div class="customer-sale-request-note"><b>Comentario del cliente:</b> ${esc(request.notes)}</div>` : ""}<div class="customer-sale-review"><label>Estado<select data-customer-sale-status="${esc(request.id)}"><option value="pending" ${request.status === "pending" ? "selected" : ""}>Pendiente</option><option value="contacted" ${request.status === "contacted" ? "selected" : ""}>Contactado</option><option value="converted" ${request.status === "converted" ? "selected" : ""}>Venta confirmada</option><option value="cancelled" ${request.status === "cancelled" ? "selected" : ""}>Cancelada</option><option value="approved" ${request.status === "approved" ? "selected" : ""}>Aprobada</option><option value="rejected" ${request.status === "rejected" ? "selected" : ""}>Rechazada</option></select></label><label>Situación crediticia<select data-customer-sale-credit="${esc(request.id)}"><option value="not_reviewed" ${request.credit_assessment === "not_reviewed" ? "selected" : ""}>Sin evaluar</option><option value="favorable" ${request.credit_assessment === "favorable" ? "selected" : ""}>Favorable</option><option value="needs_review" ${request.credit_assessment === "needs_review" ? "selected" : ""}>Requiere revisión</option><option value="unfavorable" ${request.credit_assessment === "unfavorable" ? "selected" : ""}>Desfavorable</option></select></label><label>Nota interna<textarea data-customer-sale-note="${esc(request.id)}" maxlength="1000" rows="2" placeholder="Nota para el equipo">${esc(request.admin_note || "")}</textarea></label><div class="seller-actions"><button class="dark" type="button" data-check-customer-sale-credit="${esc(request.id)}">🔎 Consultar situación crediticia</button><button class="dark" type="button" data-print-customer-sale="${esc(request.id)}">📄 Ver solicitud como PDF (con adjuntos)</button><button class="blue" type="button" data-save-customer-sale="${esc(request.id)}">💾 Guardar revisión</button><button class="blue" type="button" data-customer-sale-decision="approved" data-sale-id="${esc(request.id)}">✅ Aprobar</button><button class="red" type="button" data-customer-sale-decision="rejected" data-sale-id="${esc(request.id)}">❌ Rechazar</button></div>${creditPanel}<small>La consulta es informativa, se ejecuta a pedido y no aprueba ni rechaza automáticamente. El resultado no se almacena.</small></div></article>`;
+      return `<article class="customer-sale-request-card"><div class="customer-sale-request-head"><b>Solicitud ${esc(request.tracking_code || String(request.id).slice(0, 8))}</b><span>${esc(statusNames[request.status] || request.status)}</span></div><div class="small">${esc(request.full_name)} · <a href="tel:${esc(request.phone)}">${esc(request.phone)}</a> · ${createdAt}</div>${request.seller_id ? `<div class="small">Vendedor: ${verifiedName(request.seller_name || "Vendedor",request.seller_id)}</div>` : ""}<div class="small">📍 ${esc([request.address, request.locality].filter(Boolean).join(", ") || "Domicilio sin indicar")}</div>${detailMarkup}<div class="customer-sale-docs">${documentButtons || '<span class="small">No hay documentos adjuntos.</span>'}</div><ul class="customer-sale-request-items">${itemMarkup}</ul>${request.notes ? `<div class="customer-sale-request-note"><b>Comentario del cliente:</b> ${esc(request.notes)}</div>` : ""}<div class="customer-sale-review"><label>Estado<select data-customer-sale-status="${esc(request.id)}"><option value="pending" ${request.status === "pending" ? "selected" : ""}>Pendiente</option><option value="contacted" ${request.status === "contacted" ? "selected" : ""}>Contactado</option><option value="converted" ${request.status === "converted" ? "selected" : ""}>Venta confirmada</option><option value="cancelled" ${request.status === "cancelled" ? "selected" : ""}>Cancelada</option><option value="approved" ${request.status === "approved" ? "selected" : ""}>Aprobada</option><option value="rejected" ${request.status === "rejected" ? "selected" : ""}>Rechazada</option></select></label><label>Situación crediticia<select data-customer-sale-credit="${esc(request.id)}"><option value="not_reviewed" ${request.credit_assessment === "not_reviewed" ? "selected" : ""}>Sin evaluar</option><option value="favorable" ${request.credit_assessment === "favorable" ? "selected" : ""}>Favorable</option><option value="needs_review" ${request.credit_assessment === "needs_review" ? "selected" : ""}>Requiere revisión</option><option value="unfavorable" ${request.credit_assessment === "unfavorable" ? "selected" : ""}>Desfavorable</option></select></label><label>Nota interna<textarea data-customer-sale-note="${esc(request.id)}" maxlength="1000" rows="2" placeholder="Nota para el equipo">${esc(request.admin_note || "")}</textarea></label><div class="seller-actions"><button class="dark" type="button" data-check-customer-sale-credit="${esc(request.id)}">🔎 Consultar situación crediticia</button><button class="dark" type="button" data-print-customer-sale="${esc(request.id)}">📄 Ver solicitud como PDF (con adjuntos)</button><button class="blue" type="button" data-save-customer-sale="${esc(request.id)}">💾 Guardar revisión</button><button class="blue" type="button" data-customer-sale-decision="approved" data-sale-id="${esc(request.id)}">✅ Aprobar</button><button class="red" type="button" data-customer-sale-decision="rejected" data-sale-id="${esc(request.id)}">❌ Rechazar</button></div>${creditPanel}<small>La consulta es informativa, se ejecuta a pedido y no aprueba ni rechaza automáticamente. El resultado no se almacena.</small></div></article>`;
     });
     const selected = rows.find(request => request.id === customerSaleRequestsSelectedId) || rows[0];
     const selectedCard = cards[rows.indexOf(selected)];
@@ -1027,7 +1035,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const candidates = candidateResult.data || [];
     if (select) {
       const eligible = candidates.filter(user => !["admin", "supervisor", "custom"].includes(user.role));
-      select.innerHTML = '<option value="">Elegir usuario</option>' + eligible.map(user => `<option value="${esc(user.user_id)}">${esc(nameWithRole(user.display_name, accountRoleLabel(user)))} · ${esc(user.phone || "sin teléfono")}</option>`).join("");
+      select.innerHTML = '<option value="">Elegir usuario</option>' + eligible.map(user => `<option value="${esc(user.user_id)}">${verifiedNameText(nameWithRole(user.display_name, accountRoleLabel(user)),user.user_id)} · ${esc(user.phone || "sin teléfono")}</option>`).join("");
     }
     const sellers = sellerResult.data || [];
     const groups = new Map();
@@ -1041,12 +1049,11 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     }
     box.innerHTML = [...groups.entries()].map(([supervisorId, group]) => {
       const assigned = new Set(group.sellerIds);
-      const options = sellers.filter(seller => seller.user_id !== supervisorId).map(seller => `<label><input type="checkbox" value="${esc(seller.user_id)}" ${assigned.has(seller.user_id) ? "checked" : ""}><span>${esc(seller.name || "Sin nombre")} · ${esc(seller.phone || "sin teléfono")}${seller.active ? "" : " · desactivado"}</span></label>`).join("");
-      return `<div class="supervisor-assignment"><b>${esc(nameWithRole(group.name || "Supervisor", "Supervisor"))}</b><div class="small">${esc(group.phone || "Sin teléfono")} · ${group.sellerIds.length} vendedor(es) asignados</div><div class="small" style="margin-top:9px">Vendedores que podrá consultar</div><div class="assignment-checklist" data-supervisor-members="${esc(supervisorId)}">${options || '<div class="small">No hay vendedores disponibles.</div>'}</div><div class="actions"><button class="blue" type="button" data-save-supervisor="${esc(supervisorId)}">💾 Guardar asignación</button><button class="red" type="button" data-remove-supervisor="${esc(supervisorId)}">Quitar rol de supervisor</button></div></div>`;
+      const options = sellers.filter(seller => seller.user_id !== supervisorId).map(seller => `<label><input type="checkbox" value="${esc(seller.user_id)}" ${assigned.has(seller.user_id) ? "checked" : ""}><span>${verifiedName(seller.name || "Sin nombre",seller.user_id)} · ${esc(seller.phone || "sin teléfono")}${seller.active ? "" : " · desactivado"}</span></label>`).join("");
+      return `<div class="supervisor-assignment"><b>${verifiedRoleName(group.name || "Supervisor", "Supervisor",supervisorId)}</b><div class="small">${esc(group.phone || "Sin teléfono")} · ${group.sellerIds.length} vendedor(es) asignados</div><div class="small" style="margin-top:9px">Vendedores que podrá consultar</div><div class="assignment-checklist" data-supervisor-members="${esc(supervisorId)}">${options || '<div class="small">No hay vendedores disponibles.</div>'}</div><div class="actions"><button class="blue" type="button" data-save-supervisor="${esc(supervisorId)}">💾 Guardar asignación</button><button class="red" type="button" data-remove-supervisor="${esc(supervisorId)}">Quitar rol de supervisor</button></div></div>`;
     }).join("");
   }
 
-  let salesVerificationUsers = [];
   function renderSalesVerificationUsers() {
     const box = $("salesVerificationList");
     if (!box) return;
@@ -1062,6 +1069,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const { data, error } = await db.rpc("admin_list_staff_sales_verifications");
     if (error) { box.innerHTML = `<div class="small danger">No se pudieron cargar los usuarios: ${esc(error.message)}</div>`; return; }
     salesVerificationUsers = data || [];
+    salesVerificationByUser = new Map(salesVerificationUsers.map(user=>[user.user_id,user.is_verified===true]));
     renderSalesVerificationUsers();
   }
   async function setSalesVerification(button) {
@@ -1074,6 +1082,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       if (error) throw error;
       $("salesVerificationStatus").textContent = verified ? "✅ Insignia otorgada. Ya puede crear enlaces y consultar solicitudes." : "✅ Insignia quitada. Se bloqueó la creación de enlaces y la consulta de solicitudes.";
       await loadSalesVerificationUsers();
+      await Promise.all([loadSellers(),loadSellerProfiles(),loadAdminSales(),loadSupervisorManagement(),loadCustomRoleManagement()]);
     } catch (error) {
       $("salesVerificationStatus").textContent = "No se pudo actualizar la insignia: " + (error.message || error);
       button.disabled = false;
@@ -1107,7 +1116,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const roleSelect = $("customRoleChoice");
     const userSelect = $("customRoleUser");
     if (roleSelect) roleSelect.innerHTML = '<option value="">Elegir rol</option>' + roles.map(r => `<option value="${esc(r.id)}">${esc(r.name)}${r.can_view_assigned_sellers ? " · acceso a pedidos asignados" : ""}</option>`).join("");
-    if (userSelect) userSelect.innerHTML = '<option value="">Elegir usuario</option>' + users.map(u => `<option value="${esc(u.user_id)}">${esc(nameWithRole(u.display_name, accountRoleLabel(u)))} · ${esc(u.phone || "sin teléfono")}</option>`).join("");
+    if (userSelect) userSelect.innerHTML = '<option value="">Elegir usuario</option>' + users.map(u => `<option value="${esc(u.user_id)}">${verifiedNameText(nameWithRole(u.display_name, accountRoleLabel(u)),u.user_id)} · ${esc(u.phone || "sin teléfono")}</option>`).join("");
     if (!roles.length && !users.length) {
       assignmentsBox.innerHTML = '<div class="small">Todavía no hay roles ni usuarios disponibles.</div>';
       return;
@@ -1126,8 +1135,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       const role = roles.find(item => item.id === user.custom_role_id);
       const canView = !!role?.can_view_assigned_sellers;
       const selected = new Set(assignments.get(user.user_id) || []);
-      const sellerOptions = sellers.filter(s => s.user_id !== user.user_id).map(s => `<label><input type="checkbox" value="${esc(s.user_id)}" ${selected.has(s.user_id) ? "checked" : ""}><span>${esc(s.name || "Sin nombre")} · ${esc(s.phone || "sin teléfono")}${s.active ? "" : " · desactivado"}</span></label>`).join("");
-      return `<div class="supervisor-assignment"><b>${esc(nameWithRole(user.display_name, role?.name || user.assigned_role_name || "Personalizado"))}</b><div class="small">${esc(user.phone || "Sin teléfono")} · ${esc(user.account_type || "usuario")}</div>${canView ? `<div class="small" style="margin-top:9px">Vendedores que puede consultar</div><div class="assignment-checklist" data-custom-staff-sellers="${esc(user.user_id)}">${sellerOptions || '<div class="small">No hay vendedores disponibles.</div>'}</div><button class="blue" type="button" data-save-custom-staff="${esc(user.user_id)}">💾 Guardar vendedores</button>` : '<div class="small" style="margin-top:8px">Este rol no tiene acceso a pedidos de vendedores.</div>'}<button class="red" type="button" data-remove-custom-staff="${esc(user.user_id)}" style="margin-top:8px">Quitar rol</button></div>`;
+      const sellerOptions = sellers.filter(s => s.user_id !== user.user_id).map(s => `<label><input type="checkbox" value="${esc(s.user_id)}" ${selected.has(s.user_id) ? "checked" : ""}><span>${verifiedName(s.name || "Sin nombre",s.user_id)} · ${esc(s.phone || "sin teléfono")}${s.active ? "" : " · desactivado"}</span></label>`).join("");
+      return `<div class="supervisor-assignment"><b>${verifiedRoleName(user.display_name, role?.name || user.assigned_role_name || "Personalizado",user.user_id)}</b><div class="small">${esc(user.phone || "Sin teléfono")} · ${esc(user.account_type || "usuario")}</div>${canView ? `<div class="small" style="margin-top:9px">Vendedores que puede consultar</div><div class="assignment-checklist" data-custom-staff-sellers="${esc(user.user_id)}">${sellerOptions || '<div class="small">No hay vendedores disponibles.</div>'}</div><button class="blue" type="button" data-save-custom-staff="${esc(user.user_id)}">💾 Guardar vendedores</button>` : '<div class="small" style="margin-top:8px">Este rol no tiene acceso a pedidos de vendedores.</div>'}<button class="red" type="button" data-remove-custom-staff="${esc(user.user_id)}" style="margin-top:8px">Quitar rol</button></div>`;
     }).join("");
   }
 
@@ -1430,7 +1439,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const map = Object.fromEntries((sellers || []).map(s => [s.user_id, s]));
     box.innerHTML = data.map(r => {
       const seller = map[r.user_id] || {};
-      return `<div class="item"><div class="info"><b>👤 ${esc(seller.name || "Vendedor")}</b><div class="small">📱 ${esc(seller.phone || "")} · 💻 ${esc(r.device_label || "Dispositivo")} · ${r.active ? "🟢 Autorizado" : "🔴 Revocado"}<br>Último acceso: ${r.last_seen_at ? new Date(r.last_seen_at).toLocaleString('es-AR') : "—"}</div></div><div class="seller-actions">${r.active ? `<button type="button" class="red" onclick="revokeSellerDevice('${r.user_id}')">🚫 Revocar</button>` : ""}</div></div>`;
+      return `<div class="item"><div class="info"><b>👤 ${verifiedName(seller.name || "Vendedor",seller.user_id)}</b><div class="small">📱 ${esc(seller.phone || "")} · 💻 ${esc(r.device_label || "Dispositivo")} · ${r.active ? "🟢 Autorizado" : "🔴 Revocado"}<br>Último acceso: ${r.last_seen_at ? new Date(r.last_seen_at).toLocaleString('es-AR') : "—"}</div></div><div class="seller-actions">${r.active ? `<button type="button" class="red" onclick="revokeSellerDevice('${r.user_id}')">🚫 Revocar</button>` : ""}</div></div>`;
     }).join("");
   }
 
@@ -1458,7 +1467,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const map = Object.fromEntries((sellers || []).map(s => [s.user_id, s]));
     box.innerHTML = data.map(r => {
       const seller = map[r.user_id] || {};
-      return `<div class="item"><div class="info"><b>👤 ${esc(seller.name || "Vendedor")}</b><div class="small">📱 ${esc(seller.phone || "")} · 💻 ${esc(r.device_label || "Dispositivo nuevo")} · ${new Date(r.created_at).toLocaleString('es-AR')}</div></div><div class="seller-actions"><button type="button" class="blue" onclick="approveDeviceRequest('${r.id}')">✅ Aprobar</button><button type="button" class="red" onclick="rejectDeviceRequest('${r.id}')">❌ Rechazar</button></div></div>`;
+      return `<div class="item"><div class="info"><b>👤 ${verifiedName(seller.name || "Vendedor",seller.user_id)}</b><div class="small">📱 ${esc(seller.phone || "")} · 💻 ${esc(r.device_label || "Dispositivo nuevo")} · ${new Date(r.created_at).toLocaleString('es-AR')}</div></div><div class="seller-actions"><button type="button" class="blue" onclick="approveDeviceRequest('${r.id}')">✅ Aprobar</button><button type="button" class="red" onclick="rejectDeviceRequest('${r.id}')">❌ Rechazar</button></div></div>`;
     }).join("");
   }
 
@@ -1489,7 +1498,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     if (error) { box.innerHTML = '<div class="small danger">No se pudieron cargar las cuentas: ' + esc(error.message) + '</div>'; return; }
     if (!data?.length) { box.innerHTML = '<div class="small">Todavía no hay cuentas de stock.</div>'; return; }
     box.innerHTML = data.map(s => `
-      <div class="item"><div class="info"><b>${s.location==='deposito'?'🏭':'🏪'} ${esc(s.name)}</b>
+      <div class="item"><div class="info"><b>${s.location==='deposito'?'🏭':'🏪'} ${verifiedName(s.name,s.user_id)}</b>
       <div class="small">${s.location==='deposito'?'Depósito':'Local'} · 📱 ${esc(s.phone||'Sin número')} · ${s.active?'🟢 Activa':'🔴 Desactivada'}</div></div>
       <div class="seller-actions"><button type="button" class="${s.active?'red':'blue'}" onclick="toggleStockUser('${esc(s.user_id)}',${s.active})">${s.active?'Desactivar':'Activar'}</button>
       <button type="button" class="red" onclick="deleteStockUser('${esc(s.user_id)}')">🗑️ Eliminar</button></div></div>`).join('');
