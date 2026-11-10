@@ -60,7 +60,6 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
   <div id="sellerActions" class="seller-actions" style="display:none">
     <button id="sellerProfileButton" type="button">👤 Mi perfil</button>
     <button id="sellerSalesButton" type="button">🧾 Mis ventas</button>
-    <button id="sellerNewSaleButton" type="button">➕ Crear pedido</button>
     <button id="sellerTeamButton" type="button" style="display:none">👥 Ventas del equipo</button>
     <button id="sellerActivityButton" type="button" style="display:none">🕘 Actividad del equipo</button>
     <button id="sellerTeamProfilesButton" type="button" style="display:none">🪪 Perfiles del equipo</button>
@@ -193,24 +192,10 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 </div>
 <div id="sellerSalesModal" class="cart-modal seller-modal" aria-hidden="true">
   <div class="cart-panel seller-sales-panel" role="dialog" aria-modal="true" aria-labelledby="sellerSalesTitle">
-    <div class="cart-head"><h2 id="sellerSalesTitle">🧾 Pedidos y ventas</h2><button id="sellerSalesClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
-    <div class="seller-tabs"><button id="sellerSalesNewTab" class="active" type="button">Crear pedido</button><button id="sellerSalesHistoryTab" type="button">Mi historial</button></div>
-    <section id="sellerSalesNewPanel">
-      <p class="seller-help">Elegí los productos y cantidades, pegá el pedido del cliente y registralo. Después copiá el texto y envialo manualmente al grupo de WhatsApp.</p>
-      <input id="saleProductSearch" class="seller-search" type="search" placeholder="Buscar producto">
-      <div id="saleProductList" class="sale-product-list"></div>
-      <label class="seller-field">Tipo de cliente<select id="saleCustomerType" required><option value="">Elegí una opción</option><option value="existing">Cliente de Electro Variety</option><option value="new">Cliente nuevo</option></select></label>
-      <label class="seller-field">Localidad del cliente (opcional)<input id="saleCustomerLocality" maxlength="120" autocomplete="address-level2" placeholder="Ej. Alejandro Korn"></label>
-      <label class="seller-field">Pedido para el grupo de WhatsApp<textarea id="saleOrderText" rows="5" maxlength="10000" placeholder="Pegá acá el pedido completo"></textarea></label>
-      <div class="seller-help">Cada producto queda pendiente de entrega por 48 horas. Si no confirmás su entrega, se devuelve automáticamente al stock.</div>
-      <button id="createSellerSaleButton" class="seller-action-button" type="button">Enviar pedido por WhatsApp</button>
-      <div id="sellerSaleCreateStatus" class="seller-status" role="status"></div>
-      <label id="sellerPreparedMessageWrap" class="seller-field" style="display:none">Pedido preparado<textarea id="sellerPreparedMessage" rows="7" readonly></textarea></label>
-      <button id="sellerOpenWhatsAppLink" class="seller-action-button" type="button" style="display:none">Compartir pedido por WhatsApp</button>
-      <button id="sellerCopyPreparedButton" class="seller-action-button secondary" type="button" style="display:none">Copiar pedido</button>
-    </section>
-    <section id="sellerSalesHistoryPanel" style="display:none">
+    <div class="cart-head"><h2 id="sellerSalesTitle">🧾 Mis ventas</h2><button id="sellerSalesClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
+    <section id="sellerSalesHistoryPanel">
       <button id="sellerSalesRefresh" class="seller-action-button secondary" type="button">Actualizar historial</button>
+      <div id="sellerSaleCreateStatus" class="seller-status" role="status"></div>
       <div id="sellerSalesHistory" class="seller-sales-history">Cargando…</div>
     </section>
   </div>
@@ -948,7 +933,6 @@ async function startCatalog(seller=null,staffAccess=currentStaffAccess,staffName
   $("sellerActions").style.display=(seller||staffAccess)?"flex":"none";
   $("sellerProfileButton").style.display=(seller||staffAccess)?"":"none";
   $("sellerSalesButton").style.display=seller?"":"none";
-  $("sellerNewSaleButton").style.display=seller?"":"none";
   $("sellerTeamButton").style.display=canViewTeam?"":"none";
   const canViewTeamActivity=staffAccess?.role==="supervisor";
   $("sellerActivityButton").style.display=canViewTeamActivity?"":"none";
@@ -1232,16 +1216,8 @@ async function saveSellerPassword(){
 function openSellerSales(tab="new"){
   if(!currentSellerId)return;
   openSellerModal("sellerSalesModal");
-  showSellerSalesTab(tab);
-  renderSaleProducts();
-}
-function showSellerSalesTab(tab){
-  const history=tab==="history";
-  $("sellerSalesNewPanel").style.display=history?"none":"block";
-  $("sellerSalesHistoryPanel").style.display=history?"block":"none";
-  $("sellerSalesNewTab").classList.toggle("active",!history);
-  $("sellerSalesHistoryTab").classList.toggle("active",history);
-  if(history)loadSellerSales();
+  $("sellerSaleCreateStatus").textContent="";
+  loadSellerSales();
 }
 function stockHint(product){
   const n=Number(product.stock);
@@ -1815,8 +1791,7 @@ $("sellerPasswordSave").addEventListener("click",saveSellerPassword);
 $("createCustomerSaleReferral").addEventListener("click",createCustomerSaleReferral);
 $("firstLoginSetupSave").addEventListener("click",completeFirstLoginSetup);
 $("verifiedProfileSetupSave").addEventListener("click",saveVerifiedProfileSetup);
-$("sellerSalesButton").addEventListener("click",()=>openSellerSales("history"));
-$("sellerNewSaleButton").addEventListener("click",()=>openSellerSales("new"));
+$("sellerSalesButton").addEventListener("click",openSellerSales);
 $("sellerTeamButton").addEventListener("click",openSellerTeam);
 $("sellerActivityButton").addEventListener("click",openSellerActivity);
 $("sellerActivityClose").addEventListener("click",()=>closeSellerModal("sellerActivityModal"));
@@ -1843,12 +1818,6 @@ $("sellerTeamLoadMore").addEventListener("click",()=>loadSellerTeam(false));
 $("sellerTeamHistory").addEventListener("click",e=>{const button=e.target.closest("[data-team-resolve-sale]");if(button)resolveAssignedSellerSaleItem(button)});
 $("sellerSalesClose").addEventListener("click",()=>closeSellerModal("sellerSalesModal"));
 $("sellerSalesModal").addEventListener("click",e=>{if(e.target===$("sellerSalesModal"))closeSellerModal("sellerSalesModal")});
-$("sellerSalesNewTab").addEventListener("click",()=>showSellerSalesTab("new"));
-$("sellerSalesHistoryTab").addEventListener("click",()=>showSellerSalesTab("history"));
-$("saleProductSearch").addEventListener("input",renderSaleProducts);
-$("createSellerSaleButton").addEventListener("click",createSellerSale);
-$("sellerOpenWhatsAppLink").addEventListener("click",sharePreparedSellerOrder);
-$("sellerCopyPreparedButton").addEventListener("click",()=>copySellerSaleText($("sellerPreparedMessage").value,$("sellerCopyPreparedButton")));
 $("sellerSalesRefresh").addEventListener("click",loadSellerSales);
 $("sellerSalesHistory").addEventListener("click",e=>{
   const resolveButton=e.target.closest("[data-resolve-sale]");
