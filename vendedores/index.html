@@ -74,7 +74,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 <div id="catalogLayout"><main id="app"><div class="msg">Cargando…</div></main></div>
 <button id="onlineStaffToggle" class="online-staff-toggle" type="button" aria-label="Mostrar personal conectado" title="Arrastrá para mover · tocá para abrir" aria-expanded="false" aria-controls="onlineStaffPanel" style="display:none"><span aria-hidden="true">👥</span><span id="onlineStaffToggleCount" class="online-staff-toggle-count">0</span></button>
 <button id="onlineStaffBackdrop" class="online-staff-backdrop" type="button" aria-label="Cerrar personal conectado" tabindex="-1"></button>
-<aside id="onlineStaffPanel" class="online-staff-panel" aria-label="Personal conectado" aria-hidden="true" style="display:none"><div class="online-staff-heading"><h2>👥 Conectados</h2><button id="onlineStaffClose" class="cart-close" type="button" aria-label="Cerrar">×</button><span id="onlineStaffCount" class="online-staff-count">0</span></div><div id="onlineStaffStatus" class="seller-help" role="status">Conectando…</div><div id="onlineStaffList" aria-live="polite"></div><section id="onlineStaffRanking" class="online-staff-ranking" style="display:none"><h2>🏆 Ranking mensual</h2><p id="onlineStaffRankingMonth" class="seller-help"></p><div id="onlineStaffRankingNew"></div><div id="onlineStaffRankingExisting"></div></section></aside>
+<aside id="onlineStaffPanel" class="online-staff-panel" aria-label="Personal conectado" aria-hidden="true" style="display:none"><div class="online-staff-heading"><h2>👥 Conectados</h2><button id="onlineStaffClose" class="cart-close" type="button" aria-label="Cerrar">×</button><span id="onlineStaffCount" class="online-staff-count">0</span></div><div id="onlineStaffStatus" class="seller-help" role="status">Conectando…</div><div id="onlineStaffList" aria-live="polite"></div><section id="onlineStaffRanking" class="online-staff-ranking" style="display:none"><h2>🏆 Ranking mensual</h2><div id="onlineStaffRankingNew"></div><div id="onlineStaffRankingExisting"></div></section></aside>
 <div id="onlineStaffProfileModal" class="cart-modal seller-modal" aria-hidden="true"><div class="cart-panel online-staff-profile-panel" role="dialog" aria-modal="true" aria-labelledby="onlineStaffProfileTitle"><div class="cart-head"><h2 id="onlineStaffProfileTitle">👤 Perfil</h2><button id="onlineStaffProfileClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div><div id="onlineStaffProfileContent" class="seller-help" role="status">Cargando perfil…</div></div></div>
 <div id="cartBar" class="cartbar"><button id="cartOpenButton" type="button">🛒 Ver carrito</button></div>
 <div id="cartShareModal" class="cart-modal" aria-hidden="true" style="z-index:70">
@@ -384,7 +384,7 @@ function retrySessionCheck(mode="restore"){
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
 function isCatalogVerified(userId){return onlineStaffDirectory.find(user=>user.user_id===userId)?.is_verified===true||(userId&&userId===currentUserId&&currentSalesVerified)}
-function canViewCatalogStaffProfiles(){return currentSalesVerified===true||currentStaffAccess?.role==="admin"}
+function canViewCatalogStaffProfiles(){return currentSalesVerified===true}
 function catalogVerifiedMark(userId){return isCatalogVerified(userId)?'<span class="verified-user-mark" title="Usuario verificado" aria-label="Verificado">✓</span>':""}
 function catalogVerifiedName(name,userId){return `${esc(name||"Sin nombre")}${catalogVerifiedMark(userId)}`}
 function catalogVerifiedText(name,userId){return `${esc(name||"Sin nombre")}${isCatalogVerified(userId)?" 🔵":""}`}
@@ -472,9 +472,9 @@ function renderOnlineStaffRanking(rows){
   const root=$("onlineStaffRanking");if(!root)return;
   root.style.display=canViewCatalogStaffProfiles()?"block":"none";
   if(!canViewCatalogStaffProfiles())return;
-  $("onlineStaffRankingMonth").textContent=`Ventas completadas del mes. El período cierra el ${formatOnlineMonthEnd()}. Los pedidos pendientes o cancelados no cuentan.`;
+  const monthLabel=formatOnlineMonthEnd();const rankingTitle=$("onlineStaffRanking")?.querySelector("h2");if(rankingTitle)rankingTitle.textContent=`🏆 Ranking mensual · Cierra el ${monthLabel}`;
   const renderGroup=(category,targetId,title)=>{
-    const target=$(targetId),items=(rows||[]).filter(row=>row.category===category);
+    const target=$(targetId),items=(rows||[]).filter(row=>row.category===category).slice(0,5);
     const prize=`Premio para quien termine primero: $100.000`;
     target.innerHTML=`<div class="online-ranking-group"><h3>${title}</h3><p class="online-ranking-prize">${prize}</p>${items.length?items.map(row=>`<div class="online-ranking-row"><strong>${Number(row.ranking_position)===1?"🏆":"#"+Number(row.ranking_position)}</strong><span>${catalogVerifiedName(row.display_name,row.seller_id)} · ${esc(row.role_label||"Usuario")}</span><span class="online-ranking-count">${Number(row.sale_count)} ventas</span></div>`).join(""):'<div class="seller-help">Todavía no hay ventas completadas en esta categoría este mes.</div>'}</div>`;
   };
@@ -558,13 +558,20 @@ async function refreshOnlineStaffDirectory(){
   const {data,error}=await onlineStaffClient.rpc("get_catalog_staff_directory");
   if(error){console.warn("Directorio de conectados",error);$("onlineStaffStatus").textContent="No se pudo actualizar la lista de conectados.";return}
   onlineStaffDirectory=data||[];
-  onlineStaffPhotoUrls=new Map();
-  if(canViewCatalogStaffProfiles()){
-    const paths=[...new Set(onlineStaffDirectory.map(user=>user.photo_path).filter(Boolean))];
-    if(paths.length){const signed=await onlineStaffClient.storage.from("staff-profile-photos").createSignedUrls(paths,1800);if(!signed.error)onlineStaffPhotoUrls=new Map((signed.data||[]).filter(item=>item.signedUrl).map(item=>[item.path,item.signedUrl]))}
-  }
+  await refreshOnlineStaffPhotoUrls();
   renderOnlineStaff();
   await loadOnlineStaffRanking();
+}
+async function refreshOnlineStaffPhotoUrls(){
+  onlineStaffPhotoUrls=new Map();
+  if(!onlineStaffClient||!onlineStaffChannel||!canViewCatalogStaffProfiles())return;
+  const onlineIds=new Set(Object.values(onlineStaffChannel.presenceState()||{}).flat().map(meta=>meta?.user_id).filter(Boolean));
+  const users=onlineStaffDirectory.filter(user=>onlineIds.has(user.user_id)&&user.is_verified===true&&user.photo_path);
+  const signedEntries=await Promise.all(users.map(async user=>{
+    try{const {data,error}=await onlineStaffClient.storage.from("staff-profile-photos").createSignedUrl(user.photo_path,1800);return !error&&data?.signedUrl?[user.user_id,data.signedUrl]:null}
+    catch(error){console.warn("No se pudo cargar una foto del panel de conectados",error);return null}
+  }));
+  onlineStaffPhotoUrls=new Map(signedEntries.filter(Boolean));
 }
 function stopOnlineStaffPresence(){
   if(onlineStaffRefreshTimer){clearInterval(onlineStaffRefreshTimer);onlineStaffRefreshTimer=null}
@@ -649,7 +656,7 @@ async function startOnlineStaffPresence(){
   await refreshOnlineStaffDirectory();
   const channel=client.channel(ONLINE_STAFF_TOPIC,{config:{private:true}});
   onlineStaffChannel=channel;
-  channel.on("presence",{event:"sync"},renderOnlineStaff).subscribe(async state=>{
+  channel.on("presence",{event:"sync"},()=>{void refreshOnlineStaffPhotoUrls().then(renderOnlineStaff)}).subscribe(async state=>{
     if(state==="SUBSCRIBED"){
       const {error}=await channel.track({user_id:sessionData.session.user.id});
       if(error)$("onlineStaffStatus").textContent="No se pudo registrar la conexión.";
