@@ -105,6 +105,9 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
       <label class="seller-field">Género<select id="sellerVerifiedGender"><option value="">Elegí una opción</option><option value="female">Femenino</option><option value="male">Masculino</option><option value="non_binary">No binario</option><option value="other">Otro</option><option value="prefer_not_to_say">Prefiero no decirlo</option></select></label>
       <label class="seller-field">Teléfono<input id="sellerVerifiedPhone" type="tel" inputmode="tel" autocomplete="tel" maxlength="25"></label>
       <button id="sellerVerifiedProfileSave" class="seller-action-button" type="button">Guardar datos personales</button>
+      <button id="sellerVerifiedPhotoRemove" class="seller-action-button secondary" type="button" style="display:none;margin-top:8px">Quitar foto</button>
+      <button id="requestVerifiedProfileChange" class="seller-action-button secondary" type="button" style="margin-top:8px">Solicitar modificación de datos personales</button>
+      <div id="verifiedProfileChangeRequestStatus" class="seller-help" role="status"></div>
     </div>
     <hr>
     <h3>Cambiar contraseña</h3>
@@ -113,6 +116,19 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <button id="sellerPasswordSave" class="seller-action-button" type="button">Actualizar contraseña</button>
     <div id="customerSaleReferralPanel"><hr><h3>🔗 Tu enlace permanente de ventas</h3><p class="seller-help">Este enlace es único, queda guardado en tu perfil y no vence. Compartilo con tus clientes; las solicitudes aparecerán en tu cuenta.</p><div class="profile-name-preview"><input id="customerSaleReferralUrl" type="text" readonly aria-label="Enlace permanente de solicitudes"><button id="createCustomerSaleReferral" class="seller-action-button" type="button">Copiar enlace</button></div></div>
     <div id="sellerProfileStatus" class="seller-status" role="status"></div>
+  </div>
+</div>
+<div id="verifiedProfileChangeRequestModal" class="cart-modal seller-modal" aria-hidden="true">
+  <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="verifiedProfileChangeRequestTitle">
+    <div class="cart-head"><h2 id="verifiedProfileChangeRequestTitle">✍️ Solicitar cambio de datos</h2><button id="verifiedProfileChangeRequestClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
+    <p class="seller-help">El administrador revisará la solicitud. Tus datos actuales no cambian hasta que la apruebe.</p>
+    <label class="seller-field">Nombre y apellido<input id="requestedProfileName" maxlength="120" autocomplete="name"></label>
+    <label class="seller-field">DNI<input id="requestedProfileDni" maxlength="20" autocomplete="off"></label>
+    <label class="seller-field">Fecha de nacimiento<input id="requestedProfileBirthDate" type="date" autocomplete="bday"></label>
+    <label class="seller-field">Género<select id="requestedProfileGender"><option value="">Elegí una opción</option><option value="female">Femenino</option><option value="male">Masculino</option><option value="non_binary">No binario</option><option value="other">Otro</option><option value="prefer_not_to_say">Prefiero no decirlo</option></select></label>
+    <label class="seller-field">Teléfono<input id="requestedProfilePhone" type="tel" inputmode="tel" autocomplete="tel" maxlength="25"></label>
+    <div id="verifiedProfileChangeSubmitStatus" class="seller-status" role="status"></div>
+    <button id="submitVerifiedProfileChangeRequest" class="seller-action-button" type="button">Enviar solicitud</button>
   </div>
 </div>
 <div id="verifiedProfileSetupModal" class="cart-modal seller-modal first-login-setup" aria-hidden="true">
@@ -652,7 +668,7 @@ async function loadMyVerifiedCatalogProfile(){
 }
 function previewVerifiedProfilePhoto(fileInputId,imageId,placeholderId){
   const file=$(fileInputId)?.files?.[0],img=$(imageId);
-  if(file&&img){if(!file.type.startsWith("image/"))return;img.src=URL.createObjectURL(file);img.style.display="block";if(placeholderId)$(placeholderId).style.display="none"}
+  if(file&&img){if(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>5*1024*1024){if(placeholderId)$(placeholderId).style.display="grid";img.style.display="none";return}if(img.dataset.objectUrl)URL.revokeObjectURL(img.dataset.objectUrl);img.dataset.objectUrl=URL.createObjectURL(file);img.src=img.dataset.objectUrl;img.style.display="block";if(placeholderId)$(placeholderId).style.display="none"}
 }
 async function showSavedProfilePhoto(path,imageId,placeholderId){
   const image=$(imageId);if(!image)return;
@@ -1056,8 +1072,12 @@ async function openSellerProfile(){
   $("sellerProfileRole").value="• "+staffRoleLabel();
   $("sellerProfileStatus").textContent="";
   $("sellerVerifiedPhotoFile").value="";
+  $("sellerProfileName").readOnly=isVerified&&!!currentVerifiedCatalogProfile?.completed_at;
+  $("verifiedProfileChangeRequestStatus").textContent="";
+  $("sellerVerifiedPhotoRemove").style.display="none";
+  $("requestVerifiedProfileChange").style.display="none";
   if(isVerified){
-    try{const profile=await loadMyVerifiedCatalogProfile();if(profile){$("sellerProfileName").value=profile.full_name||"";$("sellerVerifiedDni").value=profile.dni||"";$("sellerVerifiedBirthDate").value=profile.birth_date||"";$("sellerVerifiedGender").value=profile.gender||"";$("sellerVerifiedPhone").value=profile.phone||"";await showSavedProfilePhoto(profile.photo_path,"sellerVerifiedPhotoPreview","sellerVerifiedPhotoPlaceholder");await renderMyVerifiedProfileCard(profile)} }
+    try{const profile=await loadMyVerifiedCatalogProfile();if(profile){$("sellerProfileName").value=profile.full_name||"";$("sellerVerifiedDni").value=profile.dni||"";$("sellerVerifiedBirthDate").value=profile.birth_date||"";$("sellerVerifiedGender").value=profile.gender||"";$("sellerVerifiedPhone").value=profile.phone||"";const completed=!!profile.completed_at;$("sellerProfileName").readOnly=completed;for(const id of ["sellerVerifiedDni","sellerVerifiedBirthDate","sellerVerifiedGender","sellerVerifiedPhone"])$(id).disabled=completed;$("sellerVerifiedProfileSave").textContent=completed?"Guardar foto":"Guardar datos personales";$("sellerVerifiedPhotoRemove").style.display=completed&&profile.photo_path?"":"none";$("requestVerifiedProfileChange").style.display=completed?"":"none";await showSavedProfilePhoto(profile.photo_path,"sellerVerifiedPhotoPreview","sellerVerifiedPhotoPlaceholder");await renderMyVerifiedProfileCard(profile);if(completed)await loadMyVerifiedProfileChangeRequest()}else{$("sellerProfileName").readOnly=false;for(const id of ["sellerVerifiedDni","sellerVerifiedBirthDate","sellerVerifiedGender","sellerVerifiedPhone"])$(id).disabled=false;$("sellerVerifiedProfileSave").textContent="Guardar datos personales"}}
     catch(error){$("sellerProfileStatus").textContent="No se pudieron cargar tus datos: "+(error.message||error)}
   }
   $("customerSaleReferralUrl").value="";
@@ -1084,8 +1104,36 @@ async function saveSellerName(){
   finally{$("sellerNameSave").disabled=false}
 }
 async function saveSellerVerifiedProfile(){
-  const profile=await saveVerifiedProfileFields({nameId:"sellerProfileName",dniId:"sellerVerifiedDni",birthId:"sellerVerifiedBirthDate",genderId:"sellerVerifiedGender",phoneId:"sellerVerifiedPhone",fileId:"sellerVerifiedPhotoFile",statusId:"sellerProfileStatus",buttonId:"sellerVerifiedProfileSave"});
-  if(profile){$("sellerProfileButton").innerHTML="👤 "+catalogVerifiedName(profile.full_name,currentUserId);await refreshOnlineStaffDirectory();await showSavedProfilePhoto(profile.photo_path,"sellerVerifiedPhotoPreview","sellerVerifiedPhotoPlaceholder");await renderMyVerifiedProfileCard(profile)}
+  const file=$("sellerVerifiedPhotoFile").files?.[0]||null,status=$("sellerProfileStatus"),button=$("sellerVerifiedProfileSave");
+  if(!currentVerifiedCatalogProfile?.completed_at){const profile=await saveVerifiedProfileFields({nameId:"sellerProfileName",dniId:"sellerVerifiedDni",birthId:"sellerVerifiedBirthDate",genderId:"sellerVerifiedGender",phoneId:"sellerVerifiedPhone",fileId:"sellerVerifiedPhotoFile",statusId:"sellerProfileStatus",buttonId:"sellerVerifiedProfileSave"});if(profile){await finishVerifiedProfilePhotoUpdate(profile);$("sellerProfileName").readOnly=true;for(const id of ["sellerVerifiedDni","sellerVerifiedBirthDate","sellerVerifiedGender","sellerVerifiedPhone"])$(id).disabled=true;$("sellerVerifiedProfileSave").textContent="Guardar foto";$("requestVerifiedProfileChange").style.display=""}return}
+  if(!file){status.textContent="Elegí una foto nueva o usá “Quitar foto”.";return}
+  if(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>5*1024*1024){status.textContent="La foto debe ser JPG, PNG o WebP y pesar hasta 5 MB.";return}
+  button.disabled=true;status.textContent="Guardando foto…";let uploadedPath=null;
+  try{const ext={"image/jpeg":"jpg","image/png":"png","image/webp":"webp"}[file.type],oldPath=currentVerifiedCatalogProfile.photo_path||null;uploadedPath=`${currentUserId}/${crypto.randomUUID()}.${ext}`;const {error:uploadError}=await db.storage.from("staff-profile-photos").upload(uploadedPath,file,{contentType:file.type,cacheControl:"3600",upsert:false});if(uploadError)throw uploadError;const {data,error}=await db.rpc("save_my_verified_staff_profile_photo",{p_photo_path:uploadedPath});if(error)throw error;const profile=Array.isArray(data)?data[0]:data;await finishVerifiedProfilePhotoUpdate(profile||{...currentVerifiedCatalogProfile,photo_path:uploadedPath});if(oldPath&&oldPath!==uploadedPath)void db.storage.from("staff-profile-photos").remove([oldPath]);status.textContent="✅ Foto de perfil actualizada."}
+  catch(error){if(uploadedPath)void db.storage.from("staff-profile-photos").remove([uploadedPath]);status.textContent="No se pudo guardar la foto: "+(error.message||error)}finally{button.disabled=false}
+}
+async function finishVerifiedProfilePhotoUpdate(profile){currentVerifiedCatalogProfile=profile;$("sellerProfileButton").innerHTML="👤 "+catalogVerifiedName(profile.full_name,currentUserId);await refreshOnlineStaffDirectory();await showSavedProfilePhoto(profile.photo_path,"sellerVerifiedPhotoPreview","sellerVerifiedPhotoPlaceholder");await renderMyVerifiedProfileCard(profile);$("sellerVerifiedPhotoFile").value=""}
+async function removeSellerVerifiedPhoto(){
+  const button=$("sellerVerifiedPhotoRemove"),status=$("sellerProfileStatus"),oldPath=currentVerifiedCatalogProfile?.photo_path;if(!oldPath)return;
+  button.disabled=true;status.textContent="Quitando foto…";
+  try{const {data,error}=await db.rpc("save_my_verified_staff_profile_photo",{p_photo_path:null});if(error)throw error;const profile=Array.isArray(data)?data[0]:data;await finishVerifiedProfilePhotoUpdate(profile||{...currentVerifiedCatalogProfile,photo_path:null});await db.storage.from("staff-profile-photos").remove([oldPath]);button.style.display="none";status.textContent="✅ Foto quitada."}
+  catch(error){status.textContent="No se pudo quitar la foto: "+(error.message||error)}finally{button.disabled=false}
+}
+async function loadMyVerifiedProfileChangeRequest(){
+  const {data,error}=await db.rpc("get_my_verified_staff_profile_change_request");if(error)throw error;
+  const row=Array.isArray(data)?data[0]:data,button=$("requestVerifiedProfileChange"),status=$("verifiedProfileChangeRequestStatus");
+  if(!row){button.disabled=false;status.textContent="Podés solicitar una modificación. El administrador deberá aprobarla.";return}
+  const labels={pending:"Pendiente de revisión",approved:"Aprobada",rejected:"Rechazada"};status.textContent=`Última solicitud: ${labels[row.status]||row.status}${row.admin_note?" · Nota: "+row.admin_note:""}.`;
+  button.disabled=row.status==="pending";button.textContent=row.status==="pending"?"Solicitud pendiente":"Solicitar modificación de datos personales";
+}
+function openVerifiedProfileChangeRequest(){
+  const p=currentVerifiedCatalogProfile;if(!p?.completed_at)return;
+  $("requestedProfileName").value=p.full_name||"";$("requestedProfileDni").value=p.dni||"";$("requestedProfileBirthDate").value=p.birth_date||"";$("requestedProfileGender").value=p.gender||"";$("requestedProfilePhone").value=p.phone||"";$("verifiedProfileChangeSubmitStatus").textContent="";openSellerModal("verifiedProfileChangeRequestModal");
+}
+async function submitVerifiedProfileChangeRequest(){
+  const button=$("submitVerifiedProfileChangeRequest"),status=$("verifiedProfileChangeSubmitStatus");button.disabled=true;status.textContent="Enviando solicitud…";
+  try{const {error}=await db.rpc("submit_verified_staff_profile_change_request",{p_full_name:$("requestedProfileName").value.trim(),p_dni:$("requestedProfileDni").value.trim(),p_birth_date:$("requestedProfileBirthDate").value,p_gender:$("requestedProfileGender").value,p_phone:$("requestedProfilePhone").value.trim()});if(error)throw error;closeSellerModal("verifiedProfileChangeRequestModal");await loadMyVerifiedProfileChangeRequest()}
+  catch(error){status.textContent="No se pudo enviar la solicitud: "+(error.message||error)}finally{button.disabled=false}
 }
 async function loadOrCreateCustomerSaleReferral(){
   if(!currentSalesVerified&&currentStaffAccess?.role!=="admin")return;
@@ -1683,7 +1731,7 @@ $("cartSend").addEventListener("click",sendCartWhatsApp);
 $("cartClear").addEventListener("click",()=>{cartIds.clear();updateCartButtons();renderCart();});
 $("cartModal").addEventListener("click",e=>{if(e.target===$("cartModal"))closeCart();});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeCart();closeCartShareModal();}});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeSellerModal("sellerProfileModal");closeSellerModal("sellerSalesModal");}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeSellerModal("sellerProfileModal");closeSellerModal("sellerSalesModal");closeSellerModal("verifiedProfileChangeRequestModal");}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSellerModal("sellerActivityModal")});
 $("sellerProfileButton").addEventListener("click",openSellerProfile);
 $("onlineStaffToggle").addEventListener("click",toggleOnlineStaffPanel);
@@ -1694,6 +1742,11 @@ $("sellerProfileClose").addEventListener("click",()=>closeSellerModal("sellerPro
 $("sellerProfileModal").addEventListener("click",e=>{if(e.target===$("sellerProfileModal"))closeSellerModal("sellerProfileModal")});
 $("sellerNameSave").addEventListener("click",saveSellerName);
 $("sellerVerifiedProfileSave").addEventListener("click",saveSellerVerifiedProfile);
+$("sellerVerifiedPhotoRemove").addEventListener("click",removeSellerVerifiedPhoto);
+$("requestVerifiedProfileChange").addEventListener("click",openVerifiedProfileChangeRequest);
+$("verifiedProfileChangeRequestClose").addEventListener("click",()=>closeSellerModal("verifiedProfileChangeRequestModal"));
+$("verifiedProfileChangeRequestModal").addEventListener("click",e=>{if(e.target===$("verifiedProfileChangeRequestModal"))closeSellerModal("verifiedProfileChangeRequestModal")});
+$("submitVerifiedProfileChangeRequest").addEventListener("click",submitVerifiedProfileChangeRequest);
 $("sellerVerifiedPhotoFile").addEventListener("change",()=>previewVerifiedProfilePhoto("sellerVerifiedPhotoFile","sellerVerifiedPhotoPreview","sellerVerifiedPhotoPlaceholder"));
 $("verifiedSetupPhotoFile").addEventListener("change",()=>previewVerifiedProfilePhoto("verifiedSetupPhotoFile","verifiedSetupPhotoPreview","verifiedSetupPhotoPlaceholder"));
 $("sellerPasswordSave").addEventListener("click",saveSellerPassword);
