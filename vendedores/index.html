@@ -63,6 +63,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <button id="sellerNewSaleButton" type="button">➕ Crear pedido</button>
     <button id="sellerTeamButton" type="button" style="display:none">👥 Ventas del equipo</button>
     <button id="sellerActivityButton" type="button" style="display:none">🕘 Actividad del equipo</button>
+    <button id="sellerTeamProfilesButton" type="button" style="display:none">🪪 Perfiles del equipo</button>
     <button id="customerSaleRequestsButton" type="button" style="display:none">🛍️ Mis solicitudes</button>
   </div>
   <div id="sellerStockActions" class="seller-actions" style="display:none">
@@ -93,8 +94,17 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 <div id="sellerProfileModal" class="cart-modal seller-modal" aria-hidden="true">
   <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="sellerProfileTitle">
     <div class="cart-head"><h2 id="sellerProfileTitle">👤 Mi perfil</h2><button id="sellerProfileClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
-    <label class="seller-field">Nombre visible<div class="profile-name-preview"><input id="sellerProfileName" maxlength="80" autocomplete="name"><input id="sellerProfileRole" type="text" disabled readonly aria-label="Rol, solo visualización"></div></label>
+    <label class="seller-field">Nombre y apellido<div class="profile-name-preview"><input id="sellerProfileName" maxlength="120" autocomplete="name"><input id="sellerProfileRole" type="text" disabled readonly aria-label="Rol, solo visualización"></div></label>
     <button id="sellerNameSave" class="seller-action-button" type="button">Guardar nombre</button>
+    <div id="verifiedProfileEditFields" style="display:none;border-top:1px solid #e5e7eb;margin-top:14px;padding-top:8px">
+      <h3>Datos personales</h3><p class="seller-help">La foto es opcional. Estos datos los pueden ver el administrador y el supervisor de tu equipo.</p>
+      <div class="ev-profile-photo-row"><img id="sellerVerifiedPhotoPreview" class="ev-profile-photo" alt="Foto de perfil"><label class="seller-field">Foto de perfil (opcional)<input id="sellerVerifiedPhotoFile" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
+      <label class="seller-field">DNI<input id="sellerVerifiedDni" inputmode="text" autocomplete="off" maxlength="20"></label>
+      <label class="seller-field">Fecha de nacimiento<input id="sellerVerifiedBirthDate" type="date" autocomplete="bday"></label>
+      <label class="seller-field">Género<select id="sellerVerifiedGender"><option value="">Elegí una opción</option><option value="female">Femenino</option><option value="male">Masculino</option><option value="non_binary">No binario</option><option value="other">Otro</option><option value="prefer_not_to_say">Prefiero no decirlo</option></select></label>
+      <label class="seller-field">Teléfono<input id="sellerVerifiedPhone" type="tel" inputmode="tel" autocomplete="tel" maxlength="25"></label>
+      <button id="sellerVerifiedProfileSave" class="seller-action-button" type="button">Guardar datos personales</button>
+    </div>
     <hr>
     <h3>Cambiar contraseña</h3>
     <label class="seller-field">Nueva contraseña<input id="sellerPassword" type="password" autocomplete="new-password"></label>
@@ -102,6 +112,20 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <button id="sellerPasswordSave" class="seller-action-button" type="button">Actualizar contraseña</button>
     <div id="customerSaleReferralPanel"><hr><h3>🔗 Tu enlace permanente de ventas</h3><p class="seller-help">Este enlace es único, queda guardado en tu perfil y no vence. Compartilo con tus clientes; las solicitudes aparecerán en tu cuenta.</p><div class="profile-name-preview"><input id="customerSaleReferralUrl" type="text" readonly aria-label="Enlace permanente de solicitudes"><button id="createCustomerSaleReferral" class="seller-action-button" type="button">Copiar enlace</button></div></div>
     <div id="sellerProfileStatus" class="seller-status" role="status"></div>
+  </div>
+</div>
+<div id="verifiedProfileSetupModal" class="cart-modal seller-modal first-login-setup" aria-hidden="true">
+  <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="verifiedProfileSetupTitle">
+    <h2 id="verifiedProfileSetupTitle">🪪 Completá tu perfil verificado</h2>
+    <p class="seller-help">Para continuar al catálogo, completá estos datos una sola vez. El administrador y tu supervisor podrán verlos. La foto es opcional.</p>
+    <label class="seller-field">Nombre y apellido<input id="verifiedSetupName" maxlength="120" autocomplete="name"></label>
+    <div class="ev-profile-photo-row"><img id="verifiedSetupPhotoPreview" class="ev-profile-photo" alt="Vista previa de la foto"><label class="seller-field">Foto de perfil (opcional)<input id="verifiedSetupPhotoFile" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
+    <label class="seller-field">DNI<input id="verifiedSetupDni" maxlength="20" autocomplete="off"></label>
+    <label class="seller-field">Fecha de nacimiento<input id="verifiedSetupBirthDate" type="date" autocomplete="bday"></label>
+    <label class="seller-field">Género<select id="verifiedSetupGender"><option value="">Elegí una opción</option><option value="female">Femenino</option><option value="male">Masculino</option><option value="non_binary">No binario</option><option value="other">Otro</option><option value="prefer_not_to_say">Prefiero no decirlo</option></select></label>
+    <label class="seller-field">Teléfono<input id="verifiedSetupPhone" type="tel" inputmode="tel" autocomplete="tel" maxlength="25"></label>
+    <div id="verifiedProfileSetupStatus" class="seller-status" role="status"></div>
+    <button id="verifiedProfileSetupSave" class="seller-action-button" type="button">Guardar y continuar</button>
   </div>
 </div>
 <div id="firstLoginSetupModal" class="cart-modal seller-modal first-login-setup" aria-hidden="true">
@@ -134,6 +158,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <div id="sellerActivityList" class="seller-sales-history">Cargando…</div>
   </div>
 </div>
+<div id="sellerTeamProfilesModal" class="cart-modal seller-modal" aria-hidden="true"><div class="cart-panel seller-sales-panel" role="dialog" aria-modal="true" aria-labelledby="sellerTeamProfilesTitle"><div class="cart-head"><h2 id="sellerTeamProfilesTitle">🪪 Perfiles de mi equipo</h2><button id="sellerTeamProfilesClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div><div id="sellerTeamProfilesStatus" class="seller-help" role="status"></div><div id="sellerTeamProfilesList" class="seller-sales-history">Cargando perfiles…</div></div></div>
 <div id="customerSaleRequestsModal" class="cart-modal seller-modal" aria-hidden="true">
   <div class="cart-panel seller-sales-panel" role="dialog" aria-modal="true" aria-labelledby="customerSaleRequestsTitle">
     <div class="cart-head"><h2 id="customerSaleRequestsTitle">🛍️ Solicitudes de compra</h2><button id="customerSaleRequestsClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
@@ -210,6 +235,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .seller-field{display:block;margin:14px 0 8px;font-size:13px;font-weight:900}
 .profile-name-preview{display:flex;min-width:0;margin-top:6px;border:1px solid #d1d5db;border-radius:9px;overflow:hidden}
 .profile-name-preview:focus-within{border-color:#2563eb;box-shadow:0 0 0 2px #2563eb22}
+.ev-profile-photo-row{display:flex;align-items:center;gap:14px;margin:10px 0}.ev-profile-photo{width:82px;height:82px;flex:0 0 82px;border-radius:50%;object-fit:cover;background:#e5e7eb;border:3px solid #dbeafe;display:block}.ev-profile-card{display:grid;grid-template-columns:100px minmax(0,1fr);gap:14px;align-items:center;padding:14px;margin:10px 0;background:#111827;color:#fff;border-radius:14px}.ev-profile-card img,.ev-profile-avatar-placeholder{width:96px;height:96px;border-radius:50%;object-fit:cover;background:#374151}.ev-profile-avatar-placeholder{display:grid;place-items:center;font-size:40px}.ev-profile-card .role{display:block;color:#bfdbfe;font-size:13px;font-weight:800;margin:5px 0}.ev-profile-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:10px 0 0;font-size:13px}.ev-profile-card dt{color:#cbd5e1}.ev-profile-card dd{margin:2px 0 0;overflow-wrap:anywhere}.ev-profile-fields{display:grid;gap:8px}.ev-profile-fields label{display:grid;gap:5px;font-size:13px;font-weight:800}.ev-profile-fields input,.ev-profile-fields select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:9px;font:inherit}
 .seller-field .profile-name-preview input{margin:0;border:0;border-radius:0}
 .seller-field .profile-name-preview #sellerProfileName,.seller-field .profile-name-preview #firstLoginName{flex:1;min-width:0}
 .seller-field .profile-name-preview #sellerProfileRole,.seller-field .profile-name-preview #firstLoginRole{flex:0 1 42%;min-width:100px;max-width:48%;border-left:1px solid #d1d5db;background:#f3f4f6;color:#6b7280;cursor:not-allowed;opacity:1;font-size:12px;font-weight:700}
@@ -252,6 +278,8 @@ let currentSalesVerified=false;
 let currentUserId=null;
 let currentStaffProfileName="";
 let afterFirstLoginSetup=null;
+let afterVerifiedProfileSetup=null;
+let currentVerifiedCatalogProfile=null;
 let teamSellerIds=[];
 let teamSalesOffset=0;
 let onlineStaffChannel=null;
@@ -497,6 +525,23 @@ async function loadSellerActivity(){
   }).join(""):'<div class="seller-help">No hay actividad registrada para tus vendedores asignados.</div>';
   status.textContent=`${rows.length} registro(s) diarios cargados.`;
 }
+async function loadSellerTeamProfiles(){
+  if(currentStaffAccess?.role!=="supervisor"||!currentSalesVerified)return;
+  const box=$("sellerTeamProfilesList"),status=$("sellerTeamProfilesStatus");box.textContent="Cargando perfiles…";status.textContent="";
+  const {data,error}=await db.rpc("supervisor_list_verified_staff_profiles",{p_limit:2000});
+  if(error){box.textContent="No se pudieron cargar los perfiles: "+error.message;return}
+  const rows=data||[];
+  let photoMap=new Map();
+  const paths=[...new Set(rows.map(row=>row.photo_path).filter(Boolean))];
+  if(paths.length){const signed=await db.storage.from("staff-profile-photos").createSignedUrls(paths,1800);if(!signed.error)photoMap=new Map((signed.data||[]).map(item=>[item.path,item.signedUrl]))}
+  const genderName={female:"Femenino",male:"Masculino",non_binary:"No binario",other:"Otro",prefer_not_to_say:"Prefiere no decirlo"};
+  box.innerHTML=rows.length?rows.map(row=>`<article class="ev-profile-card"><div>${photoMap.get(row.photo_path)?`<img src="${esc(photoMap.get(row.photo_path))}" alt="Foto de ${esc(row.full_name)}">`:'<div class="ev-profile-avatar-placeholder">👤</div>'}<span class="role">${esc(row.role_label)}</span></div><div><h3>${catalogVerifiedName(row.full_name,row.user_id)}</h3><dl><div><dt>DNI</dt><dd>${esc(row.dni)}</dd></div><div><dt>Fecha de nacimiento</dt><dd>${new Date(`${row.birth_date}T12:00:00`).toLocaleDateString("es-AR")}</dd></div><div><dt>Género</dt><dd>${esc(genderName[row.gender]||row.gender)}</dd></div><div><dt>Teléfono</dt><dd><a href="tel:${esc(row.phone)}">${esc(row.phone)}</a></dd></div></dl></div></article>`).join(""):'<div class="seller-help">Tus vendedores todavía no completaron sus perfiles.</div>';
+  status.textContent=`${rows.length} perfil(es) de vendedores asignados.`;
+}
+function openSellerTeamProfiles(){
+  if(currentStaffAccess?.role!=="supervisor"||!currentSalesVerified)return;
+  openSellerModal("sellerTeamProfilesModal");void loadSellerTeamProfiles();
+}
 async function startOnlineStaffPresence(){
   stopOnlineStaffPresence();
   const client=db,panel=$("onlineStaffPanel");
@@ -539,12 +584,14 @@ function showLogin(message=""){
   $("tools").style.display="none";
   $("sellerActions").style.display="none";
   currentSeller=null;currentSellerId=null;
-  currentStaffAccess=null;currentSalesVerified=false;currentUserId=null;currentStaffProfileName="";afterFirstLoginSetup=null;
+  currentStaffAccess=null;currentSalesVerified=false;currentUserId=null;currentStaffProfileName="";afterFirstLoginSetup=null;afterVerifiedProfileSetup=null;currentVerifiedCatalogProfile=null;
   $("sellerProfileModal").style.display="none";$("sellerProfileModal").setAttribute("aria-hidden","true");
   $("sellerSalesModal").style.display="none";$("sellerSalesModal").setAttribute("aria-hidden","true");
   $("sellerTeamModal").style.display="none";$("sellerTeamModal").setAttribute("aria-hidden","true");
   $("sellerActivityModal").style.display="none";$("sellerActivityModal").setAttribute("aria-hidden","true");
   $("firstLoginSetupModal").style.display="none";$("firstLoginSetupModal").setAttribute("aria-hidden","true");
+  $("verifiedProfileSetupModal").style.display="none";$("verifiedProfileSetupModal").setAttribute("aria-hidden","true");
+  $("sellerTeamProfilesModal").style.display="none";$("sellerTeamProfilesModal").setAttribute("aria-hidden","true");
   $("counter").textContent="—";
   $("catLogout").style.display="none";
   $("app").innerHTML=`<div class="loginbox">
@@ -593,6 +640,74 @@ async function completeFirstLoginSetup(){
     if(continuation)await continuation();
   }catch(error){status.textContent="No se pudo completar el perfil: "+(error.message||error)}
   finally{button.disabled=false}
+}
+
+async function loadMyVerifiedCatalogProfile(){
+  const {data,error}=await db.rpc("get_my_verified_staff_profile");
+  if(error)throw error;
+  currentVerifiedCatalogProfile=Array.isArray(data)?(data[0]||null):(data||null);
+  return currentVerifiedCatalogProfile;
+}
+function previewVerifiedProfilePhoto(fileInputId,imageId){
+  const file=$(fileInputId)?.files?.[0],img=$(imageId);
+  if(file&&img){if(!file.type.startsWith("image/"))return;img.src=URL.createObjectURL(file);img.style.display="block"}
+}
+async function showSavedProfilePhoto(path,imageId){
+  const image=$(imageId);if(!image)return;
+  if(!path){image.removeAttribute("src");image.style.display="none";return}
+  const {data,error}=await db.storage.from("staff-profile-photos").createSignedUrl(path,1800);
+  if(!error&&data?.signedUrl){image.src=data.signedUrl;image.style.display="block"}
+}
+function openVerifiedProfileSetup(name=""){
+  $("verifiedSetupName").value=name||currentStaffProfileName||"";
+  $("verifiedSetupDni").value=currentVerifiedCatalogProfile?.dni||"";
+  $("verifiedSetupBirthDate").value=currentVerifiedCatalogProfile?.birth_date||"";
+  $("verifiedSetupGender").value=currentVerifiedCatalogProfile?.gender||"";
+  $("verifiedSetupPhone").value=currentVerifiedCatalogProfile?.phone||currentSeller?.phone||"";
+  $("verifiedSetupPhotoFile").value="";
+  $("verifiedProfileSetupStatus").textContent="";
+  void showSavedProfilePhoto(currentVerifiedCatalogProfile?.photo_path,"verifiedSetupPhotoPreview");
+  $("verifiedProfileSetupModal").style.display="flex";
+  $("verifiedProfileSetupModal").setAttribute("aria-hidden","false");
+}
+async function saveVerifiedProfileFields({nameId,dniId,birthId,genderId,phoneId,fileId,statusId,buttonId}){
+  const name=$(nameId).value.trim(),dni=$(dniId).value.trim(),birthDate=$(birthId).value,gender=$(genderId).value,phone=$(phoneId).value.trim(),file=$(fileId).files?.[0]||null,status=$(statusId),button=$(buttonId);
+  if(name.length<3){status.textContent="Ingresá nombre y apellido.";return null}
+  if(dni.length<7){status.textContent="Ingresá un DNI válido.";return null}
+  if(!birthDate||birthDate>new Date().toISOString().slice(0,10)){status.textContent="Ingresá una fecha de nacimiento válida.";return null}
+  if(!gender){status.textContent="Elegí una opción de género.";return null}
+  if(phone.replace(/\D/g,"").length<8){status.textContent="Ingresá un teléfono válido.";return null}
+  if(file&&(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>5*1024*1024)){status.textContent="La foto debe ser JPG, PNG o WebP y pesar hasta 5 MB.";return null}
+  button.disabled=true;status.textContent="Guardando perfil…";
+  let uploadedPath=null;
+  try{
+    if(file){const ext={"image/jpeg":"jpg","image/png":"png","image/webp":"webp"}[file.type];uploadedPath=`${currentUserId}/${crypto.randomUUID()}.${ext}`;const {error:uploadError}=await db.storage.from("staff-profile-photos").upload(uploadedPath,file,{contentType:file.type,cacheControl:"3600",upsert:false});if(uploadError)throw uploadError}
+    const oldPath=currentVerifiedCatalogProfile?.photo_path||null;
+    const {data,error}=await db.rpc("save_my_verified_staff_profile",{p_full_name:name,p_dni:dni,p_birth_date:birthDate,p_gender:gender,p_phone:phone,p_photo_path:uploadedPath||oldPath});
+    if(error)throw error;
+    const savedProfile=Array.isArray(data)?(data[0]||null):data;
+    currentVerifiedCatalogProfile=savedProfile||{user_id:currentUserId,full_name:name,dni,birth_date:birthDate,gender,phone,photo_path:uploadedPath||oldPath};
+    currentStaffProfileName=name;
+    if(currentSeller)currentSeller={...currentSeller,name,phone};
+    if(uploadedPath&&oldPath&&oldPath!==uploadedPath)void db.storage.from("staff-profile-photos").remove([oldPath]);
+    status.textContent="✅ Datos personales guardados.";
+    return currentVerifiedCatalogProfile;
+  }catch(error){if(uploadedPath)void db.storage.from("staff-profile-photos").remove([uploadedPath]);status.textContent="No se pudo guardar el perfil: "+(error.message||error);return null}
+  finally{button.disabled=false}
+}
+async function saveVerifiedProfileSetup(){
+  const profile=await saveVerifiedProfileFields({nameId:"verifiedSetupName",dniId:"verifiedSetupDni",birthId:"verifiedSetupBirthDate",genderId:"verifiedSetupGender",phoneId:"verifiedSetupPhone",fileId:"verifiedSetupPhotoFile",statusId:"verifiedProfileSetupStatus",buttonId:"verifiedProfileSetupSave"});
+  if(!profile)return;
+  $("verifiedProfileSetupModal").style.display="none";$("verifiedProfileSetupModal").setAttribute("aria-hidden","true");
+  const next=afterVerifiedProfileSetup;afterVerifiedProfileSetup=null;if(next)await next();
+}
+async function requireVerifiedCatalogProfile(continuation,name=currentStaffProfileName){
+  if(!currentSalesVerified){await continuation();return}
+  try{
+    const profile=await loadMyVerifiedCatalogProfile();
+    if(profile?.full_name&&profile?.dni&&profile?.birth_date&&profile?.gender&&profile?.phone){await continuation();return}
+    afterVerifiedProfileSetup=continuation;openVerifiedProfileSetup(name||profile?.full_name||"");
+  }catch(error){console.warn("No se pudo verificar el perfil personal",error);$("verifiedProfileSetupStatus").textContent="No se pudo cargar el perfil. Reintentá en unos segundos.";retrySessionCheck("restore")}
 }
 
 async function sellerLogin(){
@@ -688,8 +803,8 @@ async function handleSession(session, mode="restore"){
       if(adminProfileError){console.warn("No se pudo verificar el perfil administrador",adminProfileError);retrySessionCheck(mode);return}
       const name=adminProfile?.display_name||seller?.name||"";
       currentStaffProfileName=name;
-      if(adminProfile&&!adminProfile.profile_setup_completed){requireFirstLoginSetup(name,()=>startCatalog(null,currentStaffAccess,name),staffRoleLabel(currentStaffAccess,null));return}
-      await startCatalog(null,currentStaffAccess,name);return;
+      if(adminProfile&&!adminProfile.profile_setup_completed){requireFirstLoginSetup(name,()=>requireVerifiedCatalogProfile(()=>startCatalog(null,currentStaffAccess,name),name),staffRoleLabel(currentStaffAccess,null));return}
+      await requireVerifiedCatalogProfile(()=>startCatalog(null,currentStaffAccess,name),name);return;
     }
     if(seller){
       if(!seller.active){
@@ -715,8 +830,8 @@ async function handleSession(session, mode="restore"){
       deviceRetryTimer=null;deviceRetryDelay=5000;
       startDeviceHeartbeat();
       currentStaffProfileName=seller.name||"";
-      if(!seller.profile_setup_completed){requireFirstLoginSetup(seller.name,()=>startCatalog(seller,currentStaffAccess),staffRoleLabel(currentStaffAccess,seller));return}
-      await startCatalog(seller,currentStaffAccess);
+      if(!seller.profile_setup_completed){requireFirstLoginSetup(seller.name,()=>requireVerifiedCatalogProfile(()=>startCatalog(seller,currentStaffAccess,seller.name),seller.name),staffRoleLabel(currentStaffAccess,seller));return}
+      await requireVerifiedCatalogProfile(()=>startCatalog(seller,currentStaffAccess,seller.name),seller.name);
       return;
     }
     const access=currentStaffAccess;
@@ -727,8 +842,8 @@ async function handleSession(session, mode="restore"){
       const profileName=adminProfile?.display_name||stockProfile?.name||"";
       currentStaffProfileName=profileName;
       const completed=adminProfile?.profile_setup_completed===true||stockProfile?.profile_setup_completed===true;
-      if(!completed){requireFirstLoginSetup(profileName,()=>startCatalog(null,access,profileName),staffRoleLabel(access,null));return}
-      await startCatalog(null,access,profileName);return;
+      if(!completed){requireFirstLoginSetup(profileName,()=>requireVerifiedCatalogProfile(()=>startCatalog(null,access,profileName),profileName),staffRoleLabel(access,null));return}
+      await requireVerifiedCatalogProfile(()=>startCatalog(null,access,profileName),profileName);return;
     }
     await db.auth.signOut();
     showLogin("Esta cuenta no tiene acceso al catálogo.");
@@ -749,6 +864,7 @@ async function startCatalog(seller=null,staffAccess=currentStaffAccess,staffName
   $("sellerTeamButton").style.display=canViewTeam?"":"none";
   const canViewTeamActivity=staffAccess?.role==="supervisor";
   $("sellerActivityButton").style.display=canViewTeamActivity?"":"none";
+  $("sellerTeamProfilesButton").style.display=staffAccess?.role==="supervisor"&&currentSalesVerified?"":"none";
   if(currentUserId)startCatalogActivitySession().catch(error=>console.warn("No se pudo iniciar la actividad",error));
   const canSeeCustomerRequests=!!(staffAccess?.role==="admin"||currentSalesVerified);
   $("customerSaleRequestsButton").style.display=canSeeCustomerRequests?"":"none";
@@ -876,7 +992,7 @@ function renderSaleCreditResult(payload){
   return `<div class="customer-request-section"><b>Consulta BCRA</b> · CUIL ${esc(r.cuil||"—")} · ${r.has_records?`Último período: ${esc(r.period||"—")}`:"Sin registros informados por el BCRA"}<br>${entities.length?`<ul>${entities.map(entity=>`<li>${esc(entity.entidad)} · Situación ${esc(entity.situacion??"—")} · Monto informado: ${new Intl.NumberFormat("es-AR").format(Number(entity.monto_miles)||0)} miles · Atraso: ${esc(entity.dias_atraso??"—")} días${entity.en_revision?" · En revisión":""}${entity.proceso_judicial?" · Proceso judicial":""}</li>`).join("")}</ul>`:""}<small>Consultado ${esc(r.queried_at?new Date(r.queried_at).toLocaleString("es-AR"):"recién")}. Fuente: BCRA. Resultado informativo; verificá los datos antes de decidir.</small></div>`;
 }
 async function checkCatalogSaleCredit(id,button){
-  if(currentStaffAccess?.role!=="supervisor")return;
+  if(currentStaffAccess?.role!=="supervisor"||!currentSalesVerified)return;
   if(!confirm("Se enviará el DNI de esta solicitud a Nosis para identificar el CUIL y consultar los datos públicos del BCRA. La consulta no decide automáticamente la aprobación. ¿Continuar?"))return;
   button.disabled=true;button.textContent="Consultando…";
   try{const {data,error}=await db.functions.invoke("customer-sale-credit-check",{body:{request_id:id}});if(error)throw error;if(data?.error)throw new Error(data.error);catalogCreditResults.set(id,{result:data.result});}
@@ -913,11 +1029,19 @@ async function decideCatalogCustomerSaleRequest(button){
   }catch(error){alert("No se pudo "+(decision==="approved"?"aprobar":"rechazar")+" la solicitud: "+(error.message||error))}
   finally{button.disabled=false}
 }
-function openSellerProfile(){
+async function openSellerProfile(){
   if(!currentSeller&&!currentStaffAccess)return;
-  $("sellerProfileName").value=currentSeller?.name||currentStaffProfileName||"";
+  const isVerified=!!currentSalesVerified;
+  $("verifiedProfileEditFields").style.display=isVerified?"":"none";
+  $("sellerNameSave").style.display=isVerified?"none":"";
+  $("sellerProfileName").value=isVerified?(currentVerifiedCatalogProfile?.full_name||currentSeller?.name||currentStaffProfileName||""):(currentSeller?.name||currentStaffProfileName||"");
   $("sellerProfileRole").value="• "+staffRoleLabel();
   $("sellerProfileStatus").textContent="";
+  $("sellerVerifiedPhotoFile").value="";
+  if(isVerified){
+    try{const profile=await loadMyVerifiedCatalogProfile();if(profile){$("sellerProfileName").value=profile.full_name||"";$("sellerVerifiedDni").value=profile.dni||"";$("sellerVerifiedBirthDate").value=profile.birth_date||"";$("sellerVerifiedGender").value=profile.gender||"";$("sellerVerifiedPhone").value=profile.phone||"";await showSavedProfilePhoto(profile.photo_path,"sellerVerifiedPhotoPreview")} }
+    catch(error){$("sellerProfileStatus").textContent="No se pudieron cargar tus datos: "+(error.message||error)}
+  }
   $("customerSaleReferralUrl").value="";
   $("customerSaleReferralPanel").style.display=(currentSalesVerified||currentStaffAccess?.role==="admin")?"":"none";
   if($("customerSaleReferralPanel").style.display!=="none")loadOrCreateCustomerSaleReferral();
@@ -928,6 +1052,7 @@ function openSellerProfile(){
 async function saveSellerName(){
   const name=$("sellerProfileName").value.trim();
   if(!name){$("sellerProfileStatus").textContent="Ingresá tu nombre.";return}
+  if(currentSalesVerified){await saveSellerVerifiedProfile();return}
   $("sellerNameSave").disabled=true;
   try{
     const {data,error}=await db.rpc("update_seller_display_name",{p_name:name});
@@ -939,6 +1064,10 @@ async function saveSellerName(){
     $("sellerProfileStatus").textContent="✅ Nombre actualizado.";
   }catch(e){$("sellerProfileStatus").textContent="No se pudo guardar el nombre: "+(e.message||e)}
   finally{$("sellerNameSave").disabled=false}
+}
+async function saveSellerVerifiedProfile(){
+  const profile=await saveVerifiedProfileFields({nameId:"sellerProfileName",dniId:"sellerVerifiedDni",birthId:"sellerVerifiedBirthDate",genderId:"sellerVerifiedGender",phoneId:"sellerVerifiedPhone",fileId:"sellerVerifiedPhotoFile",statusId:"sellerProfileStatus",buttonId:"sellerVerifiedProfileSave"});
+  if(profile){$("sellerProfileButton").innerHTML="👤 "+catalogVerifiedName(profile.full_name,currentUserId);await refreshOnlineStaffDirectory();await showSavedProfilePhoto(profile.photo_path,"sellerVerifiedPhotoPreview")}
 }
 async function loadOrCreateCustomerSaleReferral(){
   if(!currentSalesVerified&&currentStaffAccess?.role!=="admin")return;
@@ -1546,9 +1675,13 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("onlineStaffPanel
 $("sellerProfileClose").addEventListener("click",()=>closeSellerModal("sellerProfileModal"));
 $("sellerProfileModal").addEventListener("click",e=>{if(e.target===$("sellerProfileModal"))closeSellerModal("sellerProfileModal")});
 $("sellerNameSave").addEventListener("click",saveSellerName);
+$("sellerVerifiedProfileSave").addEventListener("click",saveSellerVerifiedProfile);
+$("sellerVerifiedPhotoFile").addEventListener("change",()=>previewVerifiedProfilePhoto("sellerVerifiedPhotoFile","sellerVerifiedPhotoPreview"));
+$("verifiedSetupPhotoFile").addEventListener("change",()=>previewVerifiedProfilePhoto("verifiedSetupPhotoFile","verifiedSetupPhotoPreview"));
 $("sellerPasswordSave").addEventListener("click",saveSellerPassword);
 $("createCustomerSaleReferral").addEventListener("click",createCustomerSaleReferral);
 $("firstLoginSetupSave").addEventListener("click",completeFirstLoginSetup);
+$("verifiedProfileSetupSave").addEventListener("click",saveVerifiedProfileSetup);
 $("sellerSalesButton").addEventListener("click",()=>openSellerSales("history"));
 $("sellerNewSaleButton").addEventListener("click",()=>openSellerSales("new"));
 $("sellerTeamButton").addEventListener("click",openSellerTeam);
@@ -1556,6 +1689,9 @@ $("sellerActivityButton").addEventListener("click",openSellerActivity);
 $("sellerActivityClose").addEventListener("click",()=>closeSellerModal("sellerActivityModal"));
 $("sellerActivityModal").addEventListener("click",e=>{if(e.target===$("sellerActivityModal"))closeSellerModal("sellerActivityModal")});
 $("sellerActivityRefresh").addEventListener("click",loadSellerActivity);
+$("sellerTeamProfilesButton").addEventListener("click",openSellerTeamProfiles);
+$("sellerTeamProfilesClose").addEventListener("click",()=>closeSellerModal("sellerTeamProfilesModal"));
+$("sellerTeamProfilesModal").addEventListener("click",e=>{if(e.target===$("sellerTeamProfilesModal"))closeSellerModal("sellerTeamProfilesModal")});
 window.addEventListener("pagehide",()=>{void endCatalogActivitySession()});
 $("customerSaleRequestsButton").addEventListener("click",openCatalogCustomerSaleRequests);
 $("customerSaleRequestsClose").addEventListener("click",()=>closeSellerModal("customerSaleRequestsModal"));
