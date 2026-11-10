@@ -95,6 +95,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <label class="seller-field">Nueva contraseña<input id="sellerPassword" type="password" autocomplete="new-password"></label>
     <label class="seller-field">Repetir contraseña<input id="sellerPasswordConfirm" type="password" autocomplete="new-password"></label>
     <button id="sellerPasswordSave" class="seller-action-button" type="button">Actualizar contraseña</button>
+    <div id="customerSaleReferralPanel"><hr><h3>🔗 Enlace de solicitud de compra</h3><p class="seller-help">Compartí este enlace con tu cliente para que la solicitud quede asignada a tu usuario.</p><div class="profile-name-preview"><input id="customerSaleReferralUrl" type="text" readonly aria-label="Enlace personal de solicitudes"><button id="createCustomerSaleReferral" class="seller-action-button" type="button">Crear y copiar enlace</button></div></div>
     <div id="sellerProfileStatus" class="seller-status" role="status"></div>
   </div>
 </div>
@@ -699,6 +700,8 @@ function openSellerProfile(){
   $("sellerProfileName").value=currentSeller?.name||currentStaffProfileName||"";
   $("sellerProfileRole").value="• "+staffRoleLabel();
   $("sellerProfileStatus").textContent="";
+  $("customerSaleReferralUrl").value="";
+  $("customerSaleReferralPanel").style.display=(currentSeller||["admin","supervisor"].includes(currentStaffAccess?.role))?"":"none";
   $("sellerPassword").value="";
   $("sellerPasswordConfirm").value="";
   openSellerModal("sellerProfileModal");
@@ -717,6 +720,14 @@ async function saveSellerName(){
     $("sellerProfileStatus").textContent="✅ Nombre actualizado.";
   }catch(e){$("sellerProfileStatus").textContent="No se pudo guardar el nombre: "+(e.message||e)}
   finally{$("sellerNameSave").disabled=false}
+}
+async function createCustomerSaleReferral(){
+  const button=$("createCustomerSaleReferral");button.disabled=true;$("sellerProfileStatus").textContent="Creando enlace…";
+  try{const {data:{session},error:sessionError}=await db.auth.getSession();if(sessionError||!session)throw new Error("La sesión venció. Volvé a ingresar.");
+    const {data,error}=await db.from("customer_sale_referral_links").insert({owner_id:session.user.id}).select("token").single();if(error)throw error;
+    const url=new URL("../ventas/",location.href);url.searchParams.set("ref",data.token);$("customerSaleReferralUrl").value=url.toString();
+    try{await navigator.clipboard.writeText(url.toString());$("sellerProfileStatus").textContent="✅ Enlace creado y copiado. Compartilo con tu cliente.";}catch(_){$("customerSaleReferralUrl").select();$("sellerProfileStatus").textContent="✅ Enlace creado. Copialo para compartirlo con tu cliente.";}
+  }catch(error){$("sellerProfileStatus").textContent="No se pudo crear el enlace: "+(error.message||error)}finally{button.disabled=false}
 }
 async function saveSellerPassword(){
   const password=$("sellerPassword").value;
@@ -1277,6 +1288,7 @@ $("sellerProfileClose").addEventListener("click",()=>closeSellerModal("sellerPro
 $("sellerProfileModal").addEventListener("click",e=>{if(e.target===$("sellerProfileModal"))closeSellerModal("sellerProfileModal")});
 $("sellerNameSave").addEventListener("click",saveSellerName);
 $("sellerPasswordSave").addEventListener("click",saveSellerPassword);
+$("createCustomerSaleReferral").addEventListener("click",createCustomerSaleReferral);
 $("firstLoginSetupSave").addEventListener("click",completeFirstLoginSetup);
 $("sellerSalesButton").addEventListener("click",()=>openSellerSales("history"));
 $("sellerNewSaleButton").addEventListener("click",()=>openSellerSales("new"));

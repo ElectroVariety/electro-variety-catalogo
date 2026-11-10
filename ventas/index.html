@@ -380,6 +380,7 @@
       };
       const formData=new FormData();
       for(const [key,value] of Object.entries(values))formData.append(key,Array.isArray(value)?JSON.stringify(value):String(value));
+      formData.set("referral_token",new URLSearchParams(location.search).get("ref")||"");
       formData.delete("proof_services");formData.delete("income_sources");
       values.proof_services.forEach(value=>formData.append("proof_services",value));
       values.income_sources.forEach(value=>formData.append("income_sources",value));

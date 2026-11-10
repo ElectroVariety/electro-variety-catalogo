@@ -121,7 +121,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <div class="card" style="margin-top:14px;border:1px solid #dbeafe;background:#f8fbff"><h3 style="margin-top:0">📢 Notificación general</h3><div class="small">Independiente de los productos. Al tocarla, el cliente irá directamente a tu WhatsApp con este mensaje ya preparado.</div><div class="grid" style="margin-top:10px"><div class="full"><label>Título</label><input id="generalPushTitle" maxlength="100" placeholder="🔥 ¡Promoción especial hoy!"></div><div class="full"><label>Mensaje de la notificación</label><input id="generalPushBody" maxlength="240" placeholder="Consultanos por nuestras promociones de hoy."></div><div class="full"><label>Mensaje predeterminado para WhatsApp</label><textarea id="generalPushWhatsAppMessage" maxlength="500" rows="3" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid #d1d5db;border-radius:9px;font:inherit;resize:vertical">Hola, quiero consultar por la promoción que recibí.</textarea><div class="small">Este texto aparecerá escrito en el chat; el cliente decide si lo envía.</div></div><div><label>Imagen opcional</label><input accept="image/*" id="generalPushImage" type="file"></div><div><label>WhatsApp de destino</label><input id="generalPushWhatsApp" inputmode="numeric" placeholder="5491123456789"></div></div><div class="actions"><button class="blue" id="sendGeneralPushButton" type="button">📤 Enviar notificación general</button></div><div class="small" id="generalPushStatus" style="margin-top:8px"></div></div>
 <div class="card" style="margin-top:14px;border:1px solid #dcfce7;background:#f8fff9"><h3 style="margin-top:0">💬 WhatsApp de Electro Variety</h3><div class="small">Número predeterminado para productos con “WhatsApp directo”.</div><div class="actions"><input id="defaultPushWhatsApp" inputmode="numeric" placeholder="5491123456789" style="flex:1"><button class="blue" id="savePushWhatsAppButton" type="button">💾 Guardar número</button></div><div class="small" id="pushWhatsAppStatus" style="margin-top:8px"></div></div><div class="card" style="margin-top:14px;border:1px solid #fef3c7;background:#fffdf5"><h3 style="margin-top:0">🛒 Al tocar cualquier producto del catálogo</h3><div class="small">Esta opción se aplica de una sola vez a <b>todos los productos</b> del catálogo de clientes. El botón “Consultar por WhatsApp” conserva el mismo comportamiento.</div><div class="actions" style="margin-top:10px"><select id="catalogProductClickWhatsAppMode" style="flex:1;padding:11px;border:1px solid #d1d5db;border-radius:9px"><option value="choose">👤 Elegir contacto (predeterminado)</option><option value="direct">💬 Ir directamente al WhatsApp de Electro Variety</option></select><button class="blue" id="saveCatalogProductClickWhatsAppButton" type="button">💾 Aplicar a todo el catálogo</button></div><div class="small" id="catalogProductClickWhatsAppStatus" style="margin-top:8px"></div></div>
 <div class="actions"><a class="button-link dark" href="../clientes/" rel="noopener" target="_blank">👀 Abrir catálogo de clientes</a><a class="button-link blue" href="../ventas/" rel="noopener" target="_blank">🛍️ Abrir formulario de ventas</a></div>
-</div></section><section class="admin-panel" data-admin-panel="customer-sales" id="admin-panel-customer-sales"><div class="card"><h2>🛍️ Solicitudes de compra de clientes</h2><div class="small">Revisá los datos personales, el domicilio, los comprobantes y los productos. Los documentos del DNI se guardan en un espacio privado y solo los administradores pueden abrirlos. Las solicitudes no modifican ni reservan stock.</div><div class="actions" style="margin-top:12px"><input id="customerSaleRequestsSearch" type="search" placeholder="🔎 Buscar por nombre, celular o referencia" style="flex:1;min-width:220px"><button class="blue" id="refreshCustomerSaleRequests" type="button">🔄 Actualizar</button></div><div class="small" id="customerSaleRequestsStatus" style="margin-top:8px"></div><div id="customerSaleRequestsList" style="margin-top:12px">Cargando solicitudes…</div></div></section><section class="admin-panel" data-admin-panel="delivery" id="admin-panel-delivery"><div class="card">
+</div></section><section class="admin-panel" data-admin-panel="customer-sales" id="admin-panel-customer-sales"><div class="card"><h2>🛍️ Solicitudes de compra de clientes</h2><div class="small">Revisá los datos personales, el domicilio, los comprobantes y los productos. Los documentos se guardan en un espacio privado. Cada supervisor ve sus solicitudes y las de vendedores asignados. La evaluación crediticia se registra manualmente y no consulta una central externa. Las solicitudes no modifican ni reservan stock.</div><div class="actions" style="margin-top:12px"><input id="customerSaleRequestsSearch" type="search" placeholder="🔎 Buscar por nombre, celular o referencia" style="flex:1;min-width:220px"><button class="blue" id="refreshCustomerSaleRequests" type="button">🔄 Actualizar</button></div><div class="small" id="customerSaleRequestsStatus" style="margin-top:8px"></div><div id="customerSaleRequestsList" style="margin-top:12px">Cargando solicitudes…</div></div></section><section class="admin-panel" data-admin-panel="delivery" id="admin-panel-delivery"><div class="card">
 <h2>📍 Consultas de cobertura</h2>
 <div class="small">Acá podés ver las consultas de ubicación realizadas desde el catálogo de clientes. Se muestran localidad, partido, zona, resultado y fecha. Las coordenadas son visibles solamente dentro del administrador.</div>
 <div class="actions" style="margin-top:12px">
@@ -269,6 +269,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     if (role === "supervisor") {
       loadSellerProfiles();
       loadAdminSales();
+      loadCustomerSaleRequests();
       return;
     }
     loadProducts();
@@ -881,7 +882,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       box.innerHTML = `<div class="small">${customerSaleRequests.length ? "No hay solicitudes que coincidan con la búsqueda." : "Todavía no hay solicitudes de compra."}</div>`;
       return;
     }
-    const statusNames = { pending: "Pendiente de contactar", contacted: "Contactado", converted: "Venta confirmada", cancelled: "Cancelada" };
+    const statusNames = { pending: "Pendiente", contacted: "Contactado", converted: "Venta confirmada", cancelled: "Cancelada", approved: "Aprobada", rejected: "Rechazada" };
     const money = value => `$${new Intl.NumberFormat("es-AR").format(Number(value) || 0)}`;
     const yesNo = value => value ? "Sí" : "No";
     const housingNames = { own: "Vivienda propia", rent_contract: "Alquilo por contrato", rent_verbal: "Alquilo de palabra" };
@@ -903,16 +904,16 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       const conditionalLabels = { referrer_full_name: "Recomendado por", referrer_phone: "Teléfono de quien recomendó", referrer_relationship: "Vínculo con quien recomendó", service_owner: "Servicio a nombre del cliente", service_holder_name: "Titular del servicio", service_holder_dni: "DNI del titular", service_holder_relationship: "Vínculo con el titular", debt_reason: "Motivo de la deuda", debt_amount: "Monto de deuda", occupation_formal: "Ocupación formal", occupation_informal: "Ocupación informal", wallet_provider: "Billetera virtual", self_employed_activity: "Actividad independiente", business_name: "Comercio", business_activity: "Actividad del comercio", business_address: "Dirección del comercio", business_duration: "Antigüedad del comercio", business_revenue: "Facturación mensual", business_profit: "Ganancia mensual", other_income_description: "Otros ingresos", income_formal_job: "Ingreso mensual · trabajo formal", income_informal_job: "Ingreso mensual · trabajo informal", income_self_employed: "Ingreso mensual · cuenta propia", income_business: "Ingreso mensual · comercio", income_allowance: "Ingreso mensual · asignación", income_retirement: "Ingreso mensual · jubilación", income_pension: "Ingreso mensual · pensión", income_cooperative: "Ingreso mensual · cooperativa", income_other: "Ingreso mensual · otros ingresos", benefit_allowance: "Beneficio o institución · asignación", benefit_retirement: "Beneficio o institución · jubilación", benefit_pension: "Beneficio o institución · pensión", benefit_cooperative: "Beneficio o institución · cooperativa" };
       const conditionalMarkup = Object.entries(details).filter(([, value]) => String(value || "").trim()).map(([key, value]) => `<span><b>${esc(conditionalLabels[key] || key)}:</b> ${esc(key === "service_owner" ? (value === "yes" ? "Sí" : "No") : value)}</span>`).join("");
       const detailMarkup = `<div class="customer-sale-details"><b class="customer-sale-section-title">Datos personales</b><span><b>DNI:</b> ${esc(request.dni || "—")}</span>${customerOnly ? `<span><b>Tipo:</b> Cliente Electro Variety · datos básicos</span>` : `<span><b>DNI actualizado:</b> ${yesNo(request.dni_updated)}</span><span><b>Teléfono alternativo:</b> ${esc(request.alternative_phone || "—")}</span><span><b>Vínculo:</b> ${esc(request.alternative_contact_relationship || "—")}</span><span><b>Recomendado:</b> ${yesNo(request.referred_by)}</span><span><b>Cliente de Electro Variety:</b> ${yesNo(request.is_electro_variety_customer)}</span><b class="customer-sale-section-title">Domicilio y comprobantes</b><span><b>Calle y altura:</b> ${esc([request.street, request.street_number].filter(Boolean).join(" ") || "—")}</span><span><b>Entre calles:</b> ${esc(request.between_streets || "—")}</span><span><b>Vivienda:</b> ${esc(housingNames[request.housing_situation] || "—")}</span><span><b>Comprobantes:</b> ${esc(services)}</span><b class="customer-sale-section-title">Situación e ingresos</b><span><b>Deudas actuales:</b> ${yesNo(request.has_debts)}</span><span><b>Trabajo e ingresos:</b> ${esc(incomes)}</span>${conditionalMarkup ? `<b class="customer-sale-section-title">Información adicional</b>${conditionalMarkup}` : ""}`}</div>`;
-      return `<article class="customer-sale-request-card"><div class="customer-sale-request-head"><b>Solicitud ${esc(request.tracking_code || String(request.id).slice(0, 8))}</b><span>${esc(statusNames[request.status] || request.status)}</span></div><div class="small">${esc(request.full_name)} · <a href="tel:${esc(request.phone)}">${esc(request.phone)}</a> · ${createdAt}</div><div class="small">📍 ${esc([request.address, request.locality].filter(Boolean).join(", ") || "Domicilio sin indicar")}</div>${detailMarkup}<div class="customer-sale-docs">${documentButtons || '<span class="small">No hay documentos adjuntos.</span>'}</div><ul class="customer-sale-request-items">${itemMarkup}</ul>${request.notes ? `<div class="customer-sale-request-note"><b>Comentario del cliente:</b> ${esc(request.notes)}</div>` : ""}<div class="customer-sale-review"><label>Estado<select data-customer-sale-status="${esc(request.id)}"><option value="pending" ${request.status === "pending" ? "selected" : ""}>Pendiente de contactar</option><option value="contacted" ${request.status === "contacted" ? "selected" : ""}>Contactado</option><option value="converted" ${request.status === "converted" ? "selected" : ""}>Venta confirmada</option><option value="cancelled" ${request.status === "cancelled" ? "selected" : ""}>Cancelada</option></select></label><label>Nota interna<textarea data-customer-sale-note="${esc(request.id)}" maxlength="1000" rows="2" placeholder="Nota para el equipo">${esc(request.admin_note || "")}</textarea></label><button class="blue" type="button" data-save-customer-sale="${esc(request.id)}">💾 Guardar revisión</button></div></article>`;
+      return `<article class="customer-sale-request-card"><div class="customer-sale-request-head"><b>Solicitud ${esc(request.tracking_code || String(request.id).slice(0, 8))}</b><span>${esc(statusNames[request.status] || request.status)}</span></div><div class="small">${esc(request.full_name)} · <a href="tel:${esc(request.phone)}">${esc(request.phone)}</a> · ${createdAt}</div><div class="small">📍 ${esc([request.address, request.locality].filter(Boolean).join(", ") || "Domicilio sin indicar")}</div>${detailMarkup}<div class="customer-sale-docs">${documentButtons || '<span class="small">No hay documentos adjuntos.</span>'}</div><ul class="customer-sale-request-items">${itemMarkup}</ul>${request.notes ? `<div class="customer-sale-request-note"><b>Comentario del cliente:</b> ${esc(request.notes)}</div>` : ""}<div class="customer-sale-review"><label>Estado<select data-customer-sale-status="${esc(request.id)}"><option value="pending" ${request.status === "pending" ? "selected" : ""}>Pendiente</option><option value="contacted" ${request.status === "contacted" ? "selected" : ""}>Contactado</option><option value="converted" ${request.status === "converted" ? "selected" : ""}>Venta confirmada</option><option value="cancelled" ${request.status === "cancelled" ? "selected" : ""}>Cancelada</option><option value="approved" ${request.status === "approved" ? "selected" : ""}>Aprobada</option><option value="rejected" ${request.status === "rejected" ? "selected" : ""}>Rechazada</option></select></label><label>Situación crediticia<select data-customer-sale-credit="${esc(request.id)}"><option value="not_reviewed" ${request.credit_assessment === "not_reviewed" ? "selected" : ""}>Sin evaluar</option><option value="favorable" ${request.credit_assessment === "favorable" ? "selected" : ""}>Favorable</option><option value="needs_review" ${request.credit_assessment === "needs_review" ? "selected" : ""}>Requiere revisión</option><option value="unfavorable" ${request.credit_assessment === "unfavorable" ? "selected" : ""}>Desfavorable</option></select></label><label>Nota interna<textarea data-customer-sale-note="${esc(request.id)}" maxlength="1000" rows="2" placeholder="Nota para el equipo">${esc(request.admin_note || "")}</textarea></label><div class="seller-actions"><button class="dark" type="button" data-print-customer-sale="${esc(request.id)}">🖨️ Ver / guardar PDF</button><button class="blue" type="button" data-save-customer-sale="${esc(request.id)}">💾 Guardar revisión</button><button class="blue" type="button" data-customer-sale-decision="approved" data-sale-id="${esc(request.id)}">✅ Aprobar</button><button class="red" type="button" data-customer-sale-decision="rejected" data-sale-id="${esc(request.id)}">❌ Rechazar</button></div></div></article>`;
     }).join("");
   }
   async function loadCustomerSaleRequests() {
     const box = $("customerSaleRequestsList");
     const status = $("customerSaleRequestsStatus");
-    if (!box || currentAccessRole !== "admin") return;
+    if (!box || !["admin", "supervisor"].includes(currentAccessRole)) return;
     if (status) status.textContent = "Cargando solicitudes…";
     const { data, error } = await db.from("customer_sale_requests")
-      .select("id,tracking_code,full_name,dni,dni_updated,phone,alternative_phone,alternative_contact_relationship,referred_by,is_electro_variety_customer,locality,address,street,street_number,between_streets,housing_situation,proof_services,has_debts,income_sources,dni_front_path,dni_back_path,conditional_details,document_paths,notes,items,status,admin_note,created_at")
+      .select("id,tracking_code,full_name,dni,dni_updated,phone,alternative_phone,alternative_contact_relationship,referred_by,is_electro_variety_customer,locality,address,street,street_number,between_streets,housing_situation,proof_services,has_debts,income_sources,dni_front_path,dni_back_path,conditional_details,document_paths,notes,items,status,admin_note,credit_assessment,seller_id,seller_name,created_at")
       .order("created_at", { ascending: false }).limit(500);
     if (error) {
       customerSaleRequests = [];
@@ -925,7 +926,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     if (status) status.textContent = `${customerSaleRequests.length} solicitud(es) cargadas.`;
   }
   async function openCustomerSaleDocument(button) {
-    if (currentAccessRole !== "admin") return;
+    if (!["admin", "supervisor"].includes(currentAccessRole)) return;
     const request = customerSaleRequests.find(row => row.id === button.dataset.saleId);
     const documentValue = request?.document_paths?.[button.dataset.customerSaleDocument] ?? request?.[button.dataset.customerSaleDocument];
     const path = Array.isArray(documentValue) ? documentValue[Number(button.dataset.documentIndex) || 0] : documentValue;
@@ -946,12 +947,13 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     }
   }
   async function saveCustomerSaleReview(button) {
-    if (currentAccessRole !== "admin") return;
+    if (!["admin", "supervisor"].includes(currentAccessRole)) return;
     const id = button.dataset.saveCustomerSale;
     const status = document.querySelector(`[data-customer-sale-status="${CSS.escape(id)}"]`)?.value;
     const note = document.querySelector(`[data-customer-sale-note="${CSS.escape(id)}"]`)?.value || "";
-    const allowed = ["pending", "contacted", "converted", "cancelled"];
-    if (!allowed.includes(status)) return;
+    const creditAssessment = document.querySelector(`[data-customer-sale-credit="${CSS.escape(id)}"]`)?.value || "not_reviewed";
+    const allowed = ["pending", "contacted", "converted", "cancelled", "approved", "rejected"];
+    if (!allowed.includes(status) || !["not_reviewed", "favorable", "needs_review", "unfavorable"].includes(creditAssessment)) return;
     const { data: userData } = await db.auth.getUser();
     if (!userData?.user) { alert("La sesión de administrador expiró. Volvé a ingresar."); return; }
     button.disabled = true;
@@ -959,6 +961,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       const { error } = await db.from("customer_sale_requests").update({
         status,
         admin_note: String(note).trim().slice(0, 1000),
+        credit_assessment: creditAssessment,
         reviewed_by: userData.user.id,
         reviewed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -971,6 +974,19 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     } finally {
       button.disabled = false;
     }
+  }
+  function printCustomerSaleRequest(id) {
+    if (!["admin", "supervisor"].includes(currentAccessRole)) return;
+    const request = customerSaleRequests.find(row => row.id === id);
+    if (!request) return;
+    const items = Array.isArray(request.items) ? request.items : [];
+    const money = value => "$" + new Intl.NumberFormat("es-AR").format(Number(value) || 0);
+    const lines = items.map(item => "<li>" + esc(item.product_name) + " × " + (Number(item.quantity) || 0) + " · " + (Number(item.installment_count) || 0) + " cuotas " + esc(item.frequency || "") + " de " + money(item.installment_amount) + "</li>").join("");
+    const html = "<!doctype html><html lang=\"es\"><meta charset=\"utf-8\"><title>Solicitud " + esc(request.tracking_code) + "</title><style>body{font:14px Arial,sans-serif;color:#111827;max-width:800px;margin:32px auto;padding:0 20px}h1{font-size:22px}h2{font-size:16px;margin-top:24px}li{margin:6px 0}@media print{body{margin:12mm auto}}</style><body><h1>Solicitud de compra " + esc(request.tracking_code) + "</h1><p><b>Estado:</b> " + esc(request.status) + " · <b>Fecha:</b> " + esc(request.created_at ? new Date(request.created_at).toLocaleString("es-AR") : "—") + "</p><h2>Datos del cliente</h2><p><b>Nombre:</b> " + esc(request.full_name) + "<br><b>DNI:</b> " + esc(request.dni) + "<br><b>Teléfono:</b> " + esc(request.phone) + "<br><b>Domicilio:</b> " + esc([request.address,request.locality].filter(Boolean).join(", ")) + "</p><h2>Productos</h2><ul>" + lines + "</ul><h2>Comentario</h2><p>" + esc(request.notes || "—") + "</p></body></html>";
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) { alert("Permití ventanas emergentes para guardar la solicitud en PDF."); return; }
+    printWindow.document.open(); printWindow.document.write(html); printWindow.document.close();
+    printWindow.onload = () => printWindow.print();
   }
   window.loadCustomerSaleRequests = loadCustomerSaleRequests;
 
@@ -2128,7 +2144,11 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   $("customerSaleRequestsSearch").addEventListener("input",renderCustomerSaleRequests);
   $("customerSaleRequestsList").addEventListener("click",event=>{
     const button=event.target.closest("[data-save-customer-sale]");
-    if(button)saveCustomerSaleReview(button);
+    if(button){saveCustomerSaleReview(button);return;}
+    const decision=event.target.closest("[data-customer-sale-decision]");
+    if(decision){const id=decision.dataset.saleId;const select=document.querySelector(`[data-customer-sale-status="${CSS.escape(id)}"]`);if(select)select.value=decision.dataset.customerSaleDecision;const save=document.querySelector(`[data-save-customer-sale="${CSS.escape(id)}"]`);if(save)saveCustomerSaleReview(save);return;}
+    const printButton=event.target.closest("[data-print-customer-sale]");
+    if(printButton){printCustomerSaleRequest(printButton.dataset.printCustomerSale);return;}
     const documentButton=event.target.closest("[data-customer-sale-document]");
     if(documentButton)openCustomerSaleDocument(documentButton);
   });
@@ -2193,7 +2213,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function closeMenu(){if(sidebar) sidebar.classList.remove('open'); if(backdrop) backdrop.classList.remove('open');}
   function showSection(id, save=true){
-    if(accessRole==='supervisor' && id!=='sales') return;
+    if(accessRole==='supervisor' && !['sales','customer-sales'].includes(id)) return;
     panels.forEach(p=>p.classList.toggle('active',p.dataset.adminPanel===id));
     buttons.forEach(b=>b.classList.toggle('active',b.dataset.adminSection===id));
     if(mobileTitle) mobileTitle.textContent=labels[id]||'Administración';
@@ -2206,7 +2226,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   window.addEventListener('electro-admin-role',event=>{
     accessRole=event.detail?.role||null;
     const supervisor=accessRole==='supervisor';
-    buttons.forEach(b=>{b.style.display=supervisor&&b.dataset.adminSection!=='sales'?'none':'';});
+    buttons.forEach(b=>{b.style.display=supervisor&&!['sales','customer-sales'].includes(b.dataset.adminSection)?'none':'';});
     if(supervisor)showSection('sales',false);
   });
 

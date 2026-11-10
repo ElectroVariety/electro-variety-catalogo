@@ -328,6 +328,24 @@ Deno.serve(async (request: Request) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceRoleKey) return respond({ error: "El formulario no está disponible en este momento." }, 503, origin);
   const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  const referralToken = String(form.get("referral_token") ?? "").trim();
+  let sellerId: string | null = null;
+  let sellerName = "";
+  if (referralToken) {
+    if (!/^[0-9a-f-]{36}$/i.test(referralToken)) return respond({ error: "El enlace de vendedor no es válido." }, 400, origin);
+    const { data: referral, error: referralError } = await admin.from("customer_sale_referral_links")
+      .select("owner_id").eq("token", referralToken).gt("expires_at", new Date().toISOString()).maybeSingle();
+    if (referralError || !referral) return respond({ error: "El enlace de vendedor venció o ya no está disponible. Pedí uno nuevo." }, 400, origin);
+    sellerId = referral.owner_id;
+    const [{ data: sellerProfile }, { data: staffProfile }] = await Promise.all([
+      admin.from("seller_profiles").select("name,active").eq("user_id", sellerId).maybeSingle(),
+      admin.from("admin_profiles").select("display_name,role").eq("user_id", sellerId).maybeSingle(),
+    ]);
+    const isActiveSeller = sellerProfile?.active === true;
+    const isSupervisorOrAdmin = ["supervisor", "admin"].includes(staffProfile?.role);
+    if (!isActiveSeller && !isSupervisorOrAdmin) return respond({ error: "La cuenta asociada a este enlace ya no está activa." }, 400, origin);
+    sellerName = String(sellerProfile?.name || staffProfile?.display_name || "").trim().slice(0, 120);
+  }
   const ids = requestedItems.map(item => item.productId);
   const { data: products, error: productsError } = await admin.from("products")
     .select("id,name,category,image_url,active,stock,q_count,q_price,m_count,m_price")
@@ -408,6 +426,8 @@ Deno.serve(async (request: Request) => {
       const code = trackingCode();
       const { error } = await admin.from("customer_sale_requests").insert({
         id: requestId,
+        seller_id: sellerId,
+        seller_name: sellerName,
         tracking_code: code,
         full_name: fullName,
         dni,
