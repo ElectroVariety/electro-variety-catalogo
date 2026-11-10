@@ -1049,6 +1049,19 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     if (!request || !confirm(`¿Eliminar definitivamente la solicitud de ${request.full_name || "este cliente"}? También se borrarán sus archivos adjuntos.`)) return;
     button.disabled = true;
     try {
+      const paths = new Set();
+      const collectPaths = value => {
+        if (typeof value === "string" && /^(dni|sale-requests)\/[0-9a-f-]{36}\/[A-Za-z0-9_.-]+$/i.test(value)) paths.add(value);
+        else if (Array.isArray(value)) value.forEach(collectPaths);
+        else if (value && typeof value === "object") Object.values(value).forEach(collectPaths);
+      };
+      collectPaths(request.dni_front_path);
+      collectPaths(request.dni_back_path);
+      collectPaths(request.document_paths);
+      if (paths.size) {
+        const { error: storageError } = await db.storage.from("customer-sale-private").remove([...paths]);
+        if (storageError) throw new Error("No se pudieron borrar los adjuntos: " + storageError.message);
+      }
       const { error } = await db.rpc("admin_delete_customer_sale_request", { p_request_id: id });
       if (error) throw error;
       customerSaleRequestsSelectedId = null;
