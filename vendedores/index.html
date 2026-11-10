@@ -94,11 +94,12 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 <div id="sellerProfileModal" class="cart-modal seller-modal" aria-hidden="true">
   <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="sellerProfileTitle">
     <div class="cart-head"><h2 id="sellerProfileTitle">👤 Mi perfil</h2><button id="sellerProfileClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
+    <article id="myVerifiedProfileCard" class="ev-profile-card" style="display:none"><div class="identity"><div id="myVerifiedProfileAvatar" class="ev-profile-avatar-placeholder" aria-label="Sin foto de perfil">👤</div><img id="myVerifiedProfilePhoto" alt="Foto de perfil" style="display:none"><span id="myVerifiedProfileRole" class="role"></span><h3 id="myVerifiedProfileName"></h3></div><dl><div><dt>DNI</dt><dd id="myVerifiedProfileDni"></dd></div><div><dt>Fecha de nacimiento</dt><dd id="myVerifiedProfileBirthDate"></dd></div><div><dt>Género</dt><dd id="myVerifiedProfileGender"></dd></div><div><dt>Teléfono</dt><dd id="myVerifiedProfilePhone"></dd></div></dl></article>
     <label class="seller-field">Nombre y apellido<div class="profile-name-preview"><input id="sellerProfileName" maxlength="120" autocomplete="name"><input id="sellerProfileRole" type="text" disabled readonly aria-label="Rol, solo visualización"></div></label>
     <button id="sellerNameSave" class="seller-action-button" type="button">Guardar nombre</button>
     <div id="verifiedProfileEditFields" style="display:none;border-top:1px solid #e5e7eb;margin-top:14px;padding-top:8px">
       <h3>Datos personales</h3><p class="seller-help">La foto es opcional. Estos datos los pueden ver el administrador y el supervisor de tu equipo.</p>
-      <div class="ev-profile-photo-row"><img id="sellerVerifiedPhotoPreview" class="ev-profile-photo" alt="Foto de perfil"><label class="seller-field">Foto de perfil (opcional)<input id="sellerVerifiedPhotoFile" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
+      <div class="ev-profile-photo-row"><div id="sellerVerifiedPhotoPlaceholder" class="ev-profile-avatar-placeholder" aria-label="Sin foto de perfil">👤</div><img id="sellerVerifiedPhotoPreview" class="ev-profile-photo" alt="Foto de perfil" style="display:none"><label class="seller-field">Foto de perfil (opcional)<input id="sellerVerifiedPhotoFile" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
       <label class="seller-field">DNI<input id="sellerVerifiedDni" inputmode="text" autocomplete="off" maxlength="20"></label>
       <label class="seller-field">Fecha de nacimiento<input id="sellerVerifiedBirthDate" type="date" autocomplete="bday"></label>
       <label class="seller-field">Género<select id="sellerVerifiedGender"><option value="">Elegí una opción</option><option value="female">Femenino</option><option value="male">Masculino</option><option value="non_binary">No binario</option><option value="other">Otro</option><option value="prefer_not_to_say">Prefiero no decirlo</option></select></label>
@@ -119,7 +120,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <h2 id="verifiedProfileSetupTitle">🪪 Completá tu perfil verificado</h2>
     <p class="seller-help">Para continuar al catálogo, completá estos datos una sola vez. El administrador y tu supervisor podrán verlos. La foto es opcional.</p>
     <label class="seller-field">Nombre y apellido<input id="verifiedSetupName" maxlength="120" autocomplete="name"></label>
-    <div class="ev-profile-photo-row"><img id="verifiedSetupPhotoPreview" class="ev-profile-photo" alt="Vista previa de la foto"><label class="seller-field">Foto de perfil (opcional)<input id="verifiedSetupPhotoFile" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
+    <div class="ev-profile-photo-row"><div id="verifiedSetupPhotoPlaceholder" class="ev-profile-avatar-placeholder" aria-label="Sin foto de perfil">👤</div><img id="verifiedSetupPhotoPreview" class="ev-profile-photo" alt="Vista previa de la foto" style="display:none"><label class="seller-field">Foto de perfil (opcional)<input id="verifiedSetupPhotoFile" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
     <label class="seller-field">DNI<input id="verifiedSetupDni" maxlength="20" autocomplete="off"></label>
     <label class="seller-field">Fecha de nacimiento<input id="verifiedSetupBirthDate" type="date" autocomplete="bday"></label>
     <label class="seller-field">Género<select id="verifiedSetupGender"><option value="">Elegí una opción</option><option value="female">Femenino</option><option value="male">Masculino</option><option value="non_binary">No binario</option><option value="other">Otro</option><option value="prefer_not_to_say">Prefiero no decirlo</option></select></label>
@@ -235,7 +236,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .seller-field{display:block;margin:14px 0 8px;font-size:13px;font-weight:900}
 .profile-name-preview{display:flex;min-width:0;margin-top:6px;border:1px solid #d1d5db;border-radius:9px;overflow:hidden}
 .profile-name-preview:focus-within{border-color:#2563eb;box-shadow:0 0 0 2px #2563eb22}
-.ev-profile-photo-row{display:flex;align-items:center;gap:14px;margin:10px 0}.ev-profile-photo{width:82px;height:82px;flex:0 0 82px;border-radius:50%;object-fit:cover;background:#e5e7eb;border:3px solid #dbeafe;display:block}.ev-profile-card{display:flex;flex-direction:column;align-items:center;gap:14px;padding:20px;margin:10px 0;background:#fff;color:#111827;border:1px solid #dbe3ed;border-radius:18px;box-shadow:0 8px 24px rgba(17,24,39,.07);text-align:center}.ev-profile-card .identity{display:flex;flex-direction:column;align-items:center}.ev-profile-card img,.ev-profile-avatar-placeholder{width:148px;height:148px;border-radius:50%;object-fit:cover;background:#e5e7eb;border:5px solid #eff6ff;box-shadow:0 4px 16px rgba(17,24,39,.14)}.ev-profile-avatar-placeholder{display:grid;place-items:center;font-size:58px;color:#6b7280}.ev-profile-card .role{display:inline-flex;align-items:center;margin:10px 0 5px;padding:6px 14px;border-radius:999px;background:#2563eb;color:#fff;font-size:13px;font-weight:800}.ev-profile-card h3{margin:3px 0 0;color:#111827;font-size:19px;line-height:1.3}.ev-profile-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;width:100%;margin:0;padding:12px;border:1px solid #e5e7eb;border-radius:13px;background:#f9fafb;text-align:left}.ev-profile-card dl>div{padding:9px;border-bottom:1px solid #e5e7eb}.ev-profile-card dl>div:nth-last-child(-n+2){border-bottom:0}.ev-profile-card dt{color:#6b7280;font-size:12px;font-weight:700}.ev-profile-card dd{margin:3px 0 0;color:#111827;font-size:14px;font-weight:700;overflow-wrap:anywhere}.ev-profile-card dd a{color:#2563eb}.ev-profile-fields{display:grid;gap:8px}.ev-profile-fields label{display:grid;gap:5px;font-size:13px;font-weight:800}.ev-profile-fields input,.ev-profile-fields select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:9px;font:inherit}
+.ev-profile-photo-row{display:flex;align-items:center;gap:14px;margin:10px 0}.ev-profile-photo{width:82px;height:82px;flex:0 0 82px;border-radius:50%;object-fit:cover;background:#e5e7eb;border:3px solid #dbeafe;display:block}.ev-profile-photo-row .ev-profile-avatar-placeholder{width:82px;height:82px;flex:0 0 82px;border-width:3px;font-size:32px}.ev-profile-card{display:flex;flex-direction:column;align-items:center;gap:14px;padding:20px;margin:10px 0;background:#fff;color:#111827;border:1px solid #dbe3ed;border-radius:18px;box-shadow:0 8px 24px rgba(17,24,39,.07);text-align:center}.ev-profile-card .identity{display:flex;flex-direction:column;align-items:center}.ev-profile-card img,.ev-profile-avatar-placeholder{width:148px;height:148px;border-radius:50%;object-fit:cover;background:#e5e7eb;border:5px solid #eff6ff;box-shadow:0 4px 16px rgba(17,24,39,.14)}.ev-profile-avatar-placeholder{display:grid;place-items:center;font-size:58px;color:#6b7280}.ev-profile-card .role{display:inline-flex;align-items:center;margin:10px 0 5px;padding:6px 14px;border-radius:999px;background:#2563eb;color:#fff;font-size:13px;font-weight:800}.ev-profile-card h3{margin:3px 0 0;color:#111827;font-size:19px;line-height:1.3}.ev-profile-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;width:100%;margin:0;padding:12px;border:1px solid #e5e7eb;border-radius:13px;background:#f9fafb;text-align:left}.ev-profile-card dl>div{padding:9px;border-bottom:1px solid #e5e7eb}.ev-profile-card dl>div:nth-last-child(-n+2){border-bottom:0}.ev-profile-card dt{color:#6b7280;font-size:12px;font-weight:700}.ev-profile-card dd{margin:3px 0 0;color:#111827;font-size:14px;font-weight:700;overflow-wrap:anywhere}.ev-profile-card dd a{color:#2563eb}.ev-profile-fields{display:grid;gap:8px}.ev-profile-fields label{display:grid;gap:5px;font-size:13px;font-weight:800}.ev-profile-fields input,.ev-profile-fields select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:9px;font:inherit}
 @media(max-width:600px){.ev-profile-card{padding:16px}.ev-profile-card img,.ev-profile-avatar-placeholder{width:128px;height:128px}.ev-profile-card dl{grid-template-columns:1fr}.ev-profile-card dl>div,.ev-profile-card dl>div:nth-last-child(-n+2){border-bottom:1px solid #e5e7eb}.ev-profile-card dl>div:last-child{border-bottom:0}}
 .seller-field .profile-name-preview input{margin:0;border:0;border-radius:0}
 .seller-field .profile-name-preview #sellerProfileName,.seller-field .profile-name-preview #firstLoginName{flex:1;min-width:0}
@@ -649,15 +650,30 @@ async function loadMyVerifiedCatalogProfile(){
   currentVerifiedCatalogProfile=Array.isArray(data)?(data[0]||null):(data||null);
   return currentVerifiedCatalogProfile;
 }
-function previewVerifiedProfilePhoto(fileInputId,imageId){
+function previewVerifiedProfilePhoto(fileInputId,imageId,placeholderId){
   const file=$(fileInputId)?.files?.[0],img=$(imageId);
-  if(file&&img){if(!file.type.startsWith("image/"))return;img.src=URL.createObjectURL(file);img.style.display="block"}
+  if(file&&img){if(!file.type.startsWith("image/"))return;img.src=URL.createObjectURL(file);img.style.display="block";if(placeholderId)$(placeholderId).style.display="none"}
 }
-async function showSavedProfilePhoto(path,imageId){
+async function showSavedProfilePhoto(path,imageId,placeholderId){
   const image=$(imageId);if(!image)return;
-  if(!path){image.removeAttribute("src");image.style.display="none";return}
+  const placeholder=placeholderId?$(placeholderId):null;
+  image.onerror=()=>{image.style.display="none";if(placeholder)placeholder.style.display="grid"};
+  image.removeAttribute("src");image.style.display="none";if(placeholder)placeholder.style.display="grid";
+  if(!path)return;
   const {data,error}=await db.storage.from("staff-profile-photos").createSignedUrl(path,1800);
-  if(!error&&data?.signedUrl){image.src=data.signedUrl;image.style.display="block"}
+  if(!error&&data?.signedUrl){image.src=data.signedUrl;image.style.display="block";if(placeholder)placeholder.style.display="none"}
+}
+async function renderMyVerifiedProfileCard(profile){
+  const card=$("myVerifiedProfileCard");if(!card||!profile)return;
+  const gender={female:"Femenino",male:"Masculino",non_binary:"No binario",other:"Otro",prefer_not_to_say:"Prefiere no decirlo"};
+  $("myVerifiedProfileName").textContent=profile.full_name||"";
+  $("myVerifiedProfileRole").textContent=staffRoleLabel();
+  $("myVerifiedProfileDni").textContent=profile.dni||"—";
+  $("myVerifiedProfileBirthDate").textContent=profile.birth_date?new Date(`${profile.birth_date}T12:00:00`).toLocaleDateString("es-AR"):"—";
+  $("myVerifiedProfileGender").textContent=gender[profile.gender]||profile.gender||"—";
+  $("myVerifiedProfilePhone").textContent=profile.phone||"—";
+  card.style.display="";
+  await showSavedProfilePhoto(profile.photo_path,"myVerifiedProfilePhoto","myVerifiedProfileAvatar");
 }
 function openVerifiedProfileSetup(name=""){
   $("verifiedSetupName").value=name||currentStaffProfileName||"";
@@ -667,7 +683,7 @@ function openVerifiedProfileSetup(name=""){
   $("verifiedSetupPhone").value=currentVerifiedCatalogProfile?.phone||currentSeller?.phone||"";
   $("verifiedSetupPhotoFile").value="";
   $("verifiedProfileSetupStatus").textContent="";
-  void showSavedProfilePhoto(currentVerifiedCatalogProfile?.photo_path,"verifiedSetupPhotoPreview");
+  void showSavedProfilePhoto(currentVerifiedCatalogProfile?.photo_path,"verifiedSetupPhotoPreview","verifiedSetupPhotoPlaceholder");
   $("verifiedProfileSetupModal").style.display="flex";
   $("verifiedProfileSetupModal").setAttribute("aria-hidden","false");
 }
@@ -1033,6 +1049,7 @@ async function decideCatalogCustomerSaleRequest(button){
 async function openSellerProfile(){
   if(!currentSeller&&!currentStaffAccess)return;
   const isVerified=!!currentSalesVerified;
+  $("myVerifiedProfileCard").style.display="none";
   $("verifiedProfileEditFields").style.display=isVerified?"":"none";
   $("sellerNameSave").style.display=isVerified?"none":"";
   $("sellerProfileName").value=isVerified?(currentVerifiedCatalogProfile?.full_name||currentSeller?.name||currentStaffProfileName||""):(currentSeller?.name||currentStaffProfileName||"");
@@ -1040,7 +1057,7 @@ async function openSellerProfile(){
   $("sellerProfileStatus").textContent="";
   $("sellerVerifiedPhotoFile").value="";
   if(isVerified){
-    try{const profile=await loadMyVerifiedCatalogProfile();if(profile){$("sellerProfileName").value=profile.full_name||"";$("sellerVerifiedDni").value=profile.dni||"";$("sellerVerifiedBirthDate").value=profile.birth_date||"";$("sellerVerifiedGender").value=profile.gender||"";$("sellerVerifiedPhone").value=profile.phone||"";await showSavedProfilePhoto(profile.photo_path,"sellerVerifiedPhotoPreview")} }
+    try{const profile=await loadMyVerifiedCatalogProfile();if(profile){$("sellerProfileName").value=profile.full_name||"";$("sellerVerifiedDni").value=profile.dni||"";$("sellerVerifiedBirthDate").value=profile.birth_date||"";$("sellerVerifiedGender").value=profile.gender||"";$("sellerVerifiedPhone").value=profile.phone||"";await showSavedProfilePhoto(profile.photo_path,"sellerVerifiedPhotoPreview","sellerVerifiedPhotoPlaceholder");await renderMyVerifiedProfileCard(profile)} }
     catch(error){$("sellerProfileStatus").textContent="No se pudieron cargar tus datos: "+(error.message||error)}
   }
   $("customerSaleReferralUrl").value="";
@@ -1068,7 +1085,7 @@ async function saveSellerName(){
 }
 async function saveSellerVerifiedProfile(){
   const profile=await saveVerifiedProfileFields({nameId:"sellerProfileName",dniId:"sellerVerifiedDni",birthId:"sellerVerifiedBirthDate",genderId:"sellerVerifiedGender",phoneId:"sellerVerifiedPhone",fileId:"sellerVerifiedPhotoFile",statusId:"sellerProfileStatus",buttonId:"sellerVerifiedProfileSave"});
-  if(profile){$("sellerProfileButton").innerHTML="👤 "+catalogVerifiedName(profile.full_name,currentUserId);await refreshOnlineStaffDirectory();await showSavedProfilePhoto(profile.photo_path,"sellerVerifiedPhotoPreview")}
+  if(profile){$("sellerProfileButton").innerHTML="👤 "+catalogVerifiedName(profile.full_name,currentUserId);await refreshOnlineStaffDirectory();await showSavedProfilePhoto(profile.photo_path,"sellerVerifiedPhotoPreview","sellerVerifiedPhotoPlaceholder");await renderMyVerifiedProfileCard(profile)}
 }
 async function loadOrCreateCustomerSaleReferral(){
   if(!currentSalesVerified&&currentStaffAccess?.role!=="admin")return;
@@ -1677,8 +1694,8 @@ $("sellerProfileClose").addEventListener("click",()=>closeSellerModal("sellerPro
 $("sellerProfileModal").addEventListener("click",e=>{if(e.target===$("sellerProfileModal"))closeSellerModal("sellerProfileModal")});
 $("sellerNameSave").addEventListener("click",saveSellerName);
 $("sellerVerifiedProfileSave").addEventListener("click",saveSellerVerifiedProfile);
-$("sellerVerifiedPhotoFile").addEventListener("change",()=>previewVerifiedProfilePhoto("sellerVerifiedPhotoFile","sellerVerifiedPhotoPreview"));
-$("verifiedSetupPhotoFile").addEventListener("change",()=>previewVerifiedProfilePhoto("verifiedSetupPhotoFile","verifiedSetupPhotoPreview"));
+$("sellerVerifiedPhotoFile").addEventListener("change",()=>previewVerifiedProfilePhoto("sellerVerifiedPhotoFile","sellerVerifiedPhotoPreview","sellerVerifiedPhotoPlaceholder"));
+$("verifiedSetupPhotoFile").addEventListener("change",()=>previewVerifiedProfilePhoto("verifiedSetupPhotoFile","verifiedSetupPhotoPreview","verifiedSetupPhotoPlaceholder"));
 $("sellerPasswordSave").addEventListener("click",saveSellerPassword);
 $("createCustomerSaleReferral").addEventListener("click",createCustomerSaleReferral);
 $("firstLoginSetupSave").addEventListener("click",completeFirstLoginSetup);
