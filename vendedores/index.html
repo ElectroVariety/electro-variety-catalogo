@@ -1213,99 +1213,11 @@ async function saveSellerPassword(){
   }catch(e){$("sellerProfileStatus").textContent="No se pudo cambiar la contraseña: "+(e.message||e)}
   finally{$("sellerPasswordSave").disabled=false}
 }
-function openSellerSales(tab="new"){
+function openSellerSales(){
   if(!currentSellerId)return;
   openSellerModal("sellerSalesModal");
   $("sellerSaleCreateStatus").textContent="";
   loadSellerSales();
-}
-function stockHint(product){
-  const n=Number(product.stock);
-  return n===-1?"Hay stock (sin cantidad exacta)":n>0?"Stock visible: "+n:"Sin stock visible";
-}
-function renderSaleProducts(){
-  const query=String($("saleProductSearch").value||"").trim().toLocaleLowerCase("es");
-  $("saleProductList").innerHTML=allProducts.map(p=>{
-    const title=productTitle(p),category=p.category||"Sin categoría";
-    return "<div class=\"sale-product-row\" data-sale-product=\""+Number(p.id)+"\">"+
-      "<div class=\"sale-product-info\"><b>"+esc(title)+"</b><small>"+esc(category)+" · "+esc(stockHint(p))+"</small></div>"+
-      "<input class=\"sale-quantity\" type=\"number\" min=\"0\" step=\"1\" value=\"0\" inputmode=\"numeric\" aria-label=\"Cantidad de "+esc(title)+"\"></div>";
-  }).join("")||'<div class="seller-help" style="padding:10px">No hay productos para elegir.</div>';
-  $("saleProductList").querySelectorAll("[data-sale-product]").forEach(row=>{
-    const p=allProducts.find(x=>Number(x.id)===Number(row.dataset.saleProduct));
-    const haystack=(p?.name||"")+" "+(p?.subtitle||"")+" "+(p?.category||"");
-    row.style.display=!query||haystack.toLocaleLowerCase("es").includes(query)?"flex":"none";
-  });
-}
-function selectedSellerSaleItems(){
-  return [...$("saleProductList").querySelectorAll("[data-sale-product]")].map(row=>({
-    product_id:Number(row.dataset.saleProduct),
-    quantity:Math.floor(Number(row.querySelector(".sale-quantity").value)||0),
-    product:allProducts.find(p=>Number(p.id)===Number(row.dataset.saleProduct))
-  })).filter(item=>item.quantity>0);
-}
-async function copySellerSaleText(text,button){
-  try{
-    await navigator.clipboard.writeText(text);
-    $("sellerSaleCreateStatus").textContent="✅ Texto copiado. Abrí WhatsApp y pegalo en el grupo de pedidos.";
-    if(button){const old=button.textContent;button.textContent="✅ Copiado";setTimeout(()=>button.textContent=old,1600)}
-  }catch(e){
-    $("sellerSaleCreateStatus").textContent="Copiá el texto del recuadro y pegalo manualmente en el grupo de WhatsApp.";
-    $("sellerPreparedMessage").focus();$("sellerPreparedMessage").select();
-  }
-}
-function clearPreparedSellerOrder(){
-  $("sellerPreparedMessage").value="";
-  $("sellerPreparedMessageWrap").style.display="none";
-  $("sellerCopyPreparedButton").style.display="none";
-  $("sellerOpenWhatsAppLink").style.display="none";
-}
-async function createSellerSale(){
-  const orderText=$("saleOrderText").value;
-  const customerType=$("saleCustomerType").value;
-  const locality=$("saleCustomerLocality").value.trim();
-  const items=selectedSellerSaleItems();
-  if(!items.length){$("sellerSaleCreateStatus").textContent="Elegí al menos un producto y cargá su cantidad.";return}
-  if(!["existing","new"].includes(customerType)){$("sellerSaleCreateStatus").textContent="Indicá si es cliente de Electro Variety o cliente nuevo.";return}
-  if(!orderText.trim()){$("sellerSaleCreateStatus").textContent="Pegá el pedido del cliente antes de registrar la venta.";return}
-  const button=$("createSellerSaleButton");button.disabled=true;
-  $("sellerSaleCreateStatus").textContent="Registrando pedido y reservando stock…";
-  try{
-    const payload=items.map(({product_id,quantity})=>({product_id,quantity}));
-    let {data:saleId,error}=await db.rpc("create_seller_sale",{p_order_text:orderText,p_items:payload,p_customer_type:customerType,p_locality:locality||null});
-    if(error&&/sesión.*dispositivo.*autorizada/i.test(error.message||"")){
-      const {data:sessionData}=await db.auth.getSession();
-      const device=await registerSellerDevice(sessionData?.session,"restore");
-      if(device.ok){
-        const retry=await db.rpc("create_seller_sale",{p_order_text:orderText,p_items:payload,p_customer_type:customerType,p_locality:locality||null});
-        saleId=retry.data;error=retry.error;
-      }
-    }
-    if(error)throw error;
-    $("sellerPreparedMessage").value=orderText;
-    $("sellerPreparedMessageWrap").style.display="block";
-    $("sellerCopyPreparedButton").style.display="block";
-    $("sellerOpenWhatsAppLink").style.display="block";
-    $("sellerSaleCreateStatus").textContent="✅ Pedido registrado y stock reservado. Se compartirá únicamente el texto que pegaste. Elegí WhatsApp y luego el grupo.";
-    for(const row of $("saleProductList").querySelectorAll(".sale-quantity"))row.value="0";
-    $("saleCustomerType").value="";$("saleCustomerLocality").value="";
-    $("saleOrderText").value="";
-    try{
-      if(!navigator.share)throw new Error("Este navegador no permite abrir el selector para compartir.");
-      await navigator.share({text:orderText});
-      clearPreparedSellerOrder();
-      $("sellerSaleCreateStatus").textContent="✅ Pedido compartido. Se limpió el texto preparado.";
-    }catch(shareError){
-      if(shareError?.name==="AbortError"){
-        $("sellerSaleCreateStatus").textContent="El pedido quedó registrado y el stock reservado. No se compartió; podés volver a abrir el selector.";
-      }else{
-        console.warn("No se pudo abrir el selector de compartir:",shareError);
-        $("sellerSaleCreateStatus").textContent="El pedido quedó registrado y el stock reservado. Tocá «Compartir pedido por WhatsApp» para elegir WhatsApp y el grupo.";
-      }
-    }
-    await loadSellerSales();
-  }catch(e){$("sellerSaleCreateStatus").textContent="No se pudo registrar el pedido: "+(e.message||e)}
-  finally{button.disabled=false}
 }
 function saleStatusLabel(status){
   return ({pending_delivery:"Pendiente de confirmar",partially_resolved:"Parcialmente confirmado",delivered:"Entregado",not_delivered:"No entregado",expired:"Venció sin confirmar"})[status]||status;
@@ -1416,21 +1328,6 @@ async function copyExistingSale(saleId){
   try{await navigator.clipboard.writeText(sale.order_text);$("sellerSaleCreateStatus").textContent="Texto exacto del pedido copiado."}
   catch(e){alert(sale.order_text)}
 }
-async function sharePreparedSellerOrder(){
-  const text=$("sellerPreparedMessage").value;
-  if(!text)return;
-  try{
-    if(!navigator.share)throw new Error("Este navegador no permite compartir directamente.");
-    await navigator.share({text});
-    clearPreparedSellerOrder();
-    $("sellerSaleCreateStatus").textContent="✅ Pedido compartido. Se limpió el texto preparado.";
-  }catch(e){
-    if(e?.name==="AbortError")return;
-    try{await navigator.clipboard.writeText(text);$("sellerSaleCreateStatus").textContent="No se pudo abrir el selector. Copié el texto exacto; pegalo en WhatsApp."}
-    catch(_){$("sellerPreparedMessage").focus();$("sellerPreparedMessage").select();$("sellerSaleCreateStatus").textContent="No se pudo abrir el selector. El texto exacto está seleccionado para copiarlo."}
-  }
-}
-
 function catalogCard(p,index){
   const stock=Number(p.stock);
   const hasStock=stock===-1 || stock>0;
