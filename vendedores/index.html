@@ -430,40 +430,15 @@ function renderOnlineStaff(){
   let markup="";
   const topRoles=["boss","admin","cm"];
   for(const group of topRoles){const matches=online.filter(user=>roleOf(user)===group);const title={boss:"Boss",admin:"Admin",cm:"CM"}[group];markup+=section(title,matches)}
-  const supervisors=online.filter(user=>roleOf(user)==="supervisor").sort(sortPeople);
-  const assignedIds=new Set();
-  if(supervisors.length){
-    markup+='<section class="online-staff-section"><h3>Supervisores y sus equipos</h3>';
-    for(const supervisor of supervisors){
-      const team=online.filter(user=>Array.isArray(user.supervisor_ids)&&user.supervisor_ids.includes(supervisor.user_id)&&!["boss","admin","cm","supervisor"].includes(roleOf(user)));
-      team.forEach(user=>assignedIds.add(user.user_id));
-      markup+=`<div class="online-supervisor">${person(supervisor)}<div class="online-staff-team">`;
-      for(const [group,title] of [["encargado","Encargados"],["coordinador","Coordinadores"],["vendedor","Vendedores"]]){
-        const members=team.filter(user=>roleOf(user)===group).sort(sortPeople);
-        if(members.length)markup+=`<h4>${title}</h4>${members.map(person).join("")}`;
-      }
-      const otherTeam=team.filter(user=>!["encargado","coordinador","vendedor"].includes(roleOf(user))).sort(sortPeople);
-      if(otherTeam.length)markup+=`<h4>Otros asignados</h4>${otherTeam.map(person).join("")}`;
-      markup+="</div></div>";
-    }
-    markup+="</section>";
-  }
-  const unassignedTeam=online.filter(user=>["encargado","coordinador","vendedor"].includes(roleOf(user))&&!assignedIds.has(user.user_id));
-  if(unassignedTeam.length){
-    markup+='<section class="online-staff-section"><h3>Sin supervisor asignado</h3>';
-    for(const [group,title] of [["encargado","Encargados"],["coordinador","Coordinadores"],["vendedor","Vendedores"]]){
-      const members=unassignedTeam.filter(user=>roleOf(user)===group).sort(sortPeople);
-      if(members.length)markup+=`<h4 class="online-staff-subheading">${title}</h4>${members.map(person).join("")}`;
-    }
-    markup+="</section>";
-  }
+  const staffGroups=[["supervisor","Supervisores"],["encargado","Encargados"],["coordinador","Coordinadores"],["vendedor","Vendedores"]];
+  for(const [group,title] of staffGroups)markup+=section(title,online.filter(user=>roleOf(user)===group));
   const departmentGroups=[["administracion","Administración"],["local","Local"],["logistica","Logística"],["reparto","Reparto"]];
   for(const [group,title] of departmentGroups){
-    const members=online.filter(user=>roleOf(user)===group&&!assignedIds.has(user.user_id));
+    const members=online.filter(user=>roleOf(user)===group);
     markup+=section(title,members);
   }
-  const grouped=new Set([...topRoles,"supervisor","encargado","coordinador","vendedor",...departmentGroups.map(x=>x[0])]);
-  const others=online.filter(user=>!grouped.has(roleOf(user))&&!assignedIds.has(user.user_id));
+  const grouped=new Set([...topRoles,...staffGroups.map(x=>x[0]),...departmentGroups.map(x=>x[0])]);
+  const others=online.filter(user=>!grouped.has(roleOf(user)));
   markup+=section("Otros",others);
   list.innerHTML=markup||'<div class="seller-help">No hay integrantes conectados para mostrar.</div>';
 }
