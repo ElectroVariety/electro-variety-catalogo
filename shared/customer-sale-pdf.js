@@ -34,7 +34,8 @@
     const all = { ...(request.document_paths && typeof request.document_paths === "object" ? request.document_paths : {}) };
     if (request.dni_front_path) all.dni_front_path = request.dni_front_path;
     if (request.dni_back_path) all.dni_back_path = request.dni_back_path;
-    return Object.entries(all).flatMap(([key, value]) => (Array.isArray(value) ? value : [value]).filter(path => typeof path === "string" && path).map((path, index) => ({ key, path, index })));
+    const seen = new Set();
+    return Object.entries(all).flatMap(([key, value]) => (Array.isArray(value) ? value : [value]).filter(path => typeof path === "string" && path && !seen.has(path) && seen.add(path)).map((path, index) => ({ key, path, index })));
   };
   const formatDate = value => value ? new Date(value).toLocaleString("es-AR") : "—";
 
