@@ -57,27 +57,16 @@
 <body>
 <header class="site-header"><div class="top"><div class="brand"><span class="brand-mark" aria-hidden="true">🛍️</span><div><div class="brand-name">ELECTRO VARIETY</div><div class="brand-subtitle">CATÁLOGO DE CLIENTES · SOLICITUD ONLINE</div></div></div><nav class="top-nav" aria-label="Navegación"><a href="../clientes/">Volver al catálogo</a></nav></div></header>
 <main class="wrap">
-  <section class="hero"><span class="badge">SOLICITUD DE COMPRA</span><h1>Solicitá tus productos</h1><p>Completá el formulario para que podamos revisar tu pedido y comunicarnos con vos para confirmar disponibilidad y coordinar la compra.</p><div class="hero-note">ⓘ Los campos marcados con <b>*</b> son obligatorios. Los archivos se guardan de forma privada; cada uno puede pesar hasta 5 MB (máximo 12 archivos y 25 MB por solicitud). Enviar la solicitud no confirma la venta ni reserva productos.</div></section>
+  <section class="hero"><span class="badge">SOLICITUD DE COMPRA</span><h1>Solicitá tus productos</h1><p>Completá el formulario para que podamos revisar tu pedido y comunicarnos con vos para confirmar disponibilidad y coordinar la compra.</p><div class="hero-note">ⓘ Los campos marcados con <b>*</b> son obligatorios. Enviar la solicitud no confirma la venta ni reserva productos. Sujeto a evaluación crediticia.</div></section>
   <div id="pageStatus" class="panel hint">Cargando productos…</div>
   <form id="saleForm" class="hidden" novalidate>
-    <section class="panel">
+    <section class="panel" id="personalPanel">
       <h2><span class="step-number">01</span>Datos personales</h2>
-      <div class="field-grid">
-        <div class="field"><label for="fullName">Nombre y apellido *</label><input id="fullName" name="full_name" maxlength="120" autocomplete="name" required></div>
-        <div class="field"><label for="dni">DNI *</label><input id="dni" name="dni" maxlength="14" autocomplete="off" placeholder="Ej.: 12.345.678" required></div>
-        <div class="field"><label for="dniUpdated">¿Tenés el DNI actualizado? *</label><select id="dniUpdated" name="dni_updated" required><option value="">Seleccioná una opción</option><option value="yes">Sí</option><option value="no">No</option></select></div>
-        <div class="field"><label for="phone">Teléfono personal *</label><input id="phone" name="phone" type="tel" maxlength="30" autocomplete="tel" placeholder="Ej.: 11 2345 6789" required></div>
-        <div class="field"><label for="alternativePhone">Teléfono alternativo *</label><input id="alternativePhone" name="alternative_phone" type="tel" maxlength="30" autocomplete="tel" required></div>
-        <div class="field"><label for="alternativeRelationship">Vínculo con el contacto alternativo *</label><input id="alternativeRelationship" name="alternative_contact_relationship" maxlength="100" required></div>
-        <div class="choice-block full"><div class="question">¿Venís recomendado por alguien? *</div><div class="choice-grid"><label class="choice-option"><input type="radio" name="referred_by" value="yes" required><span>Sí</span></label><label class="choice-option"><input type="radio" name="referred_by" value="no" required><span>No</span></label></div></div><div id="referrerFields" class="conditional-panel hidden"></div>
-        <div class="choice-block full"><div class="question">¿Sos cliente de Electro Variety? *</div><div class="choice-grid"><label class="choice-option"><input type="radio" name="is_electro_variety_customer" value="yes" required><span>Sí</span></label><label class="choice-option"><input type="radio" name="is_electro_variety_customer" value="no" required><span>No</span></label></div></div>
-        <div class="file-grid full">
-          <label class="file-drop" for="dniFront"><input class="file-input" id="dniFront" name="dni_front" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><span class="file-plus">＋</span><span><b>Frente de tu DNI *</b><small data-file-name="dniFront">Elegí un archivo de tu dispositivo</small><small>Máximo 5 MB por archivo.</small></span></label>
-          <label class="file-drop" for="dniBack"><input class="file-input" id="dniBack" name="dni_back" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><span class="file-plus">＋</span><span><b>Dorso de tu DNI *</b><small data-file-name="dniBack">Elegí un archivo de tu dispositivo</small><small>Máximo 5 MB por archivo.</small></span></label>
-        </div>
-      </div>
+      <div class="choice-block"><div class="question">¿Sos cliente de Electro Variety? *</div><div class="choice-grid"><label class="choice-option"><input type="radio" name="is_electro_variety_customer" value="yes" required><span>Sí</span></label><label class="choice-option"><input type="radio" name="is_electro_variety_customer" value="no" required><span>No</span></label></div></div>
+      <div id="identityFields" class="conditional-panel hidden"><h3 id="identityTitle">Tus datos</h3><div class="field-grid"><div class="field"><label for="fullName">Nombre y apellido *</label><input id="fullName" name="full_name" maxlength="120" autocomplete="name" required></div><div class="field"><label for="dni">DNI *</label><input id="dni" name="dni" maxlength="14" autocomplete="off" placeholder="Ej.: 12.345.678" required></div><div class="field"><label for="phone">Teléfono personal *</label><input id="phone" name="phone" type="tel" maxlength="30" autocomplete="tel" placeholder="Ej.: 11 2345 6789" required></div></div></div>
+      <div id="fullApplicantFields" class="full-application-only hidden"><div class="field-grid"><div class="field"><label for="dniUpdated">¿Tenés el DNI actualizado? *</label><select id="dniUpdated" name="dni_updated" required><option value="">Seleccioná una opción</option><option value="yes">Sí</option><option value="no">No</option></select></div><div class="field"><label for="alternativePhone">Teléfono alternativo *</label><input id="alternativePhone" name="alternative_phone" type="tel" maxlength="30" autocomplete="tel" required></div><div class="field"><label for="alternativeRelationship">Vínculo con el contacto alternativo *</label><input id="alternativeRelationship" name="alternative_contact_relationship" maxlength="100" required></div><div class="choice-block full"><div class="question">¿Venís recomendado por alguien? *</div><div class="choice-grid"><label class="choice-option"><input type="radio" name="referred_by" value="yes" required><span>Sí</span></label><label class="choice-option"><input type="radio" name="referred_by" value="no" required><span>No</span></label></div></div><div id="referrerFields" class="conditional-panel hidden"></div><div class="file-grid full"><label class="file-drop" for="dniFront"><input class="file-input" id="dniFront" name="dni_front" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><span class="file-plus">＋</span><span><b>Frente de tu DNI *</b><small data-file-name="dniFront">Elegí un archivo de tu dispositivo</small><small>Máximo 5 MB por archivo.</small></span></label><label class="file-drop" for="dniBack"><input class="file-input" id="dniBack" name="dni_back" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><span class="file-plus">＋</span><span><b>Dorso de tu DNI *</b><small data-file-name="dniBack">Elegí un archivo de tu dispositivo</small><small>Máximo 5 MB por archivo.</small></span></label></div></div></div>
     </section>
-    <section class="panel">
+    <section class="panel full-application-only hidden" data-full-section>
       <h2><span class="step-number">02</span>Domicilio</h2>
       <div class="field-grid">
         <div class="field"><label for="locality">Localidad *</label><input id="locality" name="locality" list="georefLocalities" maxlength="120" autocomplete="address-level2" placeholder="Empezá a escribir tu localidad" required><datalist id="georefLocalities"></datalist></div>
@@ -88,17 +77,17 @@
         <div class="choice-block full"><div class="question">¿Cuál es tu situación de vivienda? *</div><div class="stacked-choices"><label class="choice-option"><input type="radio" name="housing_situation" value="own" required><span>Vivienda propia</span></label><label class="choice-option"><input type="radio" name="housing_situation" value="rent_contract" required><span>Alquilo por contrato</span></label><label class="choice-option"><input type="radio" name="housing_situation" value="rent_verbal" required><span>Alquilo de palabra</span></label></div></div><div id="housingFields" class="conditional-panel hidden"></div>
       </div>
     </section>
-    <section class="panel">
+    <section class="panel full-application-only hidden" data-full-section>
       <h2><span class="step-number">03</span>Comprobante de domicilio</h2><p class="hint">Seleccioná los servicios que tengas disponibles.</p>
       <div class="choice-block"><div class="question">¿Qué servicio o comprobante tenés? *</div><div class="check-grid">
         <label class="choice-option"><input type="checkbox" name="proof_services" value="edesur"><span>Edesur</span></label><label class="choice-option"><input type="checkbox" name="proof_services" value="metrogas"><span>Metrogas</span></label><label class="choice-option"><input type="checkbox" name="proof_services" value="water"><span>Agua</span></label><label class="choice-option"><input type="checkbox" name="proof_services" value="other"><span>Otro</span></label><label class="choice-option"><input type="checkbox" name="proof_services" value="none_in_name"><span>Ninguno a mi nombre</span></label>
       </div><div id="proofServicesStatus" class="status" role="status"></div></div><div id="proofServiceFields" class="conditional-panel hidden"></div>
     </section>
-    <section class="panel">
+    <section class="panel full-application-only hidden" data-full-section>
       <h2><span class="step-number">04</span>Situación financiera</h2>
       <div class="choice-block"><div class="question">¿Tenés deudas actualmente? *</div><div class="choice-grid"><label class="choice-option"><input type="radio" name="has_debts" value="no" required><span>No</span></label><label class="choice-option"><input type="radio" name="has_debts" value="yes" required><span>Sí</span></label></div></div><div id="debtFields" class="conditional-panel hidden"></div>
     </section>
-    <section class="panel">
+    <section class="panel full-application-only hidden" data-full-section>
       <h2><span class="step-number">05</span>Trabajo e ingresos</h2><p class="hint">Podés seleccionar varias fuentes de ingresos.</p>
       <div class="check-grid">
         <label class="choice-option"><input type="checkbox" name="income_sources" value="formal_job"><span>Trabajo en blanco</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="informal_job"><span>Trabajo en negro</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="self_employed"><span>Trabajo por cuenta propia</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="business"><span>Tengo un comercio</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="allowance"><span>Cobro una asignación</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="retirement"><span>Cobro una jubilación</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="pension"><span>Cobro una pensión</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="cooperative"><span>Cobro de una cooperativa</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="other"><span>Otros ingresos</span></label>
@@ -106,7 +95,7 @@
       <div id="incomeFields" class="income-panels"></div>
     </section>
     <section class="panel">
-      <h2><span class="step-number">06</span>Elegí los productos</h2><p class="hint">Podés seleccionar hasta 10 productos y solicitar hasta 10 unidades de cada uno. Los precios y planes se verifican al enviar la solicitud.</p>
+      <h2><span class="step-number">06</span>Elegí los productos</h2><p class="hint" id="productSelectionHint">Primero indicá si ya sos cliente de Electro Variety.</p>
       <input id="productSearch" class="search" type="search" placeholder="🔎 Buscar por nombre o categoría" aria-label="Buscar producto">
       <div id="productList" class="product-list"></div>
       <div id="selectedProducts" class="selected"></div>
@@ -129,6 +118,8 @@
   const money=value=>{const digits=String(value??"").replace(/\D/g,"");return digits?new Intl.NumberFormat("es-AR").format(Number(digits)):"—";};
   let products=[];
   const selected=new Map();
+  const customerType=()=>document.querySelector('input[name="is_electro_variety_customer"]:checked')?.value||"";
+  const maxDistinctProducts=()=>customerType()==="yes"?3:customerType()==="no"?1:0;
   function plans(product){
     const available=[];
     if(Number(product.q_count)>0&&String(product.q_price||"").replace(/\D/g,""))available.push({frequency:"quincenal",count:Number(product.q_count),price:money(product.q_price)});
@@ -137,22 +128,38 @@
   }
   function formatPlan(product){return plans(product).map(p=>`${p.count} ${p.frequency} · $${p.price}`).join(" | ")||"Consultar plan de pago";}
   function renderProducts(){
+    const limit=maxDistinctProducts();
     const query=$("productSearch").value.trim().toLocaleLowerCase("es");
     const shown=products.filter(p=>`${p.name||""} ${p.category||""} ${p.subtitle||""}`.toLocaleLowerCase("es").includes(query)).slice(0,80);
     $("productList").innerHTML=shown.length?shown.map(p=>{
       const inSelection=selected.has(Number(p.id));
       const stockText=Number(p.stock)===-1?"Disponibilidad a confirmar":`Stock visible: ${Number(p.stock)}`;
-      return `<article class="product"><img src="${esc(p.image_url||"")}" alt="" loading="lazy" onerror="this.hidden=true"><div class="product-info"><div class="product-name">${esc(p.name)}</div><div class="product-meta">${esc(p.category||"Producto")} · ${esc(stockText)}<br>${esc(formatPlan(p))}</div></div><button class="button add" type="button" data-add-product="${Number(p.id)}" ${inSelection?"disabled":""}>${inSelection?"Agregado ✓":"Agregar"}</button></article>`;
+      const limitReached=!inSelection&&(limit===0||selected.size>=limit);
+      return `<article class="product"><img src="${esc(p.image_url||"")}" alt="" loading="lazy" onerror="this.hidden=true"><div class="product-info"><div class="product-name">${esc(p.name)}</div><div class="product-meta">${esc(p.category||"Producto")} · ${esc(stockText)}<br>${esc(formatPlan(p))}</div></div><button class="button add" type="button" data-add-product="${Number(p.id)}" ${(inSelection||limitReached)?"disabled":""}>${inSelection?"Agregado ✓":limitReached?"Límite alcanzado":"Agregar"}</button></article>`;
     }).join(""):'<div class="empty">No encontramos productos con esa búsqueda.</div>';
   }
   function renderSelected(){
     const items=[...selected.values()];
-    $("selectedCount").textContent=String(items.reduce((sum,item)=>sum+item.quantity,0));
+    $("selectedCount").textContent=String(items.length);
     $("selectedProducts").innerHTML=items.map(item=>{
       const p=item.product, options=plans(p);
       const max=Number(p.stock)>0?Math.min(10,Number(p.stock)):10;
       return `<article class="selected-item"><div class="selected-name">${esc(p.name)}<div class="product-meta">${esc(formatPlan(p))}</div></div><div class="selected-controls"><label>Cantidad <input type="number" min="1" max="${max}" step="1" value="${item.quantity}" inputmode="numeric" data-item-quantity="${Number(p.id)}" aria-label="Cantidad de ${esc(p.name)}"></label><label>Pago <select data-item-frequency="${Number(p.id)}" aria-label="Plan de pago para ${esc(p.name)}">${options.map(plan=>`<option value="${plan.frequency}" ${item.frequency===plan.frequency?"selected":""}>${plan.frequency==="quincenal"?"Quincenal":"Mensual"} · ${plan.count} cuotas de $${plan.price}</option>`).join("")}</select></label><button class="button remove" type="button" data-remove-product="${Number(p.id)}">Quitar</button></div></article>`;
     }).join("");
+    renderProducts();
+  }
+  function updateCustomerMode(){
+    const choice=customerType(),isKnown=choice==="yes"||choice==="no",customer=choice==="yes";
+    const identity=$("identityFields");identity.classList.toggle("hidden",!isKnown);
+    $("identityTitle").textContent=customer?"Datos del cliente de Electro Variety":"Tus datos personales";
+    for(const panel of [$("fullApplicantFields"),...document.querySelectorAll("[data-full-section]")]){
+      panel.classList.toggle("hidden",!isKnown||customer);
+      for(const control of panel.querySelectorAll("input,select,textarea,button"))control.disabled=!isKnown||customer;
+    }
+    for(const control of identity.querySelectorAll("input,select,textarea"))control.disabled=!isKnown;
+    $("productSelectionHint").textContent=!isKnown?"Primero indicá si ya sos cliente de Electro Variety.":customer?"Como cliente podés elegir hasta 3 productos distintos. Los precios y planes se verifican al enviar la solicitud.":"Si todavía no sos cliente, podés elegir 1 producto. Los precios y planes se verifican al enviar la solicitud.";
+    if(selected.size>maxDistinctProducts())$("selectionStatus").textContent=`Este tipo de solicitud permite elegir ${maxDistinctProducts()} producto${maxDistinctProducts()===1?"":"s"}. Quitá los que excedan el límite para continuar.`;
+    else $("selectionStatus").textContent="";
     renderProducts();
   }
   async function loadProducts(){
@@ -235,6 +242,8 @@
     }
   });
   renderConditionalFields();
+  document.querySelectorAll('input[name="is_electro_variety_customer"]').forEach(input=>input.addEventListener("change",updateCustomerMode));
+  updateCustomerMode();
   document.querySelectorAll('input[name="proof_services"]').forEach(input=>input.addEventListener("change",()=>{
     const boxes=[...document.querySelectorAll('input[name="proof_services"]')];
     if(input.value==="none_in_name"&&input.checked)boxes.filter(box=>box!==input).forEach(box=>box.checked=false);
@@ -286,7 +295,7 @@
   $("productList").addEventListener("click",event=>{
     const button=event.target.closest("[data-add-product]");if(!button)return;
     const product=products.find(p=>Number(p.id)===Number(button.dataset.addProduct));if(!product)return;
-    if(selected.size>=10&&!selected.has(Number(product.id))){$("selectionStatus").textContent="Podés elegir hasta 10 productos distintos.";return;}
+    if(selected.size>=maxDistinctProducts()&&!selected.has(Number(product.id))){$("selectionStatus").textContent=`Podés elegir hasta ${maxDistinctProducts()} producto${maxDistinctProducts()===1?"":"s"} distintos.`;return;}
     selected.set(Number(product.id),{product,quantity:1,frequency:plans(product)[0]?.frequency||"quincenal"});
     $("selectionStatus").textContent="";renderSelected();
   });
@@ -299,7 +308,7 @@
     const item=selected.get(Number(input.dataset.itemQuantity));if(!item)return;
     const max=Number(item.product.stock)>0?Math.min(10,Number(item.product.stock)):10;
     item.quantity=Math.min(max,Math.max(1,Math.floor(Number(input.value)||1)));
-    input.value=String(item.quantity);$("selectedCount").textContent=String([...selected.values()].reduce((sum,value)=>sum+value.quantity,0));
+    input.value=String(item.quantity);$("selectedCount").textContent=String(selected.size);
   });
   $("selectedProducts").addEventListener("change",event=>{
     const input=event.target.closest("[data-item-frequency]");if(!input)return;
@@ -310,36 +319,39 @@
     const status=$("submitStatus");status.className="status";status.textContent="";
     if(!$("saleForm").reportValidity())return;
     if(!selected.size){status.classList.add("error");status.textContent="Elegí al menos un producto.";return;}
+    const customerOnly=customerType()==="yes",productLimit=customerOnly?3:1;
+    if(customerType()!=="yes"&&customerType()!=="no"){status.classList.add("error");status.textContent="Indicá si ya sos cliente de Electro Variety.";return;}
+    if(selected.size>productLimit){status.classList.add("error");status.textContent=`Esta solicitud permite elegir ${productLimit} producto${productLimit===1?"":"s"}. Quitá los que excedan el límite.`;return;}
     const submit=$("submitButton");submit.disabled=true;submit.textContent="Enviando solicitud…";
     try{
-      const proofServices=[...document.querySelectorAll('input[name="proof_services"]:checked')].map(input=>input.value);
-      if(!proofServices.length||(proofServices.includes("none_in_name")&&proofServices.length>1)){
+      const proofServices=customerOnly?[]:[...document.querySelectorAll('input[name="proof_services"]:checked')].map(input=>input.value);
+      if(!customerOnly&&(!proofServices.length||(proofServices.includes("none_in_name")&&proofServices.length>1))){
         status.classList.add("error");status.textContent="Elegí al menos un comprobante. Si no tenés ninguno a tu nombre, marcá solo esa opción.";return;
       }
-      const incomeSources=[...document.querySelectorAll('input[name="income_sources"]:checked')].map(input=>input.value);
-      if(!incomeSources.length){status.classList.add("error");status.textContent="Seleccioná al menos una fuente de ingresos y completá los datos que se despliegan.";return;}
+      const incomeSources=customerOnly?[]:[...document.querySelectorAll('input[name="income_sources"]:checked')].map(input=>input.value);
+      if(!customerOnly&&!incomeSources.length){status.classList.add("error");status.textContent="Seleccioná al menos una fuente de ingresos y completá los datos que se despliegan.";return;}
       const dni=$("dni").value.trim().replace(/[.\s-]/g,"").toUpperCase();
       if(!/^[A-Z]?\d{7,8}$/.test(dni)){$("dni").setCustomValidity("Ingresá un DNI válido de 7 u 8 números, con letra inicial opcional.");$("dni").reportValidity();return;}
       $("dni").setCustomValidity("");
-      const frontFile=$("dniFront").files[0],backFile=$("dniBack").files[0];
-      if(!frontFile||!backFile){status.classList.add("error");status.textContent="Adjuntá el frente y el dorso de tu DNI.";return;}
-      if(frontFile.size>5*1024*1024||backFile.size>5*1024*1024){status.classList.add("error");status.textContent="Cada archivo del DNI puede pesar hasta 5 MB.";return;}
+      const frontFile=customerOnly?null:$("dniFront").files[0],backFile=customerOnly?null:$("dniBack").files[0];
+      if(!customerOnly&&(!frontFile||!backFile)){status.classList.add("error");status.textContent="Adjuntá el frente y el dorso de tu DNI.";return;}
+      if(!customerOnly&&(frontFile.size>5*1024*1024||backFile.size>5*1024*1024)){status.classList.add("error");status.textContent="Cada archivo del DNI puede pesar hasta 5 MB.";return;}
       const values={
         full_name:$("fullName").value,
         dni,
-        dni_updated:$("dniUpdated").value,
+        dni_updated:customerOnly?"no":$("dniUpdated").value,
         phone:$("phone").value,
-        alternative_phone:$("alternativePhone").value,
-        alternative_contact_relationship:$("alternativeRelationship").value,
-        referred_by:document.querySelector('input[name="referred_by"]:checked')?.value||"",
+        alternative_phone:customerOnly?"":$("alternativePhone").value,
+        alternative_contact_relationship:customerOnly?"":$("alternativeRelationship").value,
+        referred_by:customerOnly?"no":document.querySelector('input[name="referred_by"]:checked')?.value||"",
         is_electro_variety_customer:document.querySelector('input[name="is_electro_variety_customer"]:checked')?.value||"",
-        locality:$("locality").value,
-        street:$("street").value,
-        street_number:$("streetNumber").value,
-        between_streets:$("betweenStreets").value,
-        housing_situation:document.querySelector('input[name="housing_situation"]:checked')?.value||"",
+        locality:customerOnly?"":$("locality").value,
+        street:customerOnly?"":$("street").value,
+        street_number:customerOnly?"":$("streetNumber").value,
+        between_streets:customerOnly?"":$("betweenStreets").value,
+        housing_situation:customerOnly?"":document.querySelector('input[name="housing_situation"]:checked')?.value||"",
         proof_services:proofServices,
-        has_debts:document.querySelector('input[name="has_debts"]:checked')?.value||"",
+        has_debts:customerOnly?"no":document.querySelector('input[name="has_debts"]:checked')?.value||"",
         income_sources:incomeSources,
         notes:$("notes").value,
         privacy_accepted:$("privacyAccepted").checked,
@@ -352,12 +364,12 @@
       values.proof_services.forEach(value=>formData.append("proof_services",value));
       values.income_sources.forEach(value=>formData.append("income_sources",value));
       const detailFields=new Set(["referrer_full_name","referrer_phone","referrer_relationship","service_owner","service_holder_name","service_holder_dni","service_holder_relationship","debt_reason","debt_amount","occupation_formal","occupation_informal","wallet_provider","self_employed_activity","business_name","business_activity","business_address","business_duration","business_revenue","business_profit","benefit_allowance","benefit_retirement","benefit_pension","benefit_cooperative","other_income_description",...incomeSources.map(source=>`income_${source}`)]);
-      const conditionalDetails={};
-      for(const [key,value] of new FormData($("saleForm")).entries())if(detailFields.has(key)&&typeof value==="string")conditionalDetails[key]=value.trim();
+      const conditionalDetails=customerOnly?{customer_only:"true"}:{};
+      if(!customerOnly)for(const [key,value] of new FormData($("saleForm")).entries())if(detailFields.has(key)&&typeof value==="string")conditionalDetails[key]=value.trim();
       formData.set("conditional_details",JSON.stringify(conditionalDetails));
-      formData.set("dni_front",frontFile);formData.set("dni_back",backFile);
-      let uploadTotal=frontFile.size+backFile.size,uploadCount=2;
-      for(const input of document.querySelectorAll('input[type="file"][name^="attachment:"]'))for(const file of input.files){uploadTotal+=file.size;uploadCount++;formData.append(input.name,file,file.name);}
+      let uploadTotal=0,uploadCount=0;
+      if(!customerOnly){formData.set("dni_front",frontFile);formData.set("dni_back",backFile);uploadTotal=frontFile.size+backFile.size;uploadCount=2;
+        for(const input of document.querySelectorAll('input[type="file"][name^="attachment:"]'))for(const file of input.files){uploadTotal+=file.size;uploadCount++;formData.append(input.name,file,file.name);}}
       if(uploadTotal>25*1024*1024||uploadCount>12){status.classList.add("error");status.textContent="Los adjuntos pueden pesar hasta 25 MB en total y ser hasta 12 archivos. Reducí el tamaño o la cantidad e intentá de nuevo.";return;}
       const response=await fetch(`${EV_CONFIG.SUPABASE_URL}/functions/v1/submit-customer-sale-request`,{
         method:"POST",headers:{"apikey":EV_CONFIG.SUPABASE_ANON_KEY},body:formData
@@ -367,7 +379,7 @@
       const ref=String(result.tracking_code||"");
       status.className="status success";
       status.innerHTML=`<b>✅ Solicitud enviada.</b><br>El equipo revisará los productos y te contactará para confirmar la compra. Referencia: <b>${esc(ref)}</b>. Guardá este código por si necesitás mencionarlo al comunicarte con nosotros.`;
-      selected.clear();$("saleForm").reset();renderConditionalFields();renderSelected();
+      selected.clear();$("saleForm").reset();renderConditionalFields();updateCustomerMode();renderSelected();
       document.querySelectorAll("[data-file-name]").forEach(label=>label.textContent="Elegí un archivo de tu dispositivo");
       document.querySelectorAll("[data-upload-name]").forEach(label=>label.textContent="Ningún archivo seleccionado");
       status.scrollIntoView({behavior:"smooth",block:"center"});

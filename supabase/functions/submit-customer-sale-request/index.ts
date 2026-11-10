@@ -12,7 +12,6 @@ const MAX_BODY_BYTES = 26_500_000;
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_TOTAL_FILE_BYTES = 25 * 1024 * 1024;
 const MAX_FILES = 12;
-const MAX_ITEMS = 10;
 const MAX_QUANTITY = 10;
 const proofServiceOptions = new Set(["edesur", "metrogas", "water", "other", "none_in_name"]);
 const incomeOptions = new Set([
@@ -20,6 +19,7 @@ const incomeOptions = new Set([
   "retirement", "pension", "cooperative", "other",
 ]);
 const conditionalDetailOptions = new Set([
+  "customer_only",
   "referrer_full_name", "referrer_phone", "referrer_relationship", "service_owner",
   "service_holder_name", "service_holder_dni", "service_holder_relationship",
   "debt_reason", "debt_amount", "occupation_formal", "occupation_informal", "wallet_provider",
@@ -182,6 +182,7 @@ Deno.serve(async (request: Request) => {
   const privacyAccepted = form.get("privacy_accepted") === "true";
   const proofServices = stringChoices(form, "proof_services", proofServiceOptions);
   const incomeSources = stringChoices(form, "income_sources", incomeOptions);
+  const customerOnly = isCustomer === true;
   let conditionalDetails: Record<string, string> = {};
   try {
     const rawDetails = JSON.parse(String(form.get("conditional_details") ?? "{}"));
@@ -193,25 +194,27 @@ Deno.serve(async (request: Request) => {
   } catch {
     return respond({ error: "No pudimos leer los datos condicionales del formulario." }, 400, origin);
   }
-  if (!fullName || !dniRaw || !/^[A-Z]?\d{7,8}$/.test(dni) || dniUpdated === null ||
-      phone.length < 8 || phone.length > 20 || alternativePhone.length < 8 || alternativePhone.length > 20 ||
-      !alternativeRelationship || referredBy === null || isCustomer === null || !locality || !street ||
-      !streetNumber || !betweenStreets || !["own", "rent_contract", "rent_verbal"].includes(String(housingSituation)) ||
-      hasDebts === null || notes === null || proofServices === null || proofServices.length < 1 || incomeSources === null ||
-      (proofServices.includes("none_in_name") && proofServices.length > 1)) {
+  if (!fullName || !dniRaw || !/^[A-Z]?\d{7,8}$/.test(dni) || isCustomer === null ||
+      phone.length < 8 || phone.length > 20 || notes === null || proofServices === null || incomeSources === null ||
+      (!customerOnly && (dniUpdated === null || alternativePhone.length < 8 || alternativePhone.length > 20 ||
+        !alternativeRelationship || referredBy === null || !locality || !street || !streetNumber || !betweenStreets ||
+        !["own", "rent_contract", "rent_verbal"].includes(String(housingSituation)) || hasDebts === null ||
+        proofServices.length < 1 || incomeSources.length < 1 ||
+        (proofServices.includes("none_in_name") && proofServices.length > 1))) ||
+      (customerOnly && (proofServices.length > 0 || incomeSources.length > 0 ||
+        conditionalDetails.customer_only !== "true" || Object.keys(conditionalDetails).length !== 1))) {
     return respond({ error: "Revisá los datos obligatorios, el DNI, teléfonos, domicilio y comprobantes." }, 400, origin);
   }
-  if (incomeSources.length < 1) return respond({ error: "Seleccioná al menos una fuente de ingresos." }, 400, origin);
   const requiredDetails: string[] = [];
   const hasUtilityProof = proofServices.some(value => value !== "none_in_name");
-  if (referredBy) requiredDetails.push("referrer_full_name", "referrer_phone", "referrer_relationship");
+  if (!customerOnly && referredBy) requiredDetails.push("referrer_full_name", "referrer_phone", "referrer_relationship");
   if (hasUtilityProof) requiredDetails.push("service_owner");
-  if (hasUtilityProof && !["yes", "no"].includes(conditionalDetails.service_owner ?? "")) {
+  if (!customerOnly && hasUtilityProof && !["yes", "no"].includes(conditionalDetails.service_owner ?? "")) {
     return respond({ error: "Indicá si el comprobante está a tu nombre." }, 400, origin);
   }
-  if (conditionalDetails.service_owner === "no") requiredDetails.push("service_holder_name", "service_holder_dni", "service_holder_relationship");
-  if (hasDebts) requiredDetails.push("debt_reason", "debt_amount");
-  for (const source of incomeSources) {
+  if (!customerOnly && conditionalDetails.service_owner === "no") requiredDetails.push("service_holder_name", "service_holder_dni", "service_holder_relationship");
+  if (!customerOnly && hasDebts) requiredDetails.push("debt_reason", "debt_amount");
+  for (const source of customerOnly ? [] : incomeSources) {
     requiredDetails.push(`income_${source}`);
     if (source === "formal_job") requiredDetails.push("occupation_formal");
     if (source === "informal_job") requiredDetails.push("occupation_informal", "wallet_provider");
@@ -223,18 +226,21 @@ Deno.serve(async (request: Request) => {
   if (requiredDetails.some(key => !conditionalDetails[key])) {
     return respond({ error: "Completá los datos adicionales que se desplegaron al elegir tus respuestas." }, 400, origin);
   }
-  if (conditionalDetails.service_holder_dni && !/^[A-Z]?\d{7,8}$/.test(conditionalDetails.service_holder_dni.replace(/[.\s-]/g, "").toUpperCase())) {
+  if (!customerOnly && conditionalDetails.service_holder_dni && !/^[A-Z]?\d{7,8}$/.test(conditionalDetails.service_holder_dni.replace(/[.\s-]/g, "").toUpperCase())) {
     return respond({ error: "Revisá el DNI de la persona titular del servicio." }, 400, origin);
   }
-  const moneyDetailKeys = ["debt_amount", "business_revenue", "business_profit", ...incomeSources.map(source => `income_${source}`)];
+  const moneyDetailKeys = ["debt_amount", "business_revenue", "business_profit", ...(customerOnly ? [] : incomeSources.map(source => `income_${source}`))];
   if (moneyDetailKeys.some(key => conditionalDetails[key] && !strictMoneyAmount(conditionalDetails[key]))) {
     return respond({ error: "Revisá los montos ingresados; deben ser valores enteros mayores a cero." }, 400, origin);
   }
   if (!privacyAccepted) return respond({ error: "Aceptá el uso de tus datos y documentos para poder enviar la solicitud." }, 400, origin);
 
-  const front = await validateFile(form.get("dni_front"));
-  const back = await validateFile(form.get("dni_back"));
-  if (!front || !back) return respond({ error: "Adjuntá el frente y el dorso del DNI en PDF, JPG, PNG o WebP (máximo 5 MB cada uno)." }, 400, origin);
+  const front = customerOnly ? null : await validateFile(form.get("dni_front"));
+  const back = customerOnly ? null : await validateFile(form.get("dni_back"));
+  if (!customerOnly && (!front || !back)) return respond({ error: "Adjuntá el frente y el dorso del DNI en PDF, JPG, PNG o WebP (máximo 5 MB cada uno)." }, 400, origin);
+  if (customerOnly && [...form.entries()].some(([key, value]) =>
+    (key === "dni_front" || key === "dni_back" || key.startsWith("attachment:")) && value instanceof File && value.size > 0
+  )) return respond({ error: "Las solicitudes de clientes registrados no requieren adjuntos." }, 400, origin);
   const attachmentMimeTypes: Record<string, Set<string>> = {
     rental_contract: new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]),
     utility_bill: new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]),
@@ -251,17 +257,17 @@ Deno.serve(async (request: Request) => {
     business_video: new Set(["video/mp4", "video/quicktime"]),
   };
   const requiredAttachments: string[] = [];
-  if (housingSituation === "rent_contract") requiredAttachments.push("rental_contract");
-  if (hasUtilityProof) requiredAttachments.push("utility_bill");
-  if (hasUtilityProof && conditionalDetails.service_owner === "no") requiredAttachments.push("service_holder_dni_front", "service_holder_dni_back");
-  if (incomeSources.includes("formal_job")) requiredAttachments.push("salary_receipt");
-  if (incomeSources.includes("informal_job")) requiredAttachments.push("wallet_statement");
+  if (!customerOnly && housingSituation === "rent_contract") requiredAttachments.push("rental_contract");
+  if (!customerOnly && hasUtilityProof) requiredAttachments.push("utility_bill");
+  if (!customerOnly && hasUtilityProof && conditionalDetails.service_owner === "no") requiredAttachments.push("service_holder_dni_front", "service_holder_dni_back");
+  if (!customerOnly && incomeSources.includes("formal_job")) requiredAttachments.push("salary_receipt");
+  if (!customerOnly && incomeSources.includes("informal_job")) requiredAttachments.push("wallet_statement");
   for (const source of ["allowance", "retirement", "pension", "cooperative"]) {
-    if (incomeSources.includes(source)) requiredAttachments.push(`income_proof_${source}`);
+    if (!customerOnly && incomeSources.includes(source)) requiredAttachments.push(`income_proof_${source}`);
   }
   const attachmentFiles = new Map<string, Array<{ file: File; bytes: Uint8Array }>>();
-  let totalFileBytes = front.file.size + back.file.size;
-  let totalFileCount = 2;
+  let totalFileBytes = (front?.file.size ?? 0) + (back?.file.size ?? 0);
+  let totalFileCount = customerOnly ? 0 : 2;
   for (const [key, value] of form.entries()) {
     if (!key.startsWith("attachment:")) continue;
     const attachmentKey = key.slice("attachment:".length);
@@ -293,8 +299,9 @@ Deno.serve(async (request: Request) => {
   } catch {
     return respond({ error: "No pudimos leer los productos seleccionados." }, 400, origin);
   }
-  if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > MAX_ITEMS) {
-    return respond({ error: `Elegí entre 1 y ${MAX_ITEMS} productos.` }, 400, origin);
+  const productLimit = customerOnly ? 3 : 1;
+  if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > productLimit) {
+    return respond({ error: `Esta solicitud permite elegir entre 1 y ${productLimit} producto${productLimit === 1 ? "" : "s"}.` }, 400, origin);
   }
   const requestedItems: Array<{ productId: number; quantity: number; frequency: "quincenal" | "mensual" }> = [];
   const seen = new Set<number>();
@@ -355,23 +362,25 @@ Deno.serve(async (request: Request) => {
   }
 
   const requestId = crypto.randomUUID();
-  const frontPath = `dni/${requestId}/front.${mimeExtensions[front.file.type]}`;
-  const backPath = `dni/${requestId}/back.${mimeExtensions[back.file.type]}`;
+  const frontPath = front ? `dni/${requestId}/front.${mimeExtensions[front.file.type]}` : null;
+  const backPath = back ? `dni/${requestId}/back.${mimeExtensions[back.file.type]}` : null;
   const uploadedPaths: string[] = [];
   const documentPaths: Record<string, string | string[]> = {};
   const storage = admin.storage.from(BUCKET);
   try {
-    for (const [path, file] of [[frontPath, front], [backPath, back]] as const) {
-      const { error } = await storage.upload(path, file.bytes, {
-        contentType: file.file.type,
-        cacheControl: "0",
-        upsert: false,
-      });
-      if (error) throw error;
-      uploadedPaths.push(path);
+    if (front && back && frontPath && backPath) {
+      for (const [path, file] of [[frontPath, front], [backPath, back]] as const) {
+        const { error } = await storage.upload(path, file.bytes, {
+          contentType: file.file.type,
+          cacheControl: "0",
+          upsert: false,
+        });
+        if (error) throw error;
+        uploadedPaths.push(path);
+      }
+      documentPaths.dni_front = frontPath;
+      documentPaths.dni_back = backPath;
     }
-    documentPaths.dni_front = frontPath;
-    documentPaths.dni_back = backPath;
     for (const [key, files] of attachmentFiles) {
       const paths: string[] = [];
       for (const [index, file] of files.entries()) {
@@ -389,7 +398,7 @@ Deno.serve(async (request: Request) => {
       documentPaths[key] = paths.length === 1 ? paths[0] : paths;
     }
 
-    const fullAddress = `${street} ${streetNumber}, entre ${betweenStreets}`.slice(0, 200);
+    const fullAddress = customerOnly ? "" : `${street} ${streetNumber}, entre ${betweenStreets}`.slice(0, 200);
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const code = trackingCode();
       const { error } = await admin.from("customer_sale_requests").insert({
@@ -397,21 +406,21 @@ Deno.serve(async (request: Request) => {
         tracking_code: code,
         full_name: fullName,
         dni,
-        dni_updated: dniUpdated,
+        dni_updated: customerOnly ? false : dniUpdated,
         phone,
-        alternative_phone: alternativePhone,
-        alternative_contact_relationship: alternativeRelationship,
-        referred_by: referredBy,
+        alternative_phone: customerOnly ? "" : alternativePhone,
+        alternative_contact_relationship: customerOnly ? "" : alternativeRelationship,
+        referred_by: customerOnly ? false : referredBy,
         is_electro_variety_customer: isCustomer,
-        locality,
+        locality: customerOnly ? "" : locality,
         address: fullAddress,
-        street,
-        street_number: streetNumber,
-        between_streets: betweenStreets,
-        housing_situation: String(housingSituation),
-        proof_services: proofServices,
-        has_debts: hasDebts,
-        income_sources: incomeSources,
+        street: customerOnly ? "" : street,
+        street_number: customerOnly ? "" : streetNumber,
+        between_streets: customerOnly ? "" : betweenStreets,
+        housing_situation: customerOnly ? "" : String(housingSituation),
+        proof_services: customerOnly ? [] : proofServices,
+        has_debts: customerOnly ? false : hasDebts,
+        income_sources: customerOnly ? [] : incomeSources,
         dni_front_path: frontPath,
         dni_back_path: backPath,
         conditional_details: conditionalDetails,
