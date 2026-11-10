@@ -74,7 +74,8 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 <div id="catalogLayout"><main id="app"><div class="msg">Cargando…</div></main></div>
 <button id="onlineStaffToggle" class="online-staff-toggle" type="button" aria-label="Mostrar personal conectado" title="Arrastrá para mover · tocá para abrir" aria-expanded="false" aria-controls="onlineStaffPanel" style="display:none"><span aria-hidden="true">👥</span><span id="onlineStaffToggleCount" class="online-staff-toggle-count">0</span></button>
 <button id="onlineStaffBackdrop" class="online-staff-backdrop" type="button" aria-label="Cerrar personal conectado" tabindex="-1"></button>
-<aside id="onlineStaffPanel" class="online-staff-panel" aria-label="Personal conectado" aria-hidden="true" style="display:none"><div class="online-staff-heading"><h2>👥 Conectados</h2><button id="onlineStaffClose" class="cart-close" type="button" aria-label="Cerrar">×</button><span id="onlineStaffCount" class="online-staff-count">0</span></div><div id="onlineStaffStatus" class="seller-help" role="status">Conectando…</div><div id="onlineStaffList" aria-live="polite"></div></aside>
+<aside id="onlineStaffPanel" class="online-staff-panel" aria-label="Personal conectado" aria-hidden="true" style="display:none"><div class="online-staff-heading"><h2>👥 Conectados</h2><button id="onlineStaffClose" class="cart-close" type="button" aria-label="Cerrar">×</button><span id="onlineStaffCount" class="online-staff-count">0</span></div><div id="onlineStaffStatus" class="seller-help" role="status">Conectando…</div><div id="onlineStaffList" aria-live="polite"></div><section id="onlineStaffRanking" class="online-staff-ranking" style="display:none"><h2>🏆 Ranking mensual</h2><p id="onlineStaffRankingMonth" class="seller-help"></p><div id="onlineStaffRankingNew"></div><div id="onlineStaffRankingExisting"></div></section></aside>
+<div id="onlineStaffProfileModal" class="cart-modal seller-modal" aria-hidden="true"><div class="cart-panel online-staff-profile-panel" role="dialog" aria-modal="true" aria-labelledby="onlineStaffProfileTitle"><div class="cart-head"><h2 id="onlineStaffProfileTitle">👤 Perfil</h2><button id="onlineStaffProfileClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div><div id="onlineStaffProfileContent" class="seller-help" role="status">Cargando perfil…</div></div></div>
 <div id="cartBar" class="cartbar"><button id="cartOpenButton" type="button">🛒 Ver carrito</button></div>
 <div id="cartShareModal" class="cart-modal" aria-hidden="true" style="z-index:70">
   <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="cartShareTitle">
@@ -198,6 +199,8 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
       <p class="seller-help">Elegí los productos y cantidades, pegá el pedido del cliente y registralo. Después copiá el texto y envialo manualmente al grupo de WhatsApp.</p>
       <input id="saleProductSearch" class="seller-search" type="search" placeholder="Buscar producto">
       <div id="saleProductList" class="sale-product-list"></div>
+      <label class="seller-field">Tipo de cliente<select id="saleCustomerType" required><option value="">Elegí una opción</option><option value="existing">Cliente de Electro Variety</option><option value="new">Cliente nuevo</option></select></label>
+      <label class="seller-field">Localidad del cliente (opcional)<input id="saleCustomerLocality" maxlength="120" autocomplete="address-level2" placeholder="Ej. Alejandro Korn"></label>
       <label class="seller-field">Pedido para el grupo de WhatsApp<textarea id="saleOrderText" rows="5" maxlength="10000" placeholder="Pegá acá el pedido completo"></textarea></label>
       <div class="seller-help">Cada producto queda pendiente de entrega por 48 horas. Si no confirmás su entrega, se devuelve automáticamente al stock.</div>
       <button id="createSellerSaleButton" class="seller-action-button" type="button">Enviar pedido por WhatsApp</button>
@@ -238,6 +241,32 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .online-staff-person-name{min-width:0;overflow-wrap:anywhere;font-weight:700}
 .verified-user-mark{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:4px;border-radius:50%;background:#1877f2;color:#fff;font-size:10px;line-height:1;font-weight:900;vertical-align:middle;box-shadow:0 0 0 1px #fff}
 .online-staff-person-role{margin-left:auto;color:#6b7280;font-size:11px;white-space:nowrap}
+.online-staff-person-button{width:100%;border:0;background:transparent;color:#111827;text-align:left;cursor:pointer}
+.online-staff-person-button:hover{background:#eff6ff}
+.online-staff-person-avatar{width:30px;height:30px;flex:0 0 30px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:#e5e7eb;color:#4b5563;font-size:14px}
+.online-staff-person-avatar img{width:100%;height:100%;object-fit:cover}
+.online-staff-ranking{margin-top:18px;padding-top:14px;border-top:1px solid #e5e7eb}
+.online-staff-ranking>h2{margin:0 0 6px;font-size:18px;color:#111827}
+.online-ranking-group{margin-top:12px;padding:10px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff}
+.online-ranking-group h3{margin:0 0 6px;color:#111827;font-size:14px}
+.online-ranking-prize{margin:0 0 8px;color:#166534;font-size:12px;font-weight:800}
+.online-ranking-row{display:flex;gap:7px;align-items:center;padding:6px 0;border-top:1px solid #e5e7eb;font-size:12px}
+.online-ranking-row strong{min-width:25px;color:#1d4ed8}
+.online-ranking-count{margin-left:auto;white-space:nowrap;color:#4b5563}
+.online-staff-profile-panel{width:min(94vw,620px);max-height:92vh;overflow:auto;border-radius:18px;margin:auto}
+#onlineStaffProfileModal{z-index:100002}
+.online-profile-hero{display:grid;justify-items:center;text-align:center;padding:14px 8px 18px}
+.online-profile-photo{width:124px;height:124px;border-radius:50%;object-fit:cover;background:#e5e7eb;box-shadow:0 0 0 5px #eff6ff}
+.online-profile-placeholder{display:grid;place-items:center;font-size:50px;color:#6b7280}
+.online-profile-role{margin-top:12px;color:#6b7280;font-weight:700}
+.online-profile-name{margin:5px 0 0;font-size:22px;color:#111827}
+.online-profile-badge{margin-top:6px;color:#1877f2;font-weight:800}
+.online-profile-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.online-profile-metric{padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#f9fafb}
+.online-profile-metric dt{color:#6b7280;font-size:12px}
+.online-profile-metric dd{margin:5px 0 0;color:#111827;font-weight:800;overflow-wrap:anywhere}
+.online-profile-note{margin:12px 0 0;color:#6b7280;font-size:12px}
+@media(max-width:480px){.online-staff-profile-panel{width:100%;max-height:94vh;border-radius:18px 18px 0 0;margin:auto auto 0}.online-profile-metrics{grid-template-columns:1fr}}
 .online-staff-team{margin:6px 0 0 13px;padding-left:8px;border-left:2px solid #dbeafe}
 .online-staff-team h4{margin:7px 0 2px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
 .online-staff-subheading{margin:7px 0 2px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
@@ -303,6 +332,7 @@ let teamSalesOffset=0;
 let onlineStaffChannel=null;
 let onlineStaffClient=null;
 let onlineStaffDirectory=[];
+let onlineStaffPhotoUrls=new Map();
 let onlineStaffRefreshTimer=null;
 let catalogActivitySessionId=null;
 let catalogActivityUserId=null;
@@ -354,6 +384,7 @@ function retrySessionCheck(mode="restore"){
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
 function isCatalogVerified(userId){return onlineStaffDirectory.find(user=>user.user_id===userId)?.is_verified===true||(userId&&userId===currentUserId&&currentSalesVerified)}
+function canViewCatalogStaffProfiles(){return currentSalesVerified===true||currentStaffAccess?.role==="admin"}
 function catalogVerifiedMark(userId){return isCatalogVerified(userId)?'<span class="verified-user-mark" title="Usuario verificado" aria-label="Verificado">✓</span>':""}
 function catalogVerifiedName(name,userId){return `${esc(name||"Sin nombre")}${catalogVerifiedMark(userId)}`}
 function catalogVerifiedText(name,userId){return `${esc(name||"Sin nombre")}${isCatalogVerified(userId)?" 🔵":""}`}
@@ -394,7 +425,7 @@ function renderOnlineStaff(){
   const collator=new Intl.Collator("es",{sensitivity:"base"});
   const roleOf=user=>onlineRoleGroup(user.role_label);
   const sortPeople=(a,b)=>(roleRank[roleOf(a)]-roleRank[roleOf(b)])||collator.compare(a.display_name||"",b.display_name||"");
-  const person=user=>`<div class="online-staff-person"><span class="online-staff-dot" aria-label="Conectado"></span><span class="online-staff-person-name">${catalogVerifiedName(user.display_name,user.user_id)}</span><span class="online-staff-person-role">${esc(user.role_label||"Usuario")}</span></div>`;
+  const person=user=>{const photo=onlineStaffPhotoUrls.get(user.user_id);const avatar=photo?`<span class="online-staff-person-avatar"><img src="${esc(photo)}" alt=""></span>`:'<span class="online-staff-person-avatar" aria-hidden="true">👤</span>';const content=`${avatar}<span class="online-staff-dot" aria-label="Conectado"></span><span class="online-staff-person-name">${catalogVerifiedName(user.display_name,user.user_id)}</span><span class="online-staff-person-role">${esc(user.role_label||"Usuario")}</span>`;return canViewCatalogStaffProfiles()?`<button class="online-staff-person online-staff-person-button" type="button" data-online-profile-id="${esc(user.user_id)}" title="Ver perfil de ${esc(user.display_name||"usuario")}">${content}</button>`:`<div class="online-staff-person">${content}</div>`};
   const section=(title,people)=>people.length?`<section class="online-staff-section"><h3>${esc(title)}</h3>${people.sort(sortPeople).map(person).join("")}</section>`:"";
   let markup="";
   const topRoles=["boss","admin","cm"];
@@ -435,6 +466,42 @@ function renderOnlineStaff(){
   const others=online.filter(user=>!grouped.has(roleOf(user))&&!assignedIds.has(user.user_id));
   markup+=section("Otros",others);
   list.innerHTML=markup||'<div class="seller-help">No hay integrantes conectados para mostrar.</div>';
+}
+function formatOnlineMonthEnd(){const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Argentina/Buenos_Aires",year:"numeric",month:"2-digit"}).formatToParts(new Date());const year=Number(parts.find(p=>p.type==="year")?.value),month=Number(parts.find(p=>p.type==="month")?.value);return new Date(Date.UTC(year,month,0,12)).toLocaleDateString("es-AR",{timeZone:"America/Argentina/Buenos_Aires",day:"numeric",month:"long",year:"numeric"})}
+function renderOnlineStaffRanking(rows){
+  const root=$("onlineStaffRanking");if(!root)return;
+  root.style.display=canViewCatalogStaffProfiles()?"block":"none";
+  if(!canViewCatalogStaffProfiles())return;
+  $("onlineStaffRankingMonth").textContent=`Ventas completadas del mes. El período cierra el ${formatOnlineMonthEnd()}. Los pedidos pendientes o cancelados no cuentan.`;
+  const renderGroup=(category,targetId,title)=>{
+    const target=$(targetId),items=(rows||[]).filter(row=>row.category===category);
+    const prize=`Premio para quien termine primero: $100.000`;
+    target.innerHTML=`<div class="online-ranking-group"><h3>${title}</h3><p class="online-ranking-prize">${prize}</p>${items.length?items.map(row=>`<div class="online-ranking-row"><strong>${Number(row.ranking_position)===1?"🏆":"#"+Number(row.ranking_position)}</strong><span>${catalogVerifiedName(row.display_name,row.seller_id)} · ${esc(row.role_label||"Usuario")}</span><span class="online-ranking-count">${Number(row.sale_count)} ventas</span></div>`).join(""):'<div class="seller-help">Todavía no hay ventas completadas en esta categoría este mes.</div>'}</div>`;
+  };
+  renderGroup("new","onlineStaffRankingNew","Clientes nuevos");
+  renderGroup("existing","onlineStaffRankingExisting","Clientes de Electro Variety");
+}
+async function loadOnlineStaffRanking(){
+  const root=$("onlineStaffRanking");if(!root)return;
+  root.style.display=canViewCatalogStaffProfiles()?"block":"none";if(!canViewCatalogStaffProfiles())return;
+  $("onlineStaffRankingNew").innerHTML='<div class="seller-help">Actualizando ranking…</div>';
+  const {data,error}=await db.rpc("get_catalog_monthly_sales_ranking");
+  if(error){$("onlineStaffRankingNew").innerHTML=`<div class="seller-help">No se pudo cargar el ranking: ${esc(error.message)}</div>`;return}
+  renderOnlineStaffRanking(data||[]);
+}
+async function openOnlineStaffProfile(userId){
+  if(!canViewCatalogStaffProfiles()||!userId)return;
+  const content=$("onlineStaffProfileContent");content.innerHTML='<div class="seller-help">Cargando perfil…</div>';openSellerModal("onlineStaffProfileModal");
+  try{
+    const {data,error}=await db.rpc("get_catalog_staff_profile",{p_user_id:userId});
+    if(error)throw error;
+    const row=Array.isArray(data)?data[0]:data;if(!row)throw new Error("No se encontró el perfil solicitado.");
+    let photoUrl="";
+    if(row.photo_path){const signed=await db.storage.from("staff-profile-photos").createSignedUrl(row.photo_path,1800);if(!signed.error)photoUrl=signed.data?.signedUrl||""}
+    const photo=photoUrl?`<img class="online-profile-photo" src="${esc(photoUrl)}" alt="Foto de ${esc(row.display_name)}">`:'<div class="online-profile-photo online-profile-placeholder" role="img" aria-label="Sin foto de perfil">👤</div>';
+    $("onlineStaffProfileTitle").textContent=`👤 ${row.display_name||"Perfil"}`;
+    content.innerHTML=`<div class="online-profile-hero">${photo}<div class="online-profile-role">${esc(row.role_label||"Usuario")}</div><h3 class="online-profile-name">${catalogVerifiedName(row.display_name,row.user_id)}</h3><div class="online-profile-badge">${row.is_verified?"🔵 Insignia verificada":"Sin insignia de verificación"}</div></div><dl class="online-profile-metrics"><div class="online-profile-metric"><dt>Ventas a clientes de Electro Variety</dt><dd>${Number(row.existing_customer_sales)||0}</dd></div><div class="online-profile-metric"><dt>Ventas a clientes nuevos</dt><dd>${Number(row.new_customer_sales)||0}</dd></div><div class="online-profile-metric"><dt>Total de ventas completadas</dt><dd>${Number(row.total_customer_sales)||0}</dd></div><div class="online-profile-metric"><dt>Localidad donde más vendió</dt><dd>${esc(row.top_locality||"Sin datos todavía")}</dd></div><div class="online-profile-metric"><dt>Producto que más vendió</dt><dd>${esc(row.top_product||"Sin datos todavía")}${row.top_product?` · ${Number(row.top_product_units)||0} unidad(es)`:""}</dd></div></dl><p class="online-profile-note">Se cuentan pedidos entregados y confirmados. Los pedidos aún pendientes o cancelados no se incluyen.</p>`;
+  }catch(error){content.innerHTML=`<div class="seller-help">No se pudo cargar el perfil: ${esc(error.message||error)}</div>`}
 }
 function closeOnlineStaffPanel(){
   const panel=$("onlineStaffPanel"),backdrop=$("onlineStaffBackdrop"),toggle=$("onlineStaffToggle");
@@ -491,12 +558,18 @@ async function refreshOnlineStaffDirectory(){
   const {data,error}=await onlineStaffClient.rpc("get_catalog_staff_directory");
   if(error){console.warn("Directorio de conectados",error);$("onlineStaffStatus").textContent="No se pudo actualizar la lista de conectados.";return}
   onlineStaffDirectory=data||[];
+  onlineStaffPhotoUrls=new Map();
+  if(canViewCatalogStaffProfiles()){
+    const paths=[...new Set(onlineStaffDirectory.map(user=>user.photo_path).filter(Boolean))];
+    if(paths.length){const signed=await onlineStaffClient.storage.from("staff-profile-photos").createSignedUrls(paths,1800);if(!signed.error)onlineStaffPhotoUrls=new Map((signed.data||[]).filter(item=>item.signedUrl).map(item=>[item.path,item.signedUrl]))}
+  }
   renderOnlineStaff();
+  await loadOnlineStaffRanking();
 }
 function stopOnlineStaffPresence(){
   if(onlineStaffRefreshTimer){clearInterval(onlineStaffRefreshTimer);onlineStaffRefreshTimer=null}
   const channel=onlineStaffChannel,client=onlineStaffClient;
-  onlineStaffChannel=null;onlineStaffClient=null;onlineStaffDirectory=[];
+  onlineStaffChannel=null;onlineStaffClient=null;onlineStaffDirectory=[];onlineStaffPhotoUrls=new Map();
   if(channel&&client)client.removeChannel(channel).catch(()=>{});
   const panel=$("onlineStaffPanel");if(panel)panel.style.display="none";
   const toggle=$("onlineStaffToggle");if(toggle)toggle.style.display="none";
@@ -1231,19 +1304,22 @@ function clearPreparedSellerOrder(){
 }
 async function createSellerSale(){
   const orderText=$("saleOrderText").value;
+  const customerType=$("saleCustomerType").value;
+  const locality=$("saleCustomerLocality").value.trim();
   const items=selectedSellerSaleItems();
   if(!items.length){$("sellerSaleCreateStatus").textContent="Elegí al menos un producto y cargá su cantidad.";return}
+  if(!["existing","new"].includes(customerType)){$("sellerSaleCreateStatus").textContent="Indicá si es cliente de Electro Variety o cliente nuevo.";return}
   if(!orderText.trim()){$("sellerSaleCreateStatus").textContent="Pegá el pedido del cliente antes de registrar la venta.";return}
   const button=$("createSellerSaleButton");button.disabled=true;
   $("sellerSaleCreateStatus").textContent="Registrando pedido y reservando stock…";
   try{
     const payload=items.map(({product_id,quantity})=>({product_id,quantity}));
-    let {data:saleId,error}=await db.rpc("create_seller_sale",{p_order_text:orderText,p_items:payload});
+    let {data:saleId,error}=await db.rpc("create_seller_sale",{p_order_text:orderText,p_items:payload,p_customer_type:customerType,p_locality:locality||null});
     if(error&&/sesión.*dispositivo.*autorizada/i.test(error.message||"")){
       const {data:sessionData}=await db.auth.getSession();
       const device=await registerSellerDevice(sessionData?.session,"restore");
       if(device.ok){
-        const retry=await db.rpc("create_seller_sale",{p_order_text:orderText,p_items:payload});
+        const retry=await db.rpc("create_seller_sale",{p_order_text:orderText,p_items:payload,p_customer_type:customerType,p_locality:locality||null});
         saleId=retry.data;error=retry.error;
       }
     }
@@ -1254,6 +1330,7 @@ async function createSellerSale(){
     $("sellerOpenWhatsAppLink").style.display="block";
     $("sellerSaleCreateStatus").textContent="✅ Pedido registrado y stock reservado. Se compartirá únicamente el texto que pegaste. Elegí WhatsApp y luego el grupo.";
     for(const row of $("saleProductList").querySelectorAll(".sale-quantity"))row.value="0";
+    $("saleCustomerType").value="";$("saleCustomerLocality").value="";
     $("saleOrderText").value="";
     try{
       if(!navigator.share)throw new Error("Este navegador no permite abrir el selector para compartir.");
@@ -1730,13 +1807,16 @@ $("cartShareNext").addEventListener("click",shareNextCartProduct);
 $("cartSend").addEventListener("click",sendCartWhatsApp);
 $("cartClear").addEventListener("click",()=>{cartIds.clear();updateCartButtons();renderCart();});
 $("cartModal").addEventListener("click",e=>{if(e.target===$("cartModal"))closeCart();});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeCart();closeCartShareModal();}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeCart();closeCartShareModal();closeSellerModal("onlineStaffProfileModal");}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeSellerModal("sellerProfileModal");closeSellerModal("sellerSalesModal");closeSellerModal("verifiedProfileChangeRequestModal");}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSellerModal("sellerActivityModal")});
 $("sellerProfileButton").addEventListener("click",openSellerProfile);
 $("onlineStaffToggle").addEventListener("click",toggleOnlineStaffPanel);
 $("onlineStaffClose").addEventListener("click",()=>{closeOnlineStaffPanel();$("onlineStaffToggle").focus()});
 $("onlineStaffBackdrop").addEventListener("click",closeOnlineStaffPanel);
+$("onlineStaffList").addEventListener("click",e=>{const person=e.target.closest("[data-online-profile-id]");if(person)void openOnlineStaffProfile(person.dataset.onlineProfileId)});
+$("onlineStaffProfileClose").addEventListener("click",()=>closeSellerModal("onlineStaffProfileModal"));
+$("onlineStaffProfileModal").addEventListener("click",e=>{if(e.target===$("onlineStaffProfileModal"))closeSellerModal("onlineStaffProfileModal")});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("onlineStaffPanel").classList.contains("open")){closeOnlineStaffPanel();$("onlineStaffToggle").focus()}});
 $("sellerProfileClose").addEventListener("click",()=>closeSellerModal("sellerProfileModal"));
 $("sellerProfileModal").addEventListener("click",e=>{if(e.target===$("sellerProfileModal"))closeSellerModal("sellerProfileModal")});
