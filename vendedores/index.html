@@ -165,8 +165,8 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .seller-actions button,.seller-tabs button{flex:1;min-width:0;border:0;border-radius:8px;padding:9px 7px;font-size:12px;font-weight:900;background:#374151;color:#fff}
 .seller-actions button:active,.seller-tabs button:active{transform:scale(.98)}
 .seller-modal{z-index:80}
-#catalogLayout{max-width:760px;margin:12px auto;padding:0}
-#catalogLayout #app{width:100%;max-width:760px;margin:0}
+ #catalogLayout{width:100%;max-width:1320px;margin:12px auto;padding:0 18px}
+ #catalogLayout #app{width:100%;max-width:1320px;margin:0}
 .online-staff-toggle{position:fixed;right:14px;bottom:92px;z-index:99990;display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;padding:12px 13px;background:#111827;color:#fff;box-shadow:0 5px 18px rgba(17,24,39,.28);font-size:13px;font-weight:900;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
 .online-staff-toggle:active{cursor:grabbing}
 .online-staff-toggle-count{min-width:22px;padding:3px 6px;border-radius:999px;background:#dcfce7;color:#166534;text-align:center}
@@ -188,10 +188,14 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .online-staff-team{margin:6px 0 0 13px;padding-left:8px;border-left:2px solid #dbeafe}
 .online-staff-team h4{margin:7px 0 2px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
 .online-staff-subheading{margin:7px 0 2px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
-@media(max-width:900px){#catalogLayout{margin:10px auto;padding:0 10px}#catalogLayout #app{width:100%;max-width:760px;margin:0 auto}.online-staff-toggle{right:10px;bottom:92px;padding:11px 13px}}
+ @media(min-width:1100px){.catalog-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+ @media(min-width:760px) and (max-width:1099px){.catalog-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+ @media(min-width:761px){.head,.tools,.seller-actions{max-width:1320px}}
+ @media(max-width:900px){#catalogLayout{margin:10px auto;padding:0 12px}#catalogLayout #app{width:100%;max-width:1320px;margin:0 auto}.online-staff-toggle{right:10px;bottom:92px;padding:11px 13px}}
 .first-login-setup{z-index:300;align-items:center!important}.first-login-setup .cart-panel{border-radius:18px;width:min(100% - 28px,480px)}
 .seller-modal .cart-panel{padding-bottom:24px}
-.seller-sales-panel{max-height:90vh}
+ .seller-sales-panel{width:min(96vw,1440px);max-height:94vh;border-radius:16px;margin:auto}
+ @media(max-width:760px){.seller-sales-panel{width:100%;max-height:96vh;border-radius:18px 18px 0 0;margin:0 auto}.customer-request-inbox{grid-template-columns:1fr}.customer-request-inbox-list{max-height:210px}}
 .seller-field{display:block;margin:14px 0 8px;font-size:13px;font-weight:900}
 .profile-name-preview{display:flex;min-width:0;margin-top:6px;border:1px solid #d1d5db;border-radius:9px;overflow:hidden}
 .profile-name-preview:focus-within{border-color:#2563eb;box-shadow:0 0 0 2px #2563eb22}
@@ -733,10 +737,12 @@ function renderCatalogCustomerSaleRequests(){
   if(!rows.length){catalogCustomerSaleRequestsSelectedId=null;list.innerHTML=`<div class="seller-help">${catalogCustomerSaleRequests.length?"No hay solicitudes que coincidan con esos filtros.":"Todavía no hay solicitudes de compra."}</div>`;return}
   if(!rows.some(request=>request.id===catalogCustomerSaleRequestsSelectedId))catalogCustomerSaleRequestsSelectedId=rows[0].id;
   const cards=rows.map(request=>{
+    if(request.id!==catalogCustomerSaleRequestsSelectedId)return "";
     const items=(Array.isArray(request.items)?request.items:[]).map(item=>`<li><b>${esc(item.product_name||"Producto")}</b> × ${Number(item.quantity)||0} · ${Number(item.installment_count)||0} cuotas ${esc(item.frequency||"")} de $${new Intl.NumberFormat("es-AR").format(Number(item.installment_amount)||0)}</li>`).join("");
     const docs=request.document_paths||{};
     const paths={...(docs&&typeof docs==="object"?docs:{}),dni_front_path:request.dni_front_path,dni_back_path:request.dni_back_path};
-    const labels={dni_front_path:"Frente del DNI",dni_back_path:"Dorso del DNI",...Object.fromEntries(Object.keys(paths).filter(k=>k!=="dni_front_path"&&k!=="dni_back_path").map(k=>[k,k.replaceAll("_"," ")]))};
+    const documentLabels={dni_front:"Frente del DNI",dni_front_path:"Frente del DNI",dni_back:"Dorso del DNI",dni_back_path:"Dorso del DNI",utility_bill:"Comprobante de domicilio",service_proof:"Comprobante de domicilio",proof_other:"Otro comprobante",rental_contract:"Contrato de alquiler",salary_receipt:"Recibo de sueldo",wallet_statement:"Resumen de billetera virtual",income_proof:"Comprobante de ingresos",income_proof_self_employed:"Comprobante de ingresos · trabajo independiente",income_proof_allowance:"Comprobante de ingresos · asignación",income_proof_retirement:"Comprobante de ingresos · jubilación",income_proof_pension:"Comprobante de ingresos · pensión",income_proof_cooperative:"Comprobante de ingresos · cooperativa",business_photo:"Foto del comercio",business_photos:"Fotos del comercio",business_video:"Video del comercio",service_holder_dni_front:"Frente del DNI del titular del servicio",service_holder_dni_back:"Dorso del DNI del titular del servicio"};
+    const labels=Object.fromEntries(Object.keys(paths).map(key=>[key,documentLabels[key]||`Archivo adjunto · ${key.replaceAll("_"," ").replace(/\bdni\b/gi,"DNI").replace(/\bfront\b/gi,"frente").replace(/\bback\b/gi,"dorso")}`]));
     const documentButtons=Object.entries(paths).flatMap(([key,value])=>(Array.isArray(value)?value:[value]).filter(Boolean).map((path,index)=>`<button class="seller-action-button secondary" type="button" data-customer-request-document="${esc(key)}" data-document-index="${index}" data-request-id="${esc(request.id)}">📎 ${esc(labels[key]||key)}${Array.isArray(value)?` ${index+1}`:""}</button>`)).join("");
     const date=request.created_at?new Date(request.created_at).toLocaleString("es-AR"):"—";
     const yesNo=value=>value===true?"Sí":value===false?"No":"—";

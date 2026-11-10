@@ -6,8 +6,10 @@
   const labels = {
     dni_front: "Frente del DNI", dni_front_path: "Frente del DNI", dni_back: "Dorso del DNI", dni_back_path: "Dorso del DNI",
     service_holder_dni_front: "Frente del DNI del titular del servicio", service_holder_dni_back: "Dorso del DNI del titular del servicio",
-    proof_other: "Otro comprobante", service_proof: "Comprobante de domicilio", income_proof: "Comprobante de ingresos",
-    salary_receipt: "Recibo de sueldo", business_photo: "Fotografía del comercio", business_photos: "Fotografías del comercio", business_video: "Video del comercio",
+    proof_other: "Otro comprobante", service_proof: "Comprobante de domicilio", utility_bill: "Comprobante de domicilio", income_proof: "Comprobante de ingresos",
+    rental_contract: "Contrato de alquiler", wallet_statement: "Resumen de billetera virtual", salary_receipt: "Recibo de sueldo",
+    income_proof_self_employed: "Comprobante de ingresos · trabajo independiente", income_proof_allowance: "Comprobante de ingresos · asignación", income_proof_retirement: "Comprobante de ingresos · jubilación", income_proof_pension: "Comprobante de ingresos · pensión", income_proof_cooperative: "Comprobante de ingresos · cooperativa",
+    business_photo: "Foto del comercio", business_photos: "Fotos del comercio", business_video: "Video del comercio",
   };
   const housingLabels = { own: "Vivienda propia", rent_contract: "Alquilo por contrato", rent_verbal: "Alquilo de palabra" };
   const serviceLabels = { edesur: "Edesur", metrogas: "Metrogas", water: "Agua", other: "Otro", none_in_name: "Ninguno a mi nombre" };
