@@ -702,7 +702,7 @@ async function saveVerifiedProfileSetup(){
   const next=afterVerifiedProfileSetup;afterVerifiedProfileSetup=null;if(next)await next();
 }
 async function requireVerifiedCatalogProfile(continuation,name=currentStaffProfileName){
-  if(!currentSalesVerified){await continuation();return}
+  if(!currentSalesVerified||currentStaffAccess?.role==="admin"){await continuation();return}
   try{
     const profile=await loadMyVerifiedCatalogProfile();
     if(profile?.full_name&&profile?.dni&&profile?.birth_date&&profile?.gender&&profile?.phone){await continuation();return}
