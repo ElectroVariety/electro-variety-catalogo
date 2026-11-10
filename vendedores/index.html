@@ -237,6 +237,7 @@ let allProducts=[];
 let currentSeller=null;
 let currentSellerId=null;
 let currentStaffAccess=null;
+let currentSalesVerified=false;
 let currentStaffProfileName="";
 let afterFirstLoginSetup=null;
 let teamSellerIds=[];
@@ -477,7 +478,7 @@ function showLogin(message=""){
   $("tools").style.display="none";
   $("sellerActions").style.display="none";
   currentSeller=null;currentSellerId=null;
-  currentStaffAccess=null;currentStaffProfileName="";afterFirstLoginSetup=null;
+  currentStaffAccess=null;currentSalesVerified=false;currentStaffProfileName="";afterFirstLoginSetup=null;
   $("sellerProfileModal").style.display="none";$("sellerProfileModal").setAttribute("aria-hidden","true");
   $("sellerSalesModal").style.display="none";$("sellerSalesModal").setAttribute("aria-hidden","true");
   $("sellerTeamModal").style.display="none";$("sellerTeamModal").setAttribute("aria-hidden","true");
@@ -600,6 +601,12 @@ async function handleSession(session, mode="restore"){
     const {data:accessRows,error:accessError}=await db.rpc("get_my_staff_access");
     if(accessError){console.warn("No se pudo verificar el rol",accessError);retrySessionCheck(mode);return}
     currentStaffAccess=accessRows?.[0]||null;
+    currentSalesVerified=currentStaffAccess?.role==="admin";
+    if(!currentSalesVerified){
+      const {data:verification,error:verificationError}=await db.from("staff_sales_verifications").select("is_verified").eq("user_id",session.user.id).maybeSingle();
+      if(verificationError){console.warn("No se pudo verificar la insignia de ventas",verificationError);retrySessionCheck(mode);return}
+      currentSalesVerified=verification?.is_verified===true;
+    }
     if(currentStaffAccess?.role==="custom"){
       const {data:stockPermissions,error:stockPermissionsError}=await db.rpc("get_my_stock_role_permissions");
       if(stockPermissionsError){console.warn("No se pudieron verificar los permisos de stock",stockPermissionsError);retrySessionCheck(mode);return}
@@ -650,7 +657,7 @@ async function handleSession(session, mode="restore"){
       return;
     }
     const access=currentStaffAccess;
-    const canEnter=access&&(access.role==="admin"||access.role==="supervisor"||(access.role==="custom"&&(access.can_view_assigned_sellers||access.can_manage_deposito_stock||access.can_manage_local_stock)));
+    const canEnter=access&&(access.role==="admin"||access.role==="supervisor"||currentSalesVerified||(access.role==="custom"&&(access.can_view_assigned_sellers||access.can_manage_deposito_stock||access.can_manage_local_stock)));
     if(canEnter){
       const {data:adminProfile}=await db.from("admin_profiles").select("display_name,profile_setup_completed").eq("user_id",session.user.id).maybeSingle();
       const {data:stockProfile}=await db.from("stock_profiles").select("name,profile_setup_completed").eq("user_id",session.user.id).maybeSingle();
@@ -677,9 +684,9 @@ async function startCatalog(seller=null,staffAccess=currentStaffAccess,staffName
   $("sellerSalesButton").style.display=seller?"":"none";
   $("sellerNewSaleButton").style.display=seller?"":"none";
   $("sellerTeamButton").style.display=canViewTeam?"":"none";
-  const canSeeCustomerRequests=!!(seller||staffAccess?.role==="supervisor");
+  const canSeeCustomerRequests=!!(staffAccess?.role==="admin"||currentSalesVerified);
   $("customerSaleRequestsButton").style.display=canSeeCustomerRequests?"":"none";
-  $("customerSaleRequestsButton").textContent=staffAccess?.role==="supervisor"?"🛍️ Solicitudes del equipo":"🛍️ Mis solicitudes";
+  $("customerSaleRequestsButton").textContent=canViewTeam?"🛍️ Solicitudes del equipo":"🛍️ Mis solicitudes";
   const canManageDepot=staffAccess?.role==="custom"&&staffAccess.can_manage_deposito_stock;
   const canManageLocal=staffAccess?.role==="custom"&&staffAccess.can_manage_local_stock;
   $("sellerDepotStockButton").style.display=canManageDepot?"":"none";
@@ -763,17 +770,17 @@ function renderCatalogCustomerSaleRequests(){
 }
 async function loadCatalogCustomerSaleRequests(){
   const list=$("customerSaleRequestsCatalogList"),status=$("customerSaleRequestsCatalogStatus");
-  if(!list||(!currentSeller&&currentStaffAccess?.role!=="supervisor"))return;
+  if(!list||(!currentSalesVerified&&currentStaffAccess?.role!=="admin"))return;
   list.textContent="Cargando solicitudes…";status.textContent="";
   const {data,error}=await db.from("customer_sale_requests").select("id,tracking_code,full_name,dni,dni_updated,phone,alternative_phone,alternative_contact_relationship,referred_by,is_electro_variety_customer,locality,address,street,street_number,between_streets,housing_situation,proof_services,has_debts,income_sources,dni_front_path,dni_back_path,conditional_details,document_paths,notes,items,status,admin_note,credit_assessment,seller_id,seller_name,created_at").order("created_at",{ascending:false}).limit(500);
   if(error){list.innerHTML=`<div class="seller-help">No se pudieron cargar las solicitudes: ${esc(error.message)}</div>`;return}
   catalogCustomerSaleRequests=data||[];renderCatalogCustomerSaleRequests();
 }
 function openCatalogCustomerSaleRequests(){
-  if(!currentSeller&&currentStaffAccess?.role!=="supervisor")return;
-  const supervisor=currentStaffAccess?.role==="supervisor";
-  $("customerSaleRequestsTitle").textContent=supervisor?"🛍️ Solicitudes de mis vendedores":"🛍️ Mis solicitudes";
-  $("customerSaleRequestsHelp").textContent=supervisor?"Ves tus solicitudes y las de los vendedores asignados a tu equipo. Desde aquí podés revisar documentación, situación crediticia y estado.":"Estas son las solicitudes enviadas mediante tu enlace personal. La lista es de solo lectura.";
+  if(!currentSalesVerified&&currentStaffAccess?.role!=="admin")return;
+  const canViewTeam=currentStaffAccess?.role==="supervisor"||(currentStaffAccess?.role==="custom"&&currentStaffAccess.can_view_assigned_sellers);
+  $("customerSaleRequestsTitle").textContent=canViewTeam?"🛍️ Solicitudes de mi equipo":"🛍️ Mis solicitudes";
+  $("customerSaleRequestsHelp").textContent=canViewTeam?"Ves tus solicitudes y las de los vendedores asignados a tu equipo. Desde aquí podés consultar los documentos y el estado.":"Estas son las solicitudes enviadas mediante tu enlace personal. La lista es de solo lectura.";
   openSellerModal("customerSaleRequestsModal");loadCatalogCustomerSaleRequests();
 }
 function renderSaleCreditResult(payload){
@@ -810,7 +817,7 @@ function openSellerProfile(){
   $("sellerProfileRole").value="• "+staffRoleLabel();
   $("sellerProfileStatus").textContent="";
   $("customerSaleReferralUrl").value="";
-  $("customerSaleReferralPanel").style.display=(currentSeller||["admin","supervisor"].includes(currentStaffAccess?.role))?"":"none";
+  $("customerSaleReferralPanel").style.display=(currentSalesVerified||currentStaffAccess?.role==="admin")?"":"none";
   if($("customerSaleReferralPanel").style.display!=="none")loadOrCreateCustomerSaleReferral();
   $("sellerPassword").value="";
   $("sellerPasswordConfirm").value="";
@@ -832,6 +839,7 @@ async function saveSellerName(){
   finally{$("sellerNameSave").disabled=false}
 }
 async function loadOrCreateCustomerSaleReferral(){
+  if(!currentSalesVerified&&currentStaffAccess?.role!=="admin")return;
   const button=$("createCustomerSaleReferral"),input=$("customerSaleReferralUrl");button.disabled=true;input.value="";$("sellerProfileStatus").textContent="Buscando tu enlace permanente…";
   try{
     const {data:{session},error:sessionError}=await db.auth.getSession();if(sessionError||!session)throw new Error("La sesión venció. Volvé a ingresar.");
@@ -847,6 +855,7 @@ async function loadOrCreateCustomerSaleReferral(){
   }catch(error){$("sellerProfileStatus").textContent="No se pudo cargar tu enlace: "+(error.message||error)}finally{button.disabled=false}
 }
 async function createCustomerSaleReferral(){
+  if(!currentSalesVerified&&currentStaffAccess?.role!=="admin")return;
   const button=$("createCustomerSaleReferral"),url=$("customerSaleReferralUrl").value;
   if(!url){await loadOrCreateCustomerSaleReferral();return}
   button.disabled=true;

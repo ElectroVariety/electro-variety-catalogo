@@ -337,13 +337,18 @@ Deno.serve(async (request: Request) => {
       .select("owner_id").eq("token", referralToken).gt("expires_at", new Date().toISOString()).maybeSingle();
     if (referralError || !referral) return respond({ error: "El enlace de vendedor venció o ya no está disponible. Pedí uno nuevo." }, 400, origin);
     sellerId = referral.owner_id;
-    const [{ data: sellerProfile }, { data: staffProfile }] = await Promise.all([
+    const [{ data: sellerProfile }, { data: staffProfile }, { data: stockProfile }, { data: verification }] = await Promise.all([
       admin.from("seller_profiles").select("name,active").eq("user_id", sellerId).maybeSingle(),
       admin.from("admin_profiles").select("display_name,role").eq("user_id", sellerId).maybeSingle(),
+      admin.from("stock_profiles").select("name,active").eq("user_id", sellerId).maybeSingle(),
+      admin.from("staff_sales_verifications").select("is_verified").eq("user_id", sellerId).maybeSingle(),
     ]);
     const isActiveSeller = sellerProfile?.active === true;
-    const isSupervisorOrAdmin = ["supervisor", "admin"].includes(staffProfile?.role);
-    if (!isActiveSeller && !isSupervisorOrAdmin) return respond({ error: "La cuenta asociada a este enlace ya no está activa." }, 400, origin);
+    const isAdmin = staffProfile?.role === "admin";
+    const hasKnownActiveProfile = isActiveSeller || stockProfile?.active === true || ["supervisor", "custom"].includes(staffProfile?.role);
+    if (!isAdmin && (verification?.is_verified !== true || !hasKnownActiveProfile)) {
+      return respond({ error: "El enlace de ventas no está habilitado para esta cuenta. Pedí al administrador que otorgue la insignia de verificación." }, 400, origin);
+    }
     sellerName = String(sellerProfile?.name || staffProfile?.display_name || "").trim().slice(0, 120);
   }
   const ids = requestedItems.map(item => item.productId);
