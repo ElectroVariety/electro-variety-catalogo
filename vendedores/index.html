@@ -139,7 +139,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <div class="cart-head"><h2 id="customerSaleRequestsTitle">🛍️ Solicitudes de compra</h2><button id="customerSaleRequestsClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
     <p id="customerSaleRequestsHelp" class="seller-help"></p>
     <div class="customer-request-toolbar">
-      <select id="customerSaleRequestsFilter" aria-label="Filtrar solicitudes"><option value="pending">Pendientes</option><option value="contacted">En revisión</option><option value="approved">Aprobadas</option><option value="rejected">Rechazadas</option><option value="converted">Ventas confirmadas</option><option value="cancelled">Canceladas</option><option value="all">Todas</option></select>
+      <select id="customerSaleRequestsFilter" aria-label="Filtrar solicitudes"><option value="pending">Pendientes</option><option value="under_review">En revisión</option><option value="contacted">Contactado</option><option value="approved">Aprobadas</option><option value="rejected">Rechazadas</option><option value="converted">Ventas confirmadas</option><option value="cancelled">Canceladas</option><option value="all">Todas</option></select>
       <input id="customerSaleRequestsSearch" type="search" placeholder="Buscar por nombre, DNI, teléfono o localidad" aria-label="Buscar solicitudes">
       <button id="customerSaleRequestsRefresh" class="seller-action-button secondary" type="button">Actualizar</button>
     </div>
@@ -790,7 +790,7 @@ async function startCatalog(seller=null,staffAccess=currentStaffAccess,staffName
 
 function openSellerModal(id){$(id).style.display="flex";$(id).setAttribute("aria-hidden","false")}
 function closeSellerModal(id){$(id).style.display="none";$(id).setAttribute("aria-hidden","true")}
-const customerRequestStatuses={pending:"Pendiente",contacted:"Contactado",converted:"Venta confirmada",cancelled:"Cancelada",approved:"Aprobada",rejected:"Rechazada"};
+const customerRequestStatuses={pending:"Pendiente",under_review:"En revisión",contacted:"Contactado",converted:"Venta confirmada",cancelled:"Cancelada",approved:"Aprobada",rejected:"Rechazada"};
 const customerCreditLabels={not_reviewed:"Sin evaluar",favorable:"Favorable",needs_review:"Requiere revisión",unfavorable:"Desfavorable"};
 const catalogCreditResults=new Map();
 let catalogCustomerSaleRequests=[];
@@ -823,7 +823,8 @@ function renderCatalogCustomerSaleRequests(){
     const conditional=request.conditional_details&&typeof request.conditional_details==="object"?Object.entries(request.conditional_details).map(([key,value])=>`<span><b>${esc(conditionalLabels[key]||`Información adicional · ${key.replaceAll("_"," ")}`)}:</b> ${esc(Array.isArray(value)?value.map(item=>serviceNames[item]||incomeNames[item]||item).join(", "):key==="service_owner"||key==="customer_only"?yesNo(value):value??"—")}</span>`).join(""):"";
     const form=`<details open><summary>Formulario de solicitud</summary><div class="customer-request-section"><h4>01 · Datos personales</h4><div class="customer-request-data"><span><b>Nombre:</b> ${esc(request.full_name||"—")}</span><span><b>DNI:</b> ${esc(request.dni||"—")}</span><span><b>DNI actualizado:</b> ${yesNo(request.dni_updated)}</span><span><b>Celular:</b> ${esc(request.phone||"—")}</span><span><b>Teléfono alternativo:</b> ${esc(request.alternative_phone||"—")}</span><span><b>Vínculo alternativo:</b> ${esc(request.alternative_contact_relationship||"—")}</span><span><b>Recomendado:</b> ${yesNo(request.referred_by)}</span><span><b>Cliente Electro Variety:</b> ${yesNo(request.is_electro_variety_customer)}</span></div></div><div class="customer-request-section"><h4>02 · Domicilio</h4><div class="customer-request-data"><span><b>Localidad:</b> ${esc(request.locality||"—")}</span><span><b>Calle y altura:</b> ${esc([request.street,request.street_number].filter(Boolean).join(" ")||request.address||"—")}</span><span class="wide"><b>Entre calles:</b> ${esc(request.between_streets||"—")}</span><span><b>Situación de vivienda:</b> ${esc(({own:"Vivienda propia",rent_contract:"Alquiler por contrato",rent_verbal:"Alquiler de palabra"})[request.housing_situation]||request.housing_situation||"—")}</span></div></div><div class="customer-request-section"><h4>03 · Comprobantes y finanzas</h4><div class="customer-request-data"><span><b>Servicios:</b> ${esc(arr(request.proof_services,serviceNames))}</span><span><b>Deudas actuales:</b> ${yesNo(request.has_debts)}</span><span class="wide"><b>Trabajo e ingresos:</b> ${esc(arr(request.income_sources,incomeNames))}</span>${conditional}</div></div><div class="customer-request-section"><h4>Productos solicitados</h4><ul>${items||"<li>No hay productos informados.</li>"}</ul></div>${request.notes?`<div class="customer-request-section"><h4>Comentario para el equipo</h4><p>${esc(request.notes)}</p></div>`:""}</details>`;
     const creditResult=catalogCreditResults.get(request.id),creditPanel=creditResult?renderSaleCreditResult(creditResult):"";
-    const review=supervisor?`<div class="customer-request-review"><div class="seller-field"><label>Estado<select data-customer-request-status="${esc(request.id)}">${Object.entries(customerRequestStatuses).map(([key,label])=>`<option value="${key}" ${request.status===key?"selected":""}>${label}</option>`).join("")}</select></label><label>Situación crediticia<select data-customer-request-credit="${esc(request.id)}">${Object.entries(customerCreditLabels).map(([key,label])=>`<option value="${key}" ${request.credit_assessment===key?"selected":""}>${label}</option>`).join("")}</select></label><label>Nota interna<textarea data-customer-request-note="${esc(request.id)}" maxlength="1000" rows="2" placeholder="Nota interna para el equipo">${esc(request.admin_note||"")}</textarea></label><div class="customer-request-decision"><button class="seller-action-button secondary" type="button" data-check-sale-credit="${esc(request.id)}">🔎 Consultar situación crediticia</button><button class="seller-action-button" type="button" data-customer-request-decision="approved" data-request-id="${esc(request.id)}">✅ Aprobar solicitud</button><button class="seller-action-button secondary" type="button" data-customer-request-decision="rejected" data-request-id="${esc(request.id)}">❌ Rechazar solicitud</button><button class="seller-action-button secondary" type="button" data-save-customer-request="${esc(request.id)}">💾 Guardar revisión</button></div>${creditPanel}<small>La consulta es informativa y no aprueba ni rechaza automáticamente la solicitud. El resultado no se almacena.</small></div></div>`:`<div class="seller-help">Solo lectura · Tu supervisor revisa la solicitud.</div>`;
+    const canDecide=supervisor&&request.status==="under_review";
+    const review=supervisor?`<div class="customer-request-review"><div class="seller-field"><label>Situación crediticia<select data-customer-request-credit="${esc(request.id)}">${Object.entries(customerCreditLabels).map(([key,label])=>`<option value="${key}" ${request.credit_assessment===key?"selected":""}>${label}</option>`).join("")}</select></label><label>Nota interna<textarea data-customer-request-note="${esc(request.id)}" maxlength="1000" rows="2" placeholder="Nota interna para el equipo">${esc(request.admin_note||"")}</textarea></label><div class="customer-request-decision"><button class="seller-action-button secondary" type="button" data-check-sale-credit="${esc(request.id)}">🔎 Consultar situación crediticia</button><button class="seller-action-button secondary" type="button" data-save-customer-request="${esc(request.id)}">💾 Guardar revisión</button>${canDecide?`<button class="seller-action-button" type="button" data-customer-request-decision="approved" data-request-id="${esc(request.id)}">✅ Aprobar y descontar stock</button><button class="seller-action-button secondary" type="button" data-customer-request-decision="rejected" data-request-id="${esc(request.id)}">❌ Rechazar solicitud</button>`:""}</div>${creditPanel}<small>${canDecide?"Al aprobar se registra la venta y se descuenta primero el depósito; al rechazar, queda archivada en Rechazadas.":"Al abrir una solicitud pendiente, pasa a En revisión. Solo las solicitudes en revisión se pueden aprobar o rechazar."} La consulta de crédito es informativa y no decide automáticamente.</small></div></div>`:`<div class="seller-help">Solo lectura · Tu supervisor revisa la solicitud.</div>`;
     const credit=customerCreditLabels[request.credit_assessment]||customerCreditLabels.not_reviewed;
     return `<article class="customer-request-card"><div class="customer-request-top"><h3>Solicitud ${esc(request.tracking_code||String(request.id).slice(0,8))}</h3><span class="customer-request-status">${esc(customerRequestStatuses[request.status]||request.status)}</span></div><div class="customer-request-meta">${showSeller?`👤 Vendedor: <b>${catalogVerifiedName(request.seller_name||"—",request.seller_id)}</b> · `:""}${date} · Crédito: ${esc(credit)}</div><div class="customer-request-section"><h4>Cliente</h4><div class="customer-request-data"><span><b>${esc(request.full_name||"—")}</b></span><span><a href="tel:${esc(request.phone||"")}">${esc(request.phone||"—")}</a> · DNI ${esc(request.dni||"—")}</span><span class="wide">📍 ${esc([request.address||[request.street,request.street_number].filter(Boolean).join(" "),request.locality].filter(Boolean).join(", ")||"Domicilio sin indicar")}</span></div></div><div class="customer-request-section"><h4>Productos</h4><ul>${items||"<li>No hay productos informados.</li>"}</ul></div>${form}<div class="customer-request-actions">${documentButtons||'<span class="seller-help">No hay documentos adjuntos.</span>'}<button class="seller-action-button secondary" type="button" data-print-customer-request="${esc(request.id)}">📄 Ver solicitud como PDF (con adjuntos)</button></div>${request.notes?`<div class="customer-request-section"><b>Comentario:</b> ${esc(request.notes)}</div>`:""}${review}</article>`;
   });
@@ -837,7 +838,27 @@ async function loadCatalogCustomerSaleRequests(){
   list.textContent="Cargando solicitudes…";status.textContent="";
   const {data,error}=await db.from("customer_sale_requests").select("id,tracking_code,full_name,dni,dni_updated,phone,alternative_phone,alternative_contact_relationship,referred_by,is_electro_variety_customer,locality,address,street,street_number,between_streets,housing_situation,proof_services,has_debts,income_sources,dni_front_path,dni_back_path,conditional_details,document_paths,notes,items,status,admin_note,credit_assessment,seller_id,seller_name,created_at").order("created_at",{ascending:false}).limit(500);
   if(error){list.innerHTML=`<div class="seller-help">No se pudieron cargar las solicitudes: ${esc(error.message)}</div>`;return}
-  catalogCustomerSaleRequests=data||[];renderCatalogCustomerSaleRequests();
+  catalogCustomerSaleRequests=data||[];
+  if(!catalogCustomerSaleRequests.some(request=>request.id===catalogCustomerSaleRequestsSelectedId))catalogCustomerSaleRequestsSelectedId=catalogCustomerSaleRequests[0]?.id||null;
+  renderCatalogCustomerSaleRequests();
+  if(currentStaffAccess?.role==="supervisor"&&catalogCustomerSaleRequestsSelectedId){
+    const current=catalogCustomerSaleRequests.find(request=>request.id===catalogCustomerSaleRequestsSelectedId);
+    if(current&&["pending","contacted"].includes(current.status)){
+      const {data:nextStatus,error:reviewError}=await db.rpc("begin_customer_sale_request_review",{p_request_id:current.id});
+      if(reviewError){status.textContent="No se pudo abrir la revisión: "+reviewError.message}else if(nextStatus){current.status=nextStatus;if(nextStatus==="under_review")$("customerSaleRequestsFilter").value="under_review"}
+    }
+  }
+  renderCatalogCustomerSaleRequests();
+}
+async function selectCatalogCustomerSaleRequest(id){
+  catalogCustomerSaleRequestsSelectedId=id;
+  const request=catalogCustomerSaleRequests.find(row=>row.id===id);
+  if(currentStaffAccess?.role==="supervisor"&&request&&["pending","contacted"].includes(request.status)){
+    const {data,error}=await db.rpc("begin_customer_sale_request_review",{p_request_id:id});
+    if(error){alert("No se pudo iniciar la revisión: "+error.message);renderCatalogCustomerSaleRequests();return}
+    if(data){request.status=data;if(data==="under_review")$("customerSaleRequestsFilter").value="under_review"}
+  }
+  renderCatalogCustomerSaleRequests();
 }
 function openCatalogCustomerSaleRequests(){
   if(!currentSalesVerified&&currentStaffAccess?.role!=="admin")return;
@@ -869,10 +890,25 @@ async function openCatalogCustomerSaleDocument(button){
 async function printCatalogCustomerSaleRequest(id){const request=catalogCustomerSaleRequests.find(row=>row.id===id);if(!request)return;try{await window.EVCustomerSalePdf.open(request,db)}catch(error){alert("No se pudo generar el PDF: "+(error.message||error))}}
 async function saveCatalogCustomerSaleReview(button){
   if(currentStaffAccess?.role!=="supervisor")return;
-  const id=button.dataset.saveCustomerRequest,status=document.querySelector(`[data-customer-request-status="${CSS.escape(id)}"]`)?.value,credit=document.querySelector(`[data-customer-request-credit="${CSS.escape(id)}"]`)?.value,note=document.querySelector(`[data-customer-request-note="${CSS.escape(id)}"]`)?.value||"";
+  const id=button.dataset.saveCustomerRequest,credit=document.querySelector(`[data-customer-request-credit="${CSS.escape(id)}"]`)?.value,note=document.querySelector(`[data-customer-request-note="${CSS.escape(id)}"]`)?.value||"";
+  if(!["not_reviewed","favorable","needs_review","unfavorable"].includes(credit))return;
   const {data:userData}=await db.auth.getUser();if(!userData?.user){alert("La sesión expiró. Volvé a iniciar sesión.");return}
   button.disabled=true;
-  try{const {error}=await db.from("customer_sale_requests").update({status,credit_assessment:credit,admin_note:String(note).trim().slice(0,1000),reviewed_by:userData.user.id,reviewed_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",id);if(error)throw error;$("customerSaleRequestsCatalogStatus").textContent="✅ Revisión guardada.";await loadCatalogCustomerSaleRequests()}catch(error){alert("No se pudo guardar la revisión: "+(error.message||error))}finally{button.disabled=false}
+  try{const {error}=await db.from("customer_sale_requests").update({credit_assessment:credit,admin_note:String(note).trim().slice(0,1000),reviewed_by:userData.user.id,reviewed_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",id);if(error)throw error;$("customerSaleRequestsCatalogStatus").textContent="✅ Revisión guardada.";await loadCatalogCustomerSaleRequests()}catch(error){alert("No se pudo guardar la revisión: "+(error.message||error))}finally{button.disabled=false}
+}
+async function decideCatalogCustomerSaleRequest(button){
+  if(currentStaffAccess?.role!=="supervisor")return;
+  const id=button.dataset.requestId,decision=button.dataset.customerRequestDecision;
+  if(decision==="rejected"&&!confirm("¿Confirmás que querés rechazar esta solicitud? Quedará en la sección Rechazadas y no se descontará stock."))return;
+  button.disabled=true;
+  try{
+    const {data,error}=await db.rpc(decision==="approved"?"approve_customer_sale_request":"reject_customer_sale_request",{p_request_id:id});
+    if(error)throw error;
+    $("customerSaleRequestsCatalogStatus").textContent=decision==="approved"?"✅ Solicitud aprobada. Se creó la venta y se descontó el stock.":"✅ Solicitud rechazada y guardada en Rechazadas.";
+    $("customerSaleRequestsFilter").value=decision==="approved"?"approved":"rejected";
+    await loadCatalogCustomerSaleRequests();
+  }catch(error){alert("No se pudo "+(decision==="approved"?"aprobar":"rechazar")+" la solicitud: "+(error.message||error))}
+  finally{button.disabled=false}
 }
 function openSellerProfile(){
   if(!currentSeller&&!currentStaffAccess)return;
@@ -1055,9 +1091,9 @@ function renderSellerSales(sales){
   $("sellerSalesHistory").innerHTML=sales.map(sale=>{
     const items=Array.isArray(sale.seller_sale_items)?sale.seller_sale_items:[];
     const itemHtml=items.map(item=>{
-      const actions=item.status==="pending_delivery"?"<div class=\"seller-sale-item-actions\">"+
+      const actions=item.status==="pending_delivery"&&!sale.requires_supervisor_delivery?"<div class=\"seller-sale-item-actions\">"+
         "<button class=\"delivered\" type=\"button\" data-resolve-sale=\""+esc(sale.id)+"\" data-resolve-product=\""+Number(item.product_id)+"\" data-delivered=\"true\">Entregado</button>"+
-        "<button class=\"not-delivered\" type=\"button\" data-resolve-sale=\""+esc(sale.id)+"\" data-resolve-product=\""+Number(item.product_id)+"\" data-delivered=\"false\">No entregado · devolver stock</button></div>":"";
+      "<button class=\"not-delivered\" type=\"button\" data-resolve-sale=\""+esc(sale.id)+"\" data-resolve-product=\""+Number(item.product_id)+"\" data-delivered=\"false\">No entregado · devolver stock</button></div>":(item.status==="pending_delivery"&&sale.requires_supervisor_delivery?"<small>El supervisor asignado debe confirmar la entrega.</small>":"");
       return "<div class=\"seller-sale-item\"><b>"+esc(item.product_name)+" × "+Number(item.quantity)+"</b>"+
         "<div>"+esc(saleItemStatusLabel(item.status))+"</div><small>"+esc(saleAllocationLabel(item))+"</small>"+actions+"</div>";
     }).join("");
@@ -1074,7 +1110,7 @@ async function loadSellerSales(){
   if(!currentSellerId)return;
   $("sellerSalesHistory").textContent="Cargando pedidos…";
   const {data,error}=await db.from("seller_sales")
-    .select("id,seller_name,order_text,status,created_at,expires_at,seller_sale_items(id,product_id,product_name,quantity,reserved_deposito,reserved_local,deposito_untracked,local_untracked,status,resolved_at)")
+    .select("id,seller_name,order_text,status,customer_sale_request_id,requires_supervisor_delivery,created_at,expires_at,seller_sale_items(id,product_id,product_name,quantity,reserved_deposito,reserved_local,deposito_untracked,local_untracked,status,resolved_at)")
     .eq("seller_id",currentSellerId).order("created_at",{ascending:false}).limit(100);
   if(error){$("sellerSalesHistory").textContent="No se pudo cargar el historial: "+error.message;return}
   renderSellerSales(data||[]);
@@ -1096,18 +1132,20 @@ async function loadSellerTeam(reset=true){
   try{
     const {data:sellers,error:sellerError}=await db.rpc("get_my_assigned_sellers");
     if(sellerError)throw sellerError;
-    teamSellerIds=(sellers||[]).map(s=>s.user_id);
+    const teamSellerRows=[...(sellers||[])];
+    if(currentStaffAccess?.role==="supervisor"&&currentUserId&&!teamSellerRows.some(s=>s.user_id===currentUserId))teamSellerRows.unshift({user_id:currentUserId,name:currentStaffProfileName||"Mis ventas",phone:""});
+    teamSellerIds=teamSellerRows.map(s=>s.user_id);
     const select=$("sellerTeamFilter"),selected=filter;
-    select.innerHTML='<option value="">Todos mis vendedores</option>'+(sellers||[]).map(s=>`<option value="${esc(s.user_id)}">${catalogVerifiedText(s.name||"Sin nombre",s.user_id)} · ${esc(s.phone||"sin teléfono")}</option>`).join("");
+    select.innerHTML='<option value="">Todo mi equipo</option>'+teamSellerRows.map(s=>`<option value="${esc(s.user_id)}">${catalogVerifiedText(s.name||"Sin nombre",s.user_id)}${s.user_id===currentUserId?" · Mis solicitudes":" · "+esc(s.phone||"sin teléfono")}</option>`).join("");
     if(teamSellerIds.includes(selected))select.value=selected;
     if(!teamSellerIds.length){list.innerHTML='<div class="seller-help">Todavía no tenés vendedores asignados. Pedile al administrador que configure tu equipo.</div>';status.textContent="";return}
-    let query=db.from("seller_sales").select("id,seller_id,seller_name,order_text,status,created_at,expires_at,seller_sale_items(id,product_name,quantity,status)").in("seller_id",select.value?[select.value]:teamSellerIds).order("created_at",{ascending:false}).range(teamSalesOffset,teamSalesOffset+99);
+    let query=db.from("seller_sales").select("id,seller_id,seller_name,order_text,status,customer_sale_request_id,created_at,expires_at,seller_sale_items(id,product_id,product_name,quantity,status)").in("seller_id",select.value?[select.value]:teamSellerIds).order("created_at",{ascending:false}).range(teamSalesOffset,teamSalesOffset+99);
     const {data,error}=await query;if(error)throw error;
     const sales=data||[];
-    const markup=sales.map(sale=>`<article class="seller-sale-card"><h3>${catalogVerifiedName(sale.seller_name||"Vendedor",sale.seller_id)} · Pedido ${esc(String(sale.id).slice(0,8))}</h3><div class="sale-date">${esc(saleStatusLabel(sale.status))} · ${sale.created_at?new Date(sale.created_at).toLocaleString("es-AR"):"—"}</div><div class="sale-order">${esc(sale.order_text).replace(/\n/g,"<br>")}</div><ul>${(sale.seller_sale_items||[]).map(item=>`<li>${esc(item.product_name)} × ${Number(item.quantity)} · ${esc(saleItemStatusLabel(item.status))}</li>`).join("")}</ul></article>`).join("");
+    const markup=sales.map(sale=>`<article class="seller-sale-card"><h3>${catalogVerifiedName(sale.seller_name||"Vendedor",sale.seller_id)} · Pedido ${esc(String(sale.id).slice(0,8))}</h3><div class="sale-date">${esc(saleStatusLabel(sale.status))} · ${sale.created_at?new Date(sale.created_at).toLocaleString("es-AR"):"—"}</div><div class="sale-order">${esc(sale.order_text).replace(/\n/g,"<br>")}</div><ul>${(sale.seller_sale_items||[]).map(item=>{const actions=currentStaffAccess?.role==="supervisor"&&item.status==="pending_delivery"?`<div class="seller-sale-item-actions"><button class="delivered" type="button" data-team-resolve-sale="${esc(sale.id)}" data-team-resolve-product="${Number(item.product_id)}" data-delivered="true">Confirmar entrega</button><button class="not-delivered" type="button" data-team-resolve-sale="${esc(sale.id)}" data-team-resolve-product="${Number(item.product_id)}" data-delivered="false">Cancelar · devolver al stock</button></div>`:"";return `<li>${esc(item.product_name)} × ${Number(item.quantity)} · ${esc(saleItemStatusLabel(item.status))}${actions}</li>`}).join("")}</ul></article>`).join("");
     if(reset)list.innerHTML=markup||'<div class="seller-help">No hay pedidos para mostrar.</div>';else list.insertAdjacentHTML("beforeend",markup);
     teamSalesOffset+=sales.length;
-    status.textContent=`${teamSalesOffset} pedido(s) cargados de ${select.value?(sellers.find(s=>s.user_id===select.value)?.name||"un vendedor"):"tu equipo"}.`;
+    status.textContent=`${teamSalesOffset} pedido(s) cargados de ${select.value?(teamSellerRows.find(s=>s.user_id===select.value)?.name||"un vendedor"):"tu equipo"}.`;
     more.style.display=sales.length===100?"block":"none";
   }catch(error){list.innerHTML=`<div class="seller-help">No se pudieron cargar los pedidos: ${esc(error.message||error)}</div>`;status.textContent=""}
 }
@@ -1122,6 +1160,19 @@ async function resolveSellerSaleItem(button){
     await loadSellerSales();
     $("sellerSaleCreateStatus").textContent=data==="expired"?"El plazo venció y el stock ya fue devuelto.":delivered?"Entrega confirmada.":"Producto marcado como no entregado; stock devuelto.";
   }catch(e){$("sellerSalesHistory").textContent="No se pudo actualizar el estado: "+(e.message||e)}
+  finally{button.disabled=false}
+}
+async function resolveAssignedSellerSaleItem(button){
+  if(currentStaffAccess?.role!=="supervisor")return;
+  const saleId=button.dataset.teamResolveSale,productId=Number(button.dataset.teamResolveProduct),delivered=button.dataset.delivered==="true";
+  if(!confirm(delivered?"¿Confirmás que el vendedor entregó este producto?":"¿Cancelar este producto y devolverlo al stock?"))return;
+  button.disabled=true;
+  try{
+    const {data,error}=await db.rpc("resolve_assigned_seller_sale_item",{p_sale_id:saleId,p_product_id:productId,p_delivered:delivered});
+    if(error)throw error;
+    await loadSellerTeam(true);
+    $("sellerTeamStatus").textContent=data==="expired"?"El plazo venció y el stock ya fue devuelto.":delivered?"Entrega confirmada.":"Pedido cancelado; el producto volvió al stock.";
+  }catch(error){alert("No se pudo actualizar la entrega: "+(error.message||error))}
   finally{button.disabled=false}
 }
 async function copyExistingSale(saleId){
@@ -1508,13 +1559,14 @@ $("customerSaleRequestsRefresh").addEventListener("click",loadCatalogCustomerSal
 $("customerSaleRequestsFilter").addEventListener("change",renderCatalogCustomerSaleRequests);
 $("customerSaleRequestsSearch").addEventListener("input",renderCatalogCustomerSaleRequests);
 ["customerSaleFilterCustomer","customerSaleFilterDebt","customerSaleFilterReferral"].forEach(id=>$(id).addEventListener("change",renderCatalogCustomerSaleRequests));
-$("customerSaleRequestsCatalogList").addEventListener("click",e=>{const selected=e.target.closest("[data-select-customer-request]");if(selected){catalogCustomerSaleRequestsSelectedId=selected.dataset.selectCustomerRequest;renderCatalogCustomerSaleRequests();return}const doc=e.target.closest("[data-customer-request-document]");if(doc){openCatalogCustomerSaleDocument(doc);return}const credit=e.target.closest("[data-check-sale-credit]");if(credit){checkCatalogSaleCredit(credit.dataset.checkSaleCredit,credit);return}const print=e.target.closest("[data-print-customer-request]");if(print){printCatalogCustomerSaleRequest(print.dataset.printCustomerRequest);return}const decision=e.target.closest("[data-customer-request-decision]");if(decision){const id=decision.dataset.requestId,select=document.querySelector(`[data-customer-request-status="${CSS.escape(id)}"]`);if(select)select.value=decision.dataset.customerRequestDecision;const save=decision.closest(".customer-request-card")?.querySelector(`[data-save-customer-request="${CSS.escape(id)}"]`);if(save)saveCatalogCustomerSaleReview(save);return}const save=e.target.closest("[data-save-customer-request]");if(save)saveCatalogCustomerSaleReview(save)});
+$("customerSaleRequestsCatalogList").addEventListener("click",e=>{const selected=e.target.closest("[data-select-customer-request]");if(selected){selectCatalogCustomerSaleRequest(selected.dataset.selectCustomerRequest);return}const doc=e.target.closest("[data-customer-request-document]");if(doc){openCatalogCustomerSaleDocument(doc);return}const credit=e.target.closest("[data-check-sale-credit]");if(credit){checkCatalogSaleCredit(credit.dataset.checkSaleCredit,credit);return}const print=e.target.closest("[data-print-customer-request]");if(print){printCatalogCustomerSaleRequest(print.dataset.printCustomerRequest);return}const decision=e.target.closest("[data-customer-request-decision]");if(decision){decideCatalogCustomerSaleRequest(decision);return}const save=e.target.closest("[data-save-customer-request]");if(save)saveCatalogCustomerSaleReview(save)});
 $("sellerDepotStockButton").addEventListener("click",()=>location.href="../deposito/?role=1");
 $("sellerLocalStockButton").addEventListener("click",()=>location.href="../local/?role=1");
 $("sellerTeamClose").addEventListener("click",()=>closeSellerModal("sellerTeamModal"));
 $("sellerTeamRefresh").addEventListener("click",()=>loadSellerTeam(true));
 $("sellerTeamFilter").addEventListener("change",()=>loadSellerTeam(true));
 $("sellerTeamLoadMore").addEventListener("click",()=>loadSellerTeam(false));
+$("sellerTeamHistory").addEventListener("click",e=>{const button=e.target.closest("[data-team-resolve-sale]");if(button)resolveAssignedSellerSaleItem(button)});
 $("sellerSalesClose").addEventListener("click",()=>closeSellerModal("sellerSalesModal"));
 $("sellerSalesModal").addEventListener("click",e=>{if(e.target===$("sellerSalesModal"))closeSellerModal("sellerSalesModal")});
 $("sellerSalesNewTab").addEventListener("click",()=>showSellerSalesTab("new"));
