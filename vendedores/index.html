@@ -466,6 +466,10 @@ async function heartbeatCatalogActivity(){
   if(!catalogActivitySessionId||!db)return;
   try{const {error}=await db.rpc("heartbeat_catalog_staff_session",{p_session_id:catalogActivitySessionId});if(error)console.warn("No se pudo guardar la actividad",error)}catch(error){console.warn("No se pudo guardar la actividad",error)}
 }
+async function recordCatalogWhatsappShare(){
+  if(!catalogActivitySessionId||!db)return;
+  try{const {error}=await db.rpc("record_catalog_whatsapp_share",{p_session_id:catalogActivitySessionId});if(error)console.warn("No se pudo registrar el producto compartido",error)}catch(error){console.warn("No se pudo registrar el producto compartido",error)}
+}
 async function startCatalogActivitySession(){
   if(!db||!currentUserId)return;
   if(catalogActivitySessionId&&catalogActivityUserId===currentUserId)return;
@@ -484,15 +488,14 @@ function activityDuration(seconds){
 async function loadSellerActivity(){
   const list=$("sellerActivityList"),status=$("sellerActivityStatus");
   list.textContent="Cargando actividad…";status.textContent="";
-  const {data,error}=await db.rpc("supervisor_list_assigned_catalog_activity",{p_limit:500});
+  const {data,error}=await db.rpc("supervisor_list_assigned_catalog_daily_activity",{p_limit:2000});
   if(error){list.textContent="No se pudo cargar la actividad: "+error.message;return}
   const rows=data||[];
   list.innerHTML=rows.length?rows.map(row=>{
-    const start=new Date(row.started_at),last=new Date(row.last_seen_at),end=row.ended_at?new Date(row.ended_at):null;
-    const online=!end&&(Date.now()-last.getTime()<180000);
-    return `<article class="seller-sale-card"><h3>${catalogVerifiedName(row.display_name||"Sin nombre",row.user_id)} · ${esc(row.role_label||"Usuario")}</h3><div class="sale-date">${start.toLocaleDateString("es-AR")} · Inicio ${start.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}${end?" · Fin "+end.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"}):""}</div><div class="sale-date">${online?"🟢 En línea":"⚪ Sesión cerrada"} · Tiempo conectado: ${activityDuration(row.duration_seconds)}</div></article>`
+    const first=new Date(row.first_session_at),last=new Date(row.last_session_at),day=new Date(`${row.activity_date}T12:00:00`);
+    return `<article class="seller-sale-card"><h3>${catalogVerifiedName(row.display_name||"Sin nombre",row.user_id)} · ${esc(row.role_label||"Usuario")}</h3><div class="sale-date">${day.toLocaleDateString("es-AR")} · Primera sesión ${first.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})} · Última sesión ${last.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}</div><div class="sale-date">${row.is_online?"🟢 En línea":"⚪ Sin sesión activa"} · Tiempo acumulado: ${activityDuration(row.duration_seconds)} · Productos compartidos por WhatsApp: ${Number(row.whatsapp_share_count)||0}</div></article>`
   }).join(""):'<div class="seller-help">No hay actividad registrada para tus vendedores asignados.</div>';
-  status.textContent=`${rows.length} sesión(es) cargadas.`;
+  status.textContent=`${rows.length} registro(s) diarios cargados.`;
 }
 async function startOnlineStaffPresence(){
   stopOnlineStaffPresence();
@@ -1479,6 +1482,7 @@ async function shareProduct(index){
         if(!navigator.canShare || navigator.canShare({files:[file]})){
           try{
             await navigator.share({title:p.name||"Producto",text,files:[file]});
+            await recordCatalogWhatsappShare();
             return;
           }catch(e){
             if(e?.name==="AbortError")return;
@@ -1493,6 +1497,7 @@ async function shareProduct(index){
   // Fallback compatible con navegadores/Android que no permiten adjuntar el archivo.
   try{
     await navigator.share({title:p.name||"Producto",text:shareText});
+    await recordCatalogWhatsappShare();
     return;
   }catch(e){
     if(e?.name==="AbortError")return;

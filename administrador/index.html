@@ -822,20 +822,19 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const rows = catalogStaffActivityRows.filter(row => !term || `${row.display_name} ${row.role_label}`.toLocaleLowerCase("es-AR").includes(term));
     if (!rows.length) { box.innerHTML = '<div class="small">No hay sesiones que coincidan con la búsqueda.</div>'; return; }
     box.innerHTML = rows.map(row => {
-      const start = new Date(row.started_at), lastSeen = new Date(row.last_seen_at), end = row.ended_at ? new Date(row.ended_at) : null;
-      const online = !end && Date.now() - lastSeen.getTime() < 180000;
-      return `<article class="sales-order"><b>${verifiedRoleName(row.display_name || "Sin nombre", row.role_label || "Usuario", row.user_id)}</b><div class="small">Inicio: ${start.toLocaleString("es-AR")}${end ? ` · Fin: ${end.toLocaleString("es-AR")}` : ""}</div><div class="small">${online ? "🟢 En línea" : "⚪ Sesión cerrada"} · Tiempo conectado: ${formatCatalogActivityDuration(row.duration_seconds)} · Última señal: ${lastSeen.toLocaleTimeString("es-AR", {hour:"2-digit",minute:"2-digit",second:"2-digit"})}</div></article>`;
+      const first = new Date(row.first_session_at), last = new Date(row.last_session_at);
+      return `<article class="sales-order"><b>${verifiedRoleName(row.display_name || "Sin nombre", row.role_label || "Usuario", row.user_id)}</b><div class="small">${new Date(`${row.activity_date}T12:00:00`).toLocaleDateString("es-AR")} · Primera sesión: ${first.toLocaleTimeString("es-AR", {hour:"2-digit",minute:"2-digit"})} · Última sesión: ${last.toLocaleTimeString("es-AR", {hour:"2-digit",minute:"2-digit"})}</div><div class="small">${row.is_online ? "🟢 En línea" : "⚪ Sin sesión activa"} · Tiempo acumulado: ${formatCatalogActivityDuration(row.duration_seconds)} · Productos compartidos por WhatsApp: ${Number(row.whatsapp_share_count)||0}</div></article>`;
     }).join("");
   }
   async function loadCatalogStaffActivityAdmin() {
     const box = $("staffActivityAdminList"), status = $("staffActivityAdminStatus");
     if (!box || currentAccessRole !== "admin") return;
     box.textContent = "Cargando actividad…";
-    const { data, error } = await db.rpc("admin_list_catalog_staff_activity", { p_limit: 2000 });
+    const { data, error } = await db.rpc("admin_list_catalog_staff_daily_activity", { p_limit: 5000 });
     if (error) { box.innerHTML = `<div class="small danger">No se pudo cargar la actividad: ${esc(error.message)}</div>`; if (status) status.textContent = ""; return; }
     catalogStaffActivityRows = data || [];
     renderCatalogStaffActivityAdmin();
-    if (status) status.textContent = `${catalogStaffActivityRows.length} sesión(es) registradas.`;
+    if (status) status.textContent = `${catalogStaffActivityRows.length} registro(s) diarios cargados.`;
   }
 
   async function loadSellerProfiles() {
