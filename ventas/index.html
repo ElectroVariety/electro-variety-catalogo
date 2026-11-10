@@ -14,6 +14,7 @@
 .panel:not(#pageStatus){border-color:#ccd7e2;border-radius:18px;padding:22px 23px;box-shadow:0 4px 12px #26384b08}
 .panel h2{font-size:17px;font-weight:650;letter-spacing:-.02em;gap:12px;margin-bottom:12px}
 .step-number{width:34px;height:34px;border-radius:10px;background:#e4f2ff;color:#1874bd;font-size:11px}
+.conditional-panel{grid-column:1/-1;border:1px solid #d8e4ee;border-radius:12px;background:#f8fbfd;padding:14px;margin-top:9px}.conditional-panel h3{font-size:14px;margin:0 0 10px}.conditional-panel .field-grid{margin-top:8px}.choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.choice-option{display:flex;align-items:center;gap:10px;border:1px solid #e1e8ee;border-radius:10px;padding:12px;background:#fff;cursor:pointer;font-size:13px;color:#536477}.choice-option input{accent-color:#3179a6}.upload-hint{font-size:11px;color:#718093;margin:5px 0 0}.upload-file{display:block;width:100%;padding:11px;border:1px dashed #b9cbd9;border-radius:10px;background:#fff;font:inherit}.upload-item{display:grid;gap:5px;margin-top:10px}.upload-item label{font-size:12px;font-weight:850;color:#36475a}.upload-preview{font-size:11px;color:#718093}
 .panel>.hint{margin:-7px 0 10px 46px;color:#8190a0;font-size:12px}
 .search{background:#fbfdfc;border-color:#dce5df;border-radius:10px;padding:13px 14px}
 .product-list{gap:9px}
@@ -56,7 +57,7 @@
 <body>
 <header class="site-header"><div class="top"><div class="brand"><span class="brand-mark" aria-hidden="true">🛍️</span><div><div class="brand-name">ELECTRO VARIETY</div><div class="brand-subtitle">CATÁLOGO DE CLIENTES · SOLICITUD ONLINE</div></div></div><nav class="top-nav" aria-label="Navegación"><a href="../clientes/">Volver al catálogo</a></nav></div></header>
 <main class="wrap">
-  <section class="hero"><span class="badge">SOLICITUD DE COMPRA</span><h1>Solicitá tus productos</h1><p>Completá el formulario para que podamos revisar tu pedido y comunicarnos con vos para confirmar disponibilidad y coordinar la compra.</p><div class="hero-note">ⓘ Los campos marcados con <b>*</b> son obligatorios. Enviar la solicitud no confirma la venta ni reserva productos.</div></section>
+  <section class="hero"><span class="badge">SOLICITUD DE COMPRA</span><h1>Solicitá tus productos</h1><p>Completá el formulario para que podamos revisar tu pedido y comunicarnos con vos para confirmar disponibilidad y coordinar la compra.</p><div class="hero-note">ⓘ Los campos marcados con <b>*</b> son obligatorios. Los archivos se guardan de forma privada; cada uno puede pesar hasta 5 MB (máximo 12 archivos y 25 MB por solicitud). Enviar la solicitud no confirma la venta ni reserva productos.</div></section>
   <div id="pageStatus" class="panel hint">Cargando productos…</div>
   <form id="saleForm" class="hidden" novalidate>
     <section class="panel">
@@ -68,7 +69,7 @@
         <div class="field"><label for="phone">Teléfono personal *</label><input id="phone" name="phone" type="tel" maxlength="30" autocomplete="tel" placeholder="Ej.: 11 2345 6789" required></div>
         <div class="field"><label for="alternativePhone">Teléfono alternativo *</label><input id="alternativePhone" name="alternative_phone" type="tel" maxlength="30" autocomplete="tel" required></div>
         <div class="field"><label for="alternativeRelationship">Vínculo con el contacto alternativo *</label><input id="alternativeRelationship" name="alternative_contact_relationship" maxlength="100" required></div>
-        <div class="choice-block full"><div class="question">¿Venís recomendado por alguien? *</div><div class="choice-grid"><label class="choice-option"><input type="radio" name="referred_by" value="yes" required><span>Sí</span></label><label class="choice-option"><input type="radio" name="referred_by" value="no" required><span>No</span></label></div></div>
+        <div class="choice-block full"><div class="question">¿Venís recomendado por alguien? *</div><div class="choice-grid"><label class="choice-option"><input type="radio" name="referred_by" value="yes" required><span>Sí</span></label><label class="choice-option"><input type="radio" name="referred_by" value="no" required><span>No</span></label></div></div><div id="referrerFields" class="conditional-panel hidden"></div>
         <div class="choice-block full"><div class="question">¿Sos cliente de Electro Variety? *</div><div class="choice-grid"><label class="choice-option"><input type="radio" name="is_electro_variety_customer" value="yes" required><span>Sí</span></label><label class="choice-option"><input type="radio" name="is_electro_variety_customer" value="no" required><span>No</span></label></div></div>
         <div class="file-grid full">
           <label class="file-drop" for="dniFront"><input class="file-input" id="dniFront" name="dni_front" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><span class="file-plus">＋</span><span><b>Frente de tu DNI *</b><small data-file-name="dniFront">Elegí un archivo de tu dispositivo</small><small>Máximo 5 MB por archivo.</small></span></label>
@@ -84,24 +85,25 @@
         <div class="field"><label for="streetNumber">Altura del domicilio *</label><input id="streetNumber" name="street_number" maxlength="30" inputmode="numeric" placeholder="Ej.: 1234" required></div>
         <div class="field"><label for="betweenStreets">Entre calles *</label><input id="betweenStreets" name="between_streets" maxlength="120" required></div>
         <p class="geo-note full">Sugerencias de ubicación por <a href="https://www.argentina.gob.ar/georef" target="_blank" rel="noopener">Servicio Georef</a>. Podés ingresar los datos manualmente si no aparece una sugerencia.</p>
-        <div class="choice-block full"><div class="question">¿Cuál es tu situación de vivienda? *</div><div class="stacked-choices"><label class="choice-option"><input type="radio" name="housing_situation" value="own" required><span>Vivienda propia</span></label><label class="choice-option"><input type="radio" name="housing_situation" value="rent_contract" required><span>Alquilo por contrato</span></label><label class="choice-option"><input type="radio" name="housing_situation" value="rent_verbal" required><span>Alquilo de palabra</span></label></div></div>
+        <div class="choice-block full"><div class="question">¿Cuál es tu situación de vivienda? *</div><div class="stacked-choices"><label class="choice-option"><input type="radio" name="housing_situation" value="own" required><span>Vivienda propia</span></label><label class="choice-option"><input type="radio" name="housing_situation" value="rent_contract" required><span>Alquilo por contrato</span></label><label class="choice-option"><input type="radio" name="housing_situation" value="rent_verbal" required><span>Alquilo de palabra</span></label></div></div><div id="housingFields" class="conditional-panel hidden"></div>
       </div>
     </section>
     <section class="panel">
       <h2><span class="step-number">03</span>Comprobante de domicilio</h2><p class="hint">Seleccioná los servicios que tengas disponibles.</p>
       <div class="choice-block"><div class="question">¿Qué servicio o comprobante tenés? *</div><div class="check-grid">
         <label class="choice-option"><input type="checkbox" name="proof_services" value="edesur"><span>Edesur</span></label><label class="choice-option"><input type="checkbox" name="proof_services" value="metrogas"><span>Metrogas</span></label><label class="choice-option"><input type="checkbox" name="proof_services" value="water"><span>Agua</span></label><label class="choice-option"><input type="checkbox" name="proof_services" value="other"><span>Otro</span></label><label class="choice-option"><input type="checkbox" name="proof_services" value="none_in_name"><span>Ninguno a mi nombre</span></label>
-      </div><div id="proofServicesStatus" class="status" role="status"></div></div>
+      </div><div id="proofServicesStatus" class="status" role="status"></div></div><div id="proofServiceFields" class="conditional-panel hidden"></div>
     </section>
     <section class="panel">
       <h2><span class="step-number">04</span>Situación financiera</h2>
-      <div class="choice-block"><div class="question">¿Tenés deudas actualmente? *</div><div class="choice-grid"><label class="choice-option"><input type="radio" name="has_debts" value="no" required><span>No</span></label><label class="choice-option"><input type="radio" name="has_debts" value="yes" required><span>Sí</span></label></div></div>
+      <div class="choice-block"><div class="question">¿Tenés deudas actualmente? *</div><div class="choice-grid"><label class="choice-option"><input type="radio" name="has_debts" value="no" required><span>No</span></label><label class="choice-option"><input type="radio" name="has_debts" value="yes" required><span>Sí</span></label></div></div><div id="debtFields" class="conditional-panel hidden"></div>
     </section>
     <section class="panel">
       <h2><span class="step-number">05</span>Trabajo e ingresos</h2><p class="hint">Podés seleccionar varias fuentes de ingresos.</p>
       <div class="check-grid">
         <label class="choice-option"><input type="checkbox" name="income_sources" value="formal_job"><span>Trabajo en blanco</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="informal_job"><span>Trabajo en negro</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="self_employed"><span>Trabajo por cuenta propia</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="business"><span>Tengo un comercio</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="allowance"><span>Cobro una asignación</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="retirement"><span>Cobro una jubilación</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="pension"><span>Cobro una pensión</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="cooperative"><span>Cobro de una cooperativa</span></label><label class="choice-option"><input type="checkbox" name="income_sources" value="other"><span>Otros ingresos</span></label>
       </div>
+      <div id="incomeFields" class="income-panels"></div>
     </section>
     <section class="panel">
       <h2><span class="step-number">06</span>Elegí los productos</h2><p class="hint">Podés seleccionar hasta 10 productos y solicitar hasta 10 unidades de cada uno. Los precios y planes se verifican al enviar la solicitud.</p>
@@ -111,7 +113,7 @@
       <div id="selectionStatus" class="status" role="status"></div>
       <div class="summary"><b>Productos seleccionados</b><span id="selectedCount">0</span></div>
       <div class="field" style="margin-top:15px"><label for="notes">Comentario para el equipo (opcional)</label><textarea id="notes" name="notes" maxlength="1000" rows="3" placeholder="Por ejemplo, horario para contactarte o una consulta sobre el producto."></textarea></div>
-      <label class="privacy"><input id="privacyAccepted" type="checkbox" required><span>Acepto que Electro Variety trate estos datos y documentos para evaluar esta solicitud de compra y contactarme sobre ella. Los archivos del DNI solo estarán disponibles para administradores.</span></label>
+      <label class="privacy"><input id="privacyAccepted" type="checkbox" required><span>Acepto que Electro Variety trate estos datos y documentos para evaluar esta solicitud de compra y contactarme sobre ella. Los datos y adjuntos se almacenan de forma privada y solo pueden revisarlos administradores.</span></label>
       <div id="submitStatus" class="status" role="status" aria-live="polite"></div>
       <button id="submitButton" class="button submit" type="submit">Enviar solicitud de compra</button>
     </section>
@@ -170,6 +172,69 @@
       $("pageStatus").classList.add("error");
     }
   }
+  const conditionalText=(name,label,placeholder="",type="text")=>`<div class="field"><label>${esc(label)} *</label><input name="${esc(name)}" type="${type}" ${type==="tel"?"inputmode=\"tel\"":""} ${type==="text"?"maxlength=\"160\"":""} placeholder="${esc(placeholder)}" required></div>`;
+  const conditionalFile=(name,label,{multiple=false,required=true,accept="image/jpeg,image/png,image/webp,application/pdf"}={})=>`<div class="upload-item"><label>${esc(label)}${required?" *":" (opcional)"}</label><input class="upload-file" type="file" name="attachment:${esc(name)}" accept="${accept}" ${multiple?"multiple":""} ${required?"required":""}><small class="upload-hint">Máximo 5 MB por archivo.${multiple?" Podés seleccionar varios.":""}</small><small class="upload-preview" data-upload-name="${esc(name)}">Ningún archivo seleccionado</small></div>`;
+  function renderConditionalFields(section="all"){
+    if(section==="all"||section==="referrer"){
+    const referrer=document.querySelector('input[name="referred_by"]:checked')?.value;
+    const referrerBox=$("referrerFields");referrerBox.classList.toggle("hidden",referrer!=="yes");
+    referrerBox.innerHTML=referrer==="yes"?`<h3>Datos de quien te recomendó</h3><div class="field-grid">${conditionalText("referrer_full_name","Nombre y apellido de quien te recomendó")}${conditionalText("referrer_phone","Teléfono de quien te recomendó","","tel")}${conditionalText("referrer_relationship","Vínculo con esta persona","Ej.: familiar, amistad")}</div>`:"";
+    }
+    if(section==="all"||section==="housing"){
+    const housing=document.querySelector('input[name="housing_situation"]:checked')?.value;
+    const housingBox=$("housingFields");housingBox.classList.toggle("hidden",housing!=="rent_contract");
+    housingBox.innerHTML=housing==="rent_contract"?`<h3>Contrato de alquiler</h3>${conditionalFile("rental_contract","Foto o PDF del contrato de alquiler")}`:"";
+    }
+    if(section==="all"||section==="proof"){
+    const services=[...document.querySelectorAll('input[name="proof_services"]:checked')].map(input=>input.value),hasProof=services.some(value=>value!=="none_in_name");
+    const proofBox=$("proofServiceFields");proofBox.classList.toggle("hidden",!hasProof);
+    if(!hasProof){proofBox.innerHTML="";proofBox.dataset.rendered="";}
+    else if(proofBox.dataset.rendered!=="yes"){
+      proofBox.innerHTML=`<h3>Comprobante de servicio</h3>${conditionalFile("utility_bill","Foto o PDF de un comprobante de domicilio")}<div class="choice-block" style="margin-top:12px"><div class="question">¿El servicio está a tu nombre? *</div><div class="choice-grid"><label class="choice-option"><input type="radio" name="service_owner" value="yes" required><span>Sí</span></label><label class="choice-option"><input type="radio" name="service_owner" value="no" required><span>No</span></label></div></div><div id="serviceHolderFields"></div>`;
+      proofBox.dataset.rendered="yes";
+    }
+    }
+    if(section==="all"||section==="proof"||section==="holder"){
+    const owner=document.querySelector('input[name="service_owner"]:checked')?.value,holder=$("serviceHolderFields");if(holder)holder.innerHTML=owner==="no"?`<div class="conditional-panel"><h3>Datos del titular del servicio</h3><div class="field-grid">${conditionalText("service_holder_name","Nombre y apellido del titular")}${conditionalText("service_holder_dni","DNI del titular")}${conditionalText("service_holder_relationship","Vínculo con el titular")}</div><div class="file-grid" style="margin-top:10px">${conditionalFile("service_holder_dni_front","Frente del DNI del titular")}${conditionalFile("service_holder_dni_back","Dorso del DNI del titular")}</div></div>`:"";
+    }
+    if(section==="all"||section==="debt"){
+    const debts=document.querySelector('input[name="has_debts"]:checked')?.value,debtsBox=$("debtFields");debtsBox.classList.toggle("hidden",debts!=="yes");
+    debtsBox.innerHTML=debts==="yes"?`<h3>Detalle de tus deudas</h3><div class="field-grid">${conditionalText("debt_reason","Motivo de la deuda","Contanos brevemente")}${conditionalText("debt_amount","Monto aproximado","Pesos","text")}</div>`:"";
+    }
+    if(section==="all"||section==="income"){
+    const sources=[...document.querySelectorAll('input[name="income_sources"]:checked')].map(input=>input.value),sourceInfo={formal_job:["Trabajo en blanco","formal"],informal_job:["Trabajo en negro","informal"],self_employed:["Trabajo por cuenta propia","self"],business:["Tengo un comercio","business"],allowance:["Cobro una asignación","allowance"],retirement:["Cobro una jubilación","retirement"],pension:["Cobro una pensión","pension"],cooperative:["Cobro de una cooperativa","cooperative"],other:["Otros ingresos","other"]};
+    const incomeBox=$("incomeFields");
+    for(const panel of incomeBox.querySelectorAll("[data-income-source]"))if(!sources.includes(panel.dataset.incomeSource))panel.remove();
+    sources.forEach(source=>{const [label,type]=sourceInfo[source];let panel=incomeBox.querySelector(`[data-income-source="${source}"]`);
+      if(panel){incomeBox.append(panel);return;}
+      let extra="";
+      if(type==="formal")extra=conditionalText("occupation_formal","¿A qué te dedicás en tu trabajo?")+conditionalFile("salary_receipt","Recibo de sueldo");
+      if(type==="informal")extra=conditionalText("occupation_informal","¿A qué te dedicás en tu trabajo?")+conditionalText("wallet_provider","Billetera virtual utilizada")+conditionalFile("wallet_statement","Balance mensual de la billetera virtual");
+      if(type==="self")extra=conditionalText("self_employed_activity","¿A qué actividad te dedicás?")+conditionalFile("income_proof_self_employed","Comprobante de ingresos",{required:false});
+      if(type==="business")extra=conditionalText("business_name","Nombre del comercio")+conditionalText("business_activity","Actividad comercial")+conditionalText("business_address","Dirección del comercio")+conditionalText("business_duration","Antigüedad del comercio")+conditionalText("business_revenue","Facturación mensual aproximada")+conditionalText("business_profit","Ganancia mensual aproximada")+conditionalFile("business_photos","Fotografías del comercio",{multiple:true,required:false,accept:"image/jpeg,image/png,image/webp"})+conditionalFile("business_video","Video del comercio",{required:false,accept:"video/mp4,video/quicktime"});
+      if(["allowance","retirement","pension","cooperative"].includes(type))extra=conditionalText(`benefit_${type}`,"Nombre del beneficio o institución")+conditionalFile(`income_proof_${type}`,"Comprobante del ingreso");
+      if(type==="other")extra=conditionalText("other_income_description","Origen del ingreso");
+      const wrapper=document.createElement("div");wrapper.dataset.incomeSource=source;wrapper.className="conditional-panel";wrapper.innerHTML=`<h3>${esc(label)}</h3><div class="field-grid">${conditionalText(`income_${source}`,"Ingreso mensual aproximado","Pesos","text")}${extra}</div>`;incomeBox.append(wrapper);
+    });
+    }
+  }
+  document.addEventListener("change",event=>{
+    if(event.target.matches('input[name="referred_by"]'))renderConditionalFields("referrer");
+    if(event.target.matches('input[name="housing_situation"]'))renderConditionalFields("housing");
+    if(event.target.matches('input[name="proof_services"]'))renderConditionalFields("proof");
+    if(event.target.matches('input[name="has_debts"]'))renderConditionalFields("debt");
+    if(event.target.matches('input[name="income_sources"]'))renderConditionalFields("income");
+    if(event.target.matches('input[name="service_owner"]'))renderConditionalFields("holder");
+    if(event.target.matches('input[type="file"][name^="attachment:"]')){
+      const input=event.target,files=[...input.files],accepted=input.accept.split(",");
+      const bad=files.find(file=>file.size<1||file.size>5*1024*1024||!accepted.includes(file.type));
+      if(bad){input.setCustomValidity(bad.size>5*1024*1024?`“${bad.name}” supera el límite de 5 MB.`:`“${bad.name}” tiene un formato no permitido.`);input.reportValidity();input.value="";}
+      else input.setCustomValidity("");
+      const key=input.name.slice("attachment:".length),label=document.querySelector(`[data-upload-name="${CSS.escape(key)}"]`),selectedFiles=[...input.files];
+      if(label)label.textContent=selectedFiles.length?selectedFiles.map(file=>`${file.name} · ${(file.size/1024/1024).toFixed(2)} MB`).join(" · "):"Ningún archivo seleccionado";
+    }
+  });
+  renderConditionalFields();
   document.querySelectorAll('input[name="proof_services"]').forEach(input=>input.addEventListener("change",()=>{
     const boxes=[...document.querySelectorAll('input[name="proof_services"]')];
     if(input.value==="none_in_name"&&input.checked)boxes.filter(box=>box!==input).forEach(box=>box.checked=false);
@@ -251,6 +316,8 @@
       if(!proofServices.length||(proofServices.includes("none_in_name")&&proofServices.length>1)){
         status.classList.add("error");status.textContent="Elegí al menos un comprobante. Si no tenés ninguno a tu nombre, marcá solo esa opción.";return;
       }
+      const incomeSources=[...document.querySelectorAll('input[name="income_sources"]:checked')].map(input=>input.value);
+      if(!incomeSources.length){status.classList.add("error");status.textContent="Seleccioná al menos una fuente de ingresos y completá los datos que se despliegan.";return;}
       const dni=$("dni").value.trim().replace(/[.\s-]/g,"").toUpperCase();
       if(!/^[A-Z]?\d{7,8}$/.test(dni)){$("dni").setCustomValidity("Ingresá un DNI válido de 7 u 8 números, con letra inicial opcional.");$("dni").reportValidity();return;}
       $("dni").setCustomValidity("");
@@ -273,7 +340,7 @@
         housing_situation:document.querySelector('input[name="housing_situation"]:checked')?.value||"",
         proof_services:proofServices,
         has_debts:document.querySelector('input[name="has_debts"]:checked')?.value||"",
-        income_sources:[...document.querySelectorAll('input[name="income_sources"]:checked')].map(input=>input.value),
+        income_sources:incomeSources,
         notes:$("notes").value,
         privacy_accepted:$("privacyAccepted").checked,
         website:"",
@@ -284,7 +351,14 @@
       formData.delete("proof_services");formData.delete("income_sources");
       values.proof_services.forEach(value=>formData.append("proof_services",value));
       values.income_sources.forEach(value=>formData.append("income_sources",value));
+      const detailFields=new Set(["referrer_full_name","referrer_phone","referrer_relationship","service_owner","service_holder_name","service_holder_dni","service_holder_relationship","debt_reason","debt_amount","occupation_formal","occupation_informal","wallet_provider","self_employed_activity","business_name","business_activity","business_address","business_duration","business_revenue","business_profit","benefit_allowance","benefit_retirement","benefit_pension","benefit_cooperative","other_income_description",...incomeSources.map(source=>`income_${source}`)]);
+      const conditionalDetails={};
+      for(const [key,value] of new FormData($("saleForm")).entries())if(detailFields.has(key)&&typeof value==="string")conditionalDetails[key]=value.trim();
+      formData.set("conditional_details",JSON.stringify(conditionalDetails));
       formData.set("dni_front",frontFile);formData.set("dni_back",backFile);
+      let uploadTotal=frontFile.size+backFile.size,uploadCount=2;
+      for(const input of document.querySelectorAll('input[type="file"][name^="attachment:"]'))for(const file of input.files){uploadTotal+=file.size;uploadCount++;formData.append(input.name,file,file.name);}
+      if(uploadTotal>25*1024*1024||uploadCount>12){status.classList.add("error");status.textContent="Los adjuntos pueden pesar hasta 25 MB en total y ser hasta 12 archivos. Reducí el tamaño o la cantidad e intentá de nuevo.";return;}
       const response=await fetch(`${EV_CONFIG.SUPABASE_URL}/functions/v1/submit-customer-sale-request`,{
         method:"POST",headers:{"apikey":EV_CONFIG.SUPABASE_ANON_KEY},body:formData
       });
@@ -293,8 +367,9 @@
       const ref=String(result.tracking_code||"");
       status.className="status success";
       status.innerHTML=`<b>✅ Solicitud enviada.</b><br>El equipo revisará los productos y te contactará para confirmar la compra. Referencia: <b>${esc(ref)}</b>. Guardá este código por si necesitás mencionarlo al comunicarte con nosotros.`;
-      selected.clear();$("saleForm").reset();renderSelected();
+      selected.clear();$("saleForm").reset();renderConditionalFields();renderSelected();
       document.querySelectorAll("[data-file-name]").forEach(label=>label.textContent="Elegí un archivo de tu dispositivo");
+      document.querySelectorAll("[data-upload-name]").forEach(label=>label.textContent="Ningún archivo seleccionado");
       status.scrollIntoView({behavior:"smooth",block:"center"});
     }catch(error){
       console.error("Solicitud de compra",error);status.className="status error";status.textContent=error.message||"No se pudo enviar la solicitud.";

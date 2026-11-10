@@ -8,8 +8,10 @@ const allowedOrigins = new Set([
   "http://127.0.0.1:5500",
 ]);
 const BUCKET = "customer-sale-private";
-const MAX_BODY_BYTES = 10_700_000;
+const MAX_BODY_BYTES = 26_500_000;
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
+const MAX_TOTAL_FILE_BYTES = 25 * 1024 * 1024;
+const MAX_FILES = 12;
 const MAX_ITEMS = 10;
 const MAX_QUANTITY = 10;
 const proofServiceOptions = new Set(["edesur", "metrogas", "water", "other", "none_in_name"]);
@@ -17,11 +19,23 @@ const incomeOptions = new Set([
   "formal_job", "informal_job", "self_employed", "business", "allowance",
   "retirement", "pension", "cooperative", "other",
 ]);
+const conditionalDetailOptions = new Set([
+  "referrer_full_name", "referrer_phone", "referrer_relationship", "service_owner",
+  "service_holder_name", "service_holder_dni", "service_holder_relationship",
+  "debt_reason", "debt_amount", "occupation_formal", "occupation_informal", "wallet_provider",
+  "self_employed_activity", "business_name", "business_activity", "business_address",
+  "business_duration", "business_revenue", "business_profit", "other_income_description",
+  "income_formal_job", "income_informal_job", "income_self_employed", "income_business",
+  "income_allowance", "income_retirement", "income_pension", "income_cooperative", "income_other",
+  "benefit_allowance", "benefit_retirement", "benefit_pension", "benefit_cooperative",
+]);
 const mimeExtensions: Record<string, string> = {
   "application/pdf": "pdf",
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
+  "video/mp4": "mp4",
+  "video/quicktime": "mov",
 };
 const rateWindows = new Map<string, { start: number; count: number }>();
 
@@ -69,6 +83,13 @@ function moneyAmount(value: unknown): number | null {
   return Number.isSafeInteger(amount) && amount > 0 ? amount : null;
 }
 
+function strictMoneyAmount(value: unknown): number | null {
+  const text = String(value ?? "").trim();
+  if (!/^\d+$/.test(text) && !/^\d{1,3}(?:[.,]\d{3})+$/.test(text)) return null;
+  const amount = Number(text.replace(/[.,]/g, ""));
+  return Number.isSafeInteger(amount) && amount > 0 ? amount : null;
+}
+
 function trackingCode(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(5));
   const token = Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("").toUpperCase();
@@ -96,6 +117,9 @@ function isValidSignature(mime: string, bytes: Uint8Array): boolean {
   if (mime === "image/webp") {
     return new TextDecoder().decode(bytes.slice(0, 4)) === "RIFF" &&
       new TextDecoder().decode(bytes.slice(8, 12)) === "WEBP";
+  }
+  if (mime === "video/mp4" || mime === "video/quicktime") {
+    return bytes.length >= 12 && new TextDecoder().decode(bytes.slice(4, 8)) === "ftyp";
   }
   return false;
 }
@@ -158,6 +182,17 @@ Deno.serve(async (request: Request) => {
   const privacyAccepted = form.get("privacy_accepted") === "true";
   const proofServices = stringChoices(form, "proof_services", proofServiceOptions);
   const incomeSources = stringChoices(form, "income_sources", incomeOptions);
+  let conditionalDetails: Record<string, string> = {};
+  try {
+    const rawDetails = JSON.parse(String(form.get("conditional_details") ?? "{}"));
+    if (!rawDetails || typeof rawDetails !== "object" || Array.isArray(rawDetails)) throw new Error("invalid details");
+    for (const [key, value] of Object.entries(rawDetails as Record<string, unknown>)) {
+      if (!conditionalDetailOptions.has(key) || typeof value !== "string" || value.length > 500) throw new Error("invalid detail field");
+      conditionalDetails[key] = value.trim();
+    }
+  } catch {
+    return respond({ error: "No pudimos leer los datos condicionales del formulario." }, 400, origin);
+  }
   if (!fullName || !dniRaw || !/^[A-Z]?\d{7,8}$/.test(dni) || dniUpdated === null ||
       phone.length < 8 || phone.length > 20 || alternativePhone.length < 8 || alternativePhone.length > 20 ||
       !alternativeRelationship || referredBy === null || isCustomer === null || !locality || !street ||
@@ -166,11 +201,91 @@ Deno.serve(async (request: Request) => {
       (proofServices.includes("none_in_name") && proofServices.length > 1)) {
     return respond({ error: "Revisá los datos obligatorios, el DNI, teléfonos, domicilio y comprobantes." }, 400, origin);
   }
+  if (incomeSources.length < 1) return respond({ error: "Seleccioná al menos una fuente de ingresos." }, 400, origin);
+  const requiredDetails: string[] = [];
+  const hasUtilityProof = proofServices.some(value => value !== "none_in_name");
+  if (referredBy) requiredDetails.push("referrer_full_name", "referrer_phone", "referrer_relationship");
+  if (hasUtilityProof) requiredDetails.push("service_owner");
+  if (hasUtilityProof && !["yes", "no"].includes(conditionalDetails.service_owner ?? "")) {
+    return respond({ error: "Indicá si el comprobante está a tu nombre." }, 400, origin);
+  }
+  if (conditionalDetails.service_owner === "no") requiredDetails.push("service_holder_name", "service_holder_dni", "service_holder_relationship");
+  if (hasDebts) requiredDetails.push("debt_reason", "debt_amount");
+  for (const source of incomeSources) {
+    requiredDetails.push(`income_${source}`);
+    if (source === "formal_job") requiredDetails.push("occupation_formal");
+    if (source === "informal_job") requiredDetails.push("occupation_informal", "wallet_provider");
+    if (source === "self_employed") requiredDetails.push("self_employed_activity");
+    if (source === "business") requiredDetails.push("business_name", "business_activity", "business_address", "business_duration", "business_revenue", "business_profit");
+    if (["allowance", "retirement", "pension", "cooperative"].includes(source)) requiredDetails.push(`benefit_${source}`);
+    if (source === "other") requiredDetails.push("other_income_description");
+  }
+  if (requiredDetails.some(key => !conditionalDetails[key])) {
+    return respond({ error: "Completá los datos adicionales que se desplegaron al elegir tus respuestas." }, 400, origin);
+  }
+  if (conditionalDetails.service_holder_dni && !/^[A-Z]?\d{7,8}$/.test(conditionalDetails.service_holder_dni.replace(/[.\s-]/g, "").toUpperCase())) {
+    return respond({ error: "Revisá el DNI de la persona titular del servicio." }, 400, origin);
+  }
+  const moneyDetailKeys = ["debt_amount", "business_revenue", "business_profit", ...incomeSources.map(source => `income_${source}`)];
+  if (moneyDetailKeys.some(key => conditionalDetails[key] && !strictMoneyAmount(conditionalDetails[key]))) {
+    return respond({ error: "Revisá los montos ingresados; deben ser valores enteros mayores a cero." }, 400, origin);
+  }
   if (!privacyAccepted) return respond({ error: "Aceptá el uso de tus datos y documentos para poder enviar la solicitud." }, 400, origin);
 
   const front = await validateFile(form.get("dni_front"));
   const back = await validateFile(form.get("dni_back"));
   if (!front || !back) return respond({ error: "Adjuntá el frente y el dorso del DNI en PDF, JPG, PNG o WebP (máximo 5 MB cada uno)." }, 400, origin);
+  const attachmentMimeTypes: Record<string, Set<string>> = {
+    rental_contract: new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]),
+    utility_bill: new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]),
+    service_holder_dni_front: new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]),
+    service_holder_dni_back: new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]),
+    salary_receipt: new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]),
+    wallet_statement: new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]),
+    income_proof_self_employed: new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]),
+    income_proof_allowance: new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]),
+    income_proof_retirement: new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]),
+    income_proof_pension: new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]),
+    income_proof_cooperative: new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]),
+    business_photos: new Set(["image/jpeg", "image/png", "image/webp"]),
+    business_video: new Set(["video/mp4", "video/quicktime"]),
+  };
+  const requiredAttachments: string[] = [];
+  if (housingSituation === "rent_contract") requiredAttachments.push("rental_contract");
+  if (hasUtilityProof) requiredAttachments.push("utility_bill");
+  if (hasUtilityProof && conditionalDetails.service_owner === "no") requiredAttachments.push("service_holder_dni_front", "service_holder_dni_back");
+  if (incomeSources.includes("formal_job")) requiredAttachments.push("salary_receipt");
+  if (incomeSources.includes("informal_job")) requiredAttachments.push("wallet_statement");
+  for (const source of ["allowance", "retirement", "pension", "cooperative"]) {
+    if (incomeSources.includes(source)) requiredAttachments.push(`income_proof_${source}`);
+  }
+  const attachmentFiles = new Map<string, Array<{ file: File; bytes: Uint8Array }>>();
+  let totalFileBytes = front.file.size + back.file.size;
+  let totalFileCount = 2;
+  for (const [key, value] of form.entries()) {
+    if (!key.startsWith("attachment:")) continue;
+    const attachmentKey = key.slice("attachment:".length);
+    const allowedTypes = attachmentMimeTypes[attachmentKey];
+    if (!allowedTypes || !(value instanceof File) || !allowedTypes.has(value.type)) {
+      return respond({ error: "Hay un adjunto con un formato no permitido." }, 400, origin);
+    }
+    const validated = await validateFile(value);
+    if (!validated) return respond({ error: `El adjunto «${attachmentKey}» no se pudo validar o supera los 5 MB.` }, 400, origin);
+    const values = attachmentFiles.get(attachmentKey) ?? [];
+    if (values.length > 0 && attachmentKey !== "business_photos") {
+      return respond({ error: "Se adjuntó más de un archivo en un campo individual." }, 400, origin);
+    }
+    values.push(validated);
+    attachmentFiles.set(attachmentKey, values);
+    totalFileBytes += value.size;
+    totalFileCount += 1;
+  }
+  if (requiredAttachments.some(key => !attachmentFiles.has(key))) {
+    return respond({ error: "Falta adjuntar uno o más documentos requeridos por las respuestas elegidas." }, 400, origin);
+  }
+  if (totalFileCount > MAX_FILES || totalFileBytes > MAX_TOTAL_FILE_BYTES) {
+    return respond({ error: "Los adjuntos no pueden superar 12 archivos ni 25 MB en total." }, 413, origin);
+  }
 
   let rawItems: unknown;
   try {
@@ -243,6 +358,7 @@ Deno.serve(async (request: Request) => {
   const frontPath = `dni/${requestId}/front.${mimeExtensions[front.file.type]}`;
   const backPath = `dni/${requestId}/back.${mimeExtensions[back.file.type]}`;
   const uploadedPaths: string[] = [];
+  const documentPaths: Record<string, string | string[]> = {};
   const storage = admin.storage.from(BUCKET);
   try {
     for (const [path, file] of [[frontPath, front], [backPath, back]] as const) {
@@ -253,6 +369,24 @@ Deno.serve(async (request: Request) => {
       });
       if (error) throw error;
       uploadedPaths.push(path);
+    }
+    documentPaths.dni_front = frontPath;
+    documentPaths.dni_back = backPath;
+    for (const [key, files] of attachmentFiles) {
+      const paths: string[] = [];
+      for (const [index, file] of files.entries()) {
+        const suffix = files.length > 1 ? `-${index + 1}` : "";
+        const path = `sale-requests/${requestId}/${key}${suffix}.${mimeExtensions[file.file.type]}`;
+        const { error } = await storage.upload(path, file.bytes, {
+          contentType: file.file.type,
+          cacheControl: "0",
+          upsert: false,
+        });
+        if (error) throw error;
+        uploadedPaths.push(path);
+        paths.push(path);
+      }
+      documentPaths[key] = paths.length === 1 ? paths[0] : paths;
     }
 
     const fullAddress = `${street} ${streetNumber}, entre ${betweenStreets}`.slice(0, 200);
@@ -280,6 +414,8 @@ Deno.serve(async (request: Request) => {
         income_sources: incomeSources,
         dni_front_path: frontPath,
         dni_back_path: backPath,
+        conditional_details: conditionalDetails,
+        document_paths: documentPaths,
         notes: notes ?? "",
         items: snapshots,
         privacy_accepted: true,
