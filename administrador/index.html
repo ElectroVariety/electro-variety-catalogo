@@ -788,7 +788,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     box.textContent = "Cargando vendedores…";
 
     const [sellerResult, roleResult] = await Promise.all([
-      db.from("seller_profiles").select("user_id,name,phone,active,created_at").order("created_at", { ascending: false }),
+      db.from("seller_profiles").select("user_id,name,phone,active,created_at"),
       db.rpc("admin_list_custom_role_candidates")
     ]);
     const { data, error } = sellerResult;
@@ -804,14 +804,15 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     }
 
     const rolesByUser = new Map((roleResult.data || []).map(user => [user.user_id, user]));
-    box.innerHTML = data.map(s => `
+    const sortedSellers = [...data].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "es-AR", { sensitivity: "base" }));
+    box.innerHTML = sortedSellers.map(s => `
       <div class="item seller-list-item">
         <div class="info">
           <b>${verifiedRoleName(s.name, accountRoleLabel(rolesByUser.get(s.user_id) || { account_type: "Vendedor" }), s.user_id)}</b>
           <div class="small">📱 ${esc(s.phone || "Sin número")} · ${s.active ? "🟢 Acceso habilitado" : "🔴 Acceso bloqueado"}</div>
         </div>
         <div class="seller-actions">
-          <button type="button" class="blue" onclick="editSeller('${esc(s.user_id)}',${JSON.stringify(String(s.name || '')).replace(/</g, '\u003c')})">✏️ Editar nombre</button>
+          <button type="button" class="blue" data-edit-seller="${esc(s.user_id)}" data-edit-seller-name="${esc(s.name || '')}">✏️ Editar nombre</button>
           <button type="button" class="dark" data-reset-seller-password="${esc(s.user_id)}" data-reset-seller-name="${esc(s.name || '')}">🔐 Restablecer contraseña</button>
           <button type="button" class="${s.active ? "red" : "blue"}" onclick="toggleSeller('${esc(s.user_id)}',${s.active})">${s.active ? "Desactivar" : "Activar"}</button>
           <button type="button" class="red" onclick="deleteSeller('${esc(s.user_id)}')">🗑️ Eliminar</button>
@@ -962,7 +963,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     if (!box) return;
     box.textContent = "Cargando perfiles…";
     const [sellerResult, roleResult] = await Promise.all([
-      db.from("seller_profiles").select("user_id,name,phone,active,created_at").order("name", { ascending: true }),
+      db.from("seller_profiles").select("user_id,name,phone,active,created_at"),
       currentAccessRole === "admin" ? db.rpc("admin_list_custom_role_candidates") : Promise.resolve({ data: [], error: null })
     ]);
     const { data, error } = sellerResult;
@@ -977,7 +978,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       return;
     }
     const rolesByUser = new Map((roleResult.data || []).map(user => [user.user_id, user]));
-    box.innerHTML = data.map(s => {
+    const sortedSellers = [...data].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "es-AR", { sensitivity: "base" }));
+    box.innerHTML = sortedSellers.map(s => {
       const role = accountRoleLabel(rolesByUser.get(s.user_id) || { account_type: "Vendedor" });
       return `<div class="item"><div class="info"><b>${verifiedRoleName(s.name, role, s.user_id)}</b><div class="small">📱 ${esc(s.phone || "Sin teléfono")} · ${s.active ? "🟢 Activo" : "🔴 Desactivado"}</div><div class="small">Alta: ${s.created_at ? new Date(s.created_at).toLocaleDateString("es-AR") : "—"}</div></div></div>`;
     }).join("");
@@ -1603,8 +1605,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       if (error) throw error;
       if (data !== name) throw new Error("No se confirmó el nombre actualizado.");
       setStatus("sellerStatus", "✅ Nombre actualizado.", "ok");
-      await loadSellers();
-      await loadSellerDevices();
+      await Promise.all([loadSellers(), loadSellerProfiles(), loadSellerDevices(), loadDeviceRequests()]);
     } catch (error) {
       console.error("No se pudo editar el nombre del vendedor", error);
       alert("No se pudo actualizar el nombre del vendedor: " + (error.message || "Error desconocido"));
@@ -1696,7 +1697,11 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const ids = [...new Set(data.map(r => r.user_id))];
     const { data: sellers } = await db.from("seller_profiles").select("user_id,name,phone").in("user_id", ids);
     const map = Object.fromEntries((sellers || []).map(s => [s.user_id, s]));
-    box.innerHTML = data.map(r => {
+    const sortedDevices = [...data].sort((a, b) => {
+      const nameOrder = String(map[a.user_id]?.name || "").localeCompare(String(map[b.user_id]?.name || ""), "es-AR", { sensitivity: "base" });
+      return nameOrder || String(a.device_label || "").localeCompare(String(b.device_label || ""), "es-AR", { sensitivity: "base" });
+    });
+    box.innerHTML = sortedDevices.map(r => {
       const seller = map[r.user_id] || {};
       return `<div class="item"><div class="info"><b>👤 ${verifiedName(seller.name || "Vendedor",seller.user_id)}</b><div class="small">📱 ${esc(seller.phone || "")} · 💻 ${esc(r.device_label || "Dispositivo")} · ${r.active ? "🟢 Autorizado" : "🔴 Revocado"}<br>Último acceso: ${r.last_seen_at ? new Date(r.last_seen_at).toLocaleString('es-AR') : "—"}</div></div><div class="seller-actions">${r.active ? `<button type="button" class="red" onclick="revokeSellerDevice('${r.user_id}')">🚫 Revocar</button>` : ""}</div></div>`;
     }).join("");
@@ -1724,7 +1729,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const ids = [...new Set(data.map(r => r.user_id))];
     const { data: sellers } = await db.from("seller_profiles").select("user_id,name,phone").in("user_id", ids);
     const map = Object.fromEntries((sellers || []).map(s => [s.user_id, s]));
-    box.innerHTML = data.map(r => {
+    const sortedRequests = [...data].sort((a, b) => String(map[a.user_id]?.name || "").localeCompare(String(map[b.user_id]?.name || ""), "es-AR", { sensitivity: "base" }));
+    box.innerHTML = sortedRequests.map(r => {
       const seller = map[r.user_id] || {};
       return `<div class="item"><div class="info"><b>👤 ${verifiedName(seller.name || "Vendedor",seller.user_id)}</b><div class="small">📱 ${esc(seller.phone || "")} · 💻 ${esc(r.device_label || "Dispositivo nuevo")} · ${new Date(r.created_at).toLocaleString('es-AR')}</div></div><div class="seller-actions"><button type="button" class="blue" onclick="approveDeviceRequest('${r.id}')">✅ Aprobar</button><button type="button" class="red" onclick="rejectDeviceRequest('${r.id}')">❌ Rechazar</button></div></div>`;
     }).join("");
@@ -2429,6 +2435,11 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   $("resetButton").addEventListener("click", resetForm);
   $("createSellerButton").addEventListener("click", createSeller);
   $("sellerList").addEventListener("click", event => {
+    const editButton = event.target.closest("[data-edit-seller]");
+    if (editButton) {
+      editSeller(editButton.dataset.editSeller, editButton.dataset.editSellerName);
+      return;
+    }
     const button = event.target.closest("[data-reset-seller-password]");
     if (button) openSellerPasswordReset(button.dataset.resetSellerPassword, button.dataset.resetSellerName);
   });
