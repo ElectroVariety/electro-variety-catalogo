@@ -604,7 +604,7 @@ async function loadSellerActivity(){
 async function loadAssignedSellerActivityProfile(userId){
   if(currentStaffAccess?.role!=="supervisor"||!currentSalesVerified||!userId)return null;
   const {data,error}=await db.rpc("supervisor_get_assigned_catalog_activity_profile",{p_user_id:userId,p_limit:10000});
-  if(error){console.warn("No se pudo consultar el historial de actividad asignado",error);return null}
+  if(error)return null;
   return data||[];
 }
 function renderAssignedSellerActivityProfile(rows){
@@ -1816,7 +1816,7 @@ $("sellerProfileButton").addEventListener("click",openSellerProfile);
 $("onlineStaffToggle").addEventListener("click",toggleOnlineStaffPanel);
 $("onlineStaffClose").addEventListener("click",()=>{closeOnlineStaffPanel();$("onlineStaffToggle").focus()});
 $("onlineStaffBackdrop").addEventListener("click",closeOnlineStaffPanel);
-$("onlineStaffList").addEventListener("click",e=>{const person=e.target.closest("[data-online-profile-id]");if(person)void openOnlineStaffProfile(person.dataset.onlineProfileId)});
+$("onlineStaffList").addEventListener("click",e=>{const person=e.target.closest("[data-online-profile-id]");if(person)void openOnlineStaffProfile(person.dataset.onlineProfileId,currentStaffAccess?.role==="supervisor"&&currentSalesVerified)});
 $("onlineStaffProfileClose").addEventListener("click",()=>closeSellerModal("onlineStaffProfileModal"));
 $("onlineStaffProfileModal").addEventListener("click",e=>{if(e.target===$("onlineStaffProfileModal"))closeSellerModal("onlineStaffProfileModal")});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("onlineStaffPanel").classList.contains("open")){closeOnlineStaffPanel();$("onlineStaffToggle").focus()}});
