@@ -267,6 +267,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .online-profile-metric dd{margin:5px 0 0;color:#111827;font-weight:800;overflow-wrap:anywhere}
 .online-profile-note{margin:12px 0 0;color:#6b7280;font-size:12px}
 .online-profile-activity{margin-top:18px;padding-top:14px;border-top:1px solid #e5e7eb}.online-profile-activity h3{margin:0 0 10px;color:#111827;font-size:17px}.online-profile-activity-day{padding:11px;margin:8px 0;border:1px solid #e5e7eb;border-radius:12px;background:#f9fafb;font-size:12px;color:#4b5563}.online-profile-activity-day b{display:block;margin-bottom:5px;color:#111827;text-transform:capitalize}.seller-activity-profile-link{display:flex;justify-content:space-between;gap:8px;width:100%;padding:0;border:0;background:none;color:#111827;text-align:left;font:inherit;font-weight:800;cursor:pointer}.seller-activity-profile-link:hover{color:#2563eb}
+.online-customer-analytics-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin:12px 0}.online-customer-analytics-controls label{display:grid;gap:4px;min-width:130px;color:#6b7280;font-size:12px}.online-customer-analytics-controls input{max-width:180px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}.online-customer-analytics-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}.online-customer-top-products,.online-customer-daily{margin-top:14px}.online-customer-top-products ol{margin:6px 0;padding-left:22px}.online-customer-daily>.online-profile-activity-day{margin-top:8px}
 @media(max-width:480px){.online-staff-profile-panel{width:100%;max-height:94vh;border-radius:18px 18px 0 0;margin:auto auto 0}.online-profile-metrics{grid-template-columns:1fr}}
 .online-staff-team{margin:6px 0 0 13px;padding-left:8px;border-left:2px solid #dbeafe}
 .online-staff-team h4{margin:7px 0 2px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
@@ -478,7 +479,11 @@ async function openOnlineStaffProfile(userId,includeAssignedActivity=false){
     const photo=photoUrl?`<img class="online-profile-photo" src="${esc(photoUrl)}" alt="Foto de ${esc(row.display_name)}">`:'<div class="online-profile-photo online-profile-placeholder" role="img" aria-label="Sin foto de perfil">👤</div>';
     $("onlineStaffProfileTitle").textContent=`👤 ${row.display_name||"Perfil"}`;
     content.innerHTML=`<div class="online-profile-hero">${photo}<div class="online-profile-role">${esc(row.role_label||"Usuario")}</div><h3 class="online-profile-name">${catalogVerifiedName(row.display_name,row.user_id)}</h3><div class="online-profile-badge">${row.is_verified?"🔵 Insignia verificada":"Sin insignia de verificación"}</div></div><dl class="online-profile-metrics"><div class="online-profile-metric"><dt>Ventas a clientes de Electro Variety</dt><dd>${Number(row.existing_customer_sales)||0}</dd></div><div class="online-profile-metric"><dt>Ventas a clientes nuevos</dt><dd>${Number(row.new_customer_sales)||0}</dd></div><div class="online-profile-metric"><dt>Total de ventas completadas</dt><dd>${Number(row.total_customer_sales)||0}</dd></div><div class="online-profile-metric"><dt>Localidad donde más vendió</dt><dd>${esc(row.top_locality||"Sin datos todavía")}</dd></div><div class="online-profile-metric"><dt>Producto que más vendió</dt><dd>${esc(row.top_product||"Sin datos todavía")}${row.top_product?` · ${Number(row.top_product_units)||0} unidad(es)`:""}</dd></div></dl><p class="online-profile-note">Se cuentan pedidos entregados y confirmados. Los pedidos aún pendientes o cancelados no se incluyen.</p>`;
-    if(includeAssignedActivity){const dailyActivity=await loadAssignedSellerActivityProfile(userId);if(dailyActivity)renderAssignedSellerActivityProfile(dailyActivity)}
+    if(includeAssignedActivity){
+      const [dailyActivity,customerAnalytics]=await Promise.all([loadAssignedSellerActivityProfile(userId),loadAssignedSellerCustomerCatalogAnalytics(userId)]);
+      if(dailyActivity)renderAssignedSellerActivityProfile(dailyActivity);
+      renderAssignedSellerCustomerCatalogAnalyticsProfile(userId,customerAnalytics);
+    }
   }catch(error){content.innerHTML=`<div class="seller-help">No se pudo cargar el perfil: ${esc(error.message||error)}</div>`}
 }
 function closeOnlineStaffPanel(){
@@ -617,6 +622,32 @@ function renderAssignedSellerActivityProfile(rows){
     return `<article class="online-profile-activity-day"><b>${date.toLocaleDateString("es-AR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})}</b><div>${row.is_online?"🟢 En línea":"⚪ Sin sesión activa"} · Primera sesión ${first.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})} · Última sesión ${last.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}</div><div>Tiempo conectado: ${activityDuration(row.duration_seconds)} · Sesiones: ${Number(row.session_count)||0} · Productos compartidos por WhatsApp: ${Number(row.whatsapp_share_count)||0}</div></article>`
   }).join(""));
   content.append(section);
+}
+async function loadAssignedSellerCustomerCatalogAnalytics(userId,from=null,to=null){
+  if(currentStaffAccess?.role!=="supervisor"||!currentSalesVerified||!userId)return {error:"Sin autorización para consultar este enlace."};
+  const {data,error}=await db.rpc("supervisor_get_assigned_customer_catalog_analytics",{p_owner_id:userId,p_from:from,p_to:to});
+  if(error)return {error:error.message};
+  return {row:Array.isArray(data)?data[0]:data};
+}
+function renderAssignedSellerCustomerCatalogAnalyticsProfile(userId,result){
+  const content=$("onlineStaffProfileContent");if(!content)return;
+  const section=document.createElement("section");section.className="online-profile-activity online-customer-analytics";section.dataset.assignedCustomerAnalytics=userId;
+  if(result?.error){section.innerHTML=`<h3>📊 Actividad del catálogo de clientes</h3><div class="seller-help">No se pudieron cargar las métricas: ${esc(result.error)}</div>`;content.append(section);return}
+  const row=result?.row;
+  if(!row){section.innerHTML='<h3>📊 Actividad del catálogo de clientes</h3><div class="seller-help">No hay métricas disponibles.</div>';content.append(section);return}
+  const number=value=>new Intl.NumberFormat("es-AR").format(Number(value)||0);
+  const metrics=[["Visitas al enlace",row.visits],["Personas únicas aprox.",row.unique_visitors],["Consultas de productos",row.product_consults],["Consultas de ubicación / entrega",row.delivery_consults],["Instalaciones detectadas",row.installs],["Notificaciones permitidas",row.notification_grants],["Notificaciones denegadas",row.notification_denials],["Suscripciones Push",row.push_subscriptions]];
+  const products=Array.isArray(row.top_products)?row.top_products:[];
+  const daily=Array.isArray(row.daily_activity)?row.daily_activity:[];
+  section.innerHTML=`<h3>📊 Actividad del catálogo de clientes</h3><div class="seller-help">${row.has_link?"Resumen del enlace personal para el período seleccionado.":"Este vendedor todavía no creó su enlace personal."} Las personas únicas son una estimación y no se registra su IP.</div><div class="online-customer-analytics-controls"><label>Desde<input type="date" data-customer-analytics-from value="${esc(row.period_from)}"></label><label>Hasta<input type="date" data-customer-analytics-to value="${esc(row.period_to)}"></label><button type="button" class="seller-action-button secondary" data-refresh-assigned-customer-analytics="${esc(userId)}">Actualizar métricas</button></div><div class="online-customer-analytics-metrics">${metrics.map(([label,value])=>`<div class="online-profile-metric"><dt>${label}</dt><dd>${number(value)}</dd></div>`).join("")}</div><div class="online-customer-top-products"><b>Productos más consultados</b>${products.length?`<ol>${products.map(item=>`<li>${esc(item.name||"Producto")} · ${number(item.consults)} consulta(s)</li>`).join("")}</ol>`:'<div class="seller-help">Todavía no hay consultas de productos en este período.</div>'}</div><div class="online-customer-daily"><b>Actividad por día</b>${daily.length?daily.map(day=>`<article class="online-profile-activity-day"><b>${new Date(`${day.date}T12:00:00`).toLocaleDateString("es-AR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})}</b><div>Visitas: ${number(day.visits)} · Consultas de productos: ${number(day.product_consults)} · Consultas de ubicación: ${number(day.delivery_consults)}</div><div>Instalaciones: ${number(day.installs)} · Notificaciones permitidas: ${number(day.notification_grants)} · Suscripciones Push: ${number(day.push_subscriptions)} · Denegadas: ${number(day.notification_denials)}</div></article>`).join(""):'<div class="seller-help">Sin actividad en el período seleccionado.</div>'}</div>`;
+  content.append(section);
+}
+async function refreshAssignedSellerCustomerCatalogAnalytics(button){
+  const section=button.closest("[data-assigned-customer-analytics]");if(!section)return;
+  const userId=section.dataset.assignedCustomerAnalytics,from=section.querySelector("[data-customer-analytics-from]")?.value||null,to=section.querySelector("[data-customer-analytics-to]")?.value||null;
+  button.disabled=true;button.textContent="Actualizando…";
+  const result=await loadAssignedSellerCustomerCatalogAnalytics(userId,from,to);
+  const content=$("onlineStaffProfileContent");if(content?.contains(section)){section.remove();renderAssignedSellerCustomerCatalogAnalyticsProfile(userId,result)}
 }
 async function loadSellerTeamProfiles(){
   if(currentStaffAccess?.role!=="supervisor"||!currentSalesVerified)return;
@@ -1817,6 +1848,7 @@ $("onlineStaffToggle").addEventListener("click",toggleOnlineStaffPanel);
 $("onlineStaffClose").addEventListener("click",()=>{closeOnlineStaffPanel();$("onlineStaffToggle").focus()});
 $("onlineStaffBackdrop").addEventListener("click",closeOnlineStaffPanel);
 $("onlineStaffList").addEventListener("click",e=>{const person=e.target.closest("[data-online-profile-id]");if(person)void openOnlineStaffProfile(person.dataset.onlineProfileId,currentStaffAccess?.role==="supervisor"&&currentSalesVerified)});
+$("onlineStaffProfileContent").addEventListener("click",event=>{const button=event.target.closest("[data-refresh-assigned-customer-analytics]");if(button)void refreshAssignedSellerCustomerCatalogAnalytics(button)});
 $("onlineStaffProfileClose").addEventListener("click",()=>closeSellerModal("onlineStaffProfileModal"));
 $("onlineStaffProfileModal").addEventListener("click",e=>{if(e.target===$("onlineStaffProfileModal"))closeSellerModal("onlineStaffProfileModal")});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("onlineStaffPanel").classList.contains("open")){closeOnlineStaffPanel();$("onlineStaffToggle").focus()}});
