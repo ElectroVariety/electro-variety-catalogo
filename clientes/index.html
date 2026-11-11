@@ -129,7 +129,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     </div>
   </div>
 </section>
-  <section id="personalCatalogNotice" class="personal-catalog-notice"><strong>📲 Catálogo de tu vendedor</strong>Elegí un producto para iniciar una consulta privada por WhatsApp.</section>
+  <section id="personalCatalogNotice" class="personal-catalog-notice"><strong>📲 Catálogo de tu vendedor</strong>Elegí un producto para iniciar una consulta privada por WhatsApp. Este enlace registra visitas y acciones de forma seudónima para sus estadísticas; el catálogo no guarda tu IP en esas métricas.</section>
   <section class="delivery-cta">
     <h2>📍 ¿Llegamos a tu domicilio?</h2>
     <p>Usá tu ubicación para comprobar si hacemos entregas en tu zona. Al continuar, autorizás guardar la ubicación de esta consulta.</p>
@@ -212,6 +212,32 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
   let catalogWhatsAppMode="choose";
   let catalogWhatsAppNumber="";
   const personalCatalogToken=new URLSearchParams(location.search).get("ref")||"";
+  const customerAnalyticsPending=new Set();
+  function customerCatalogAnalyticsIds(){
+    if(!personalCatalogToken)return null;
+    try{
+      const visitorKey=`ev-catalog-visitor-${personalCatalogToken}`;
+      const sessionKey=`ev-catalog-session-${personalCatalogToken}`;
+      let visitorId=localStorage.getItem(visitorKey),sessionId=sessionStorage.getItem(sessionKey);
+      if(!visitorId){visitorId=crypto.randomUUID();localStorage.setItem(visitorKey,visitorId);}
+      if(!sessionId){sessionId=crypto.randomUUID();sessionStorage.setItem(sessionKey,sessionId);}
+      return {visitorId,sessionId};
+    }catch(error){console.warn("No se pudo preparar el registro seudónimo del catálogo",error);return null;}
+  }
+  function recordCustomerCatalogAnalyticsEvent(eventType,productId=null){
+    const ids=customerCatalogAnalyticsIds();if(!ids)return;
+    const oneTime=["install","notification_granted","notification_denied","push_subscribed"].includes(eventType);
+    const eventKey=`ev-catalog-event-${personalCatalogToken}-${eventType}`;
+    if(oneTime&&localStorage.getItem(eventKey))return;
+    const pendingKey=`${eventType}:${productId||""}`;if(customerAnalyticsPending.has(pendingKey))return;
+    customerAnalyticsPending.add(pendingKey);
+    db.rpc("record_customer_catalog_analytics_event",{
+      p_token:personalCatalogToken,p_visitor_id:ids.visitorId,p_session_id:ids.sessionId,
+      p_event_type:eventType,p_product_id:productId
+    }).then(({error})=>{if(error)console.warn("No se pudo registrar la actividad del catálogo",error);else if(oneTime)localStorage.setItem(eventKey,"1");})
+      .catch(error=>console.warn("No se pudo registrar la actividad del catálogo",error))
+      .finally(()=>customerAnalyticsPending.delete(pendingKey));
+  }
   let features=[];
   let selectedCategory="";
   let media=[];
@@ -348,6 +374,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
   async function shareCartByWhatsApp(){
     const selected=products.filter(p=>cart.has(String(p.id)));
     if(!selected.length)return;
+    if(personalCatalogToken)selected.forEach(p=>recordCustomerCatalogAnalyticsEvent("product_consult",Number(p.id)));
     const text=`Hola, quiero consultar por estos productos:\n\n${selected.map(p=>p.name||"Producto").join("\n\n")}`;
 
     // Si el administrador configuró WhatsApp directo, NO usamos navigator.share:
@@ -396,6 +423,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
   function openCatalogProductWhatsApp(productId){
     const p=products.find(x=>String(x.id)===String(productId));
     if(!p)return;
+    if(personalCatalogToken)recordCustomerCatalogAnalyticsEvent("product_consult",Number(p.id));
     if(catalogWhatsAppMode==="direct" && catalogWhatsAppNumber){
       window.open(catalogDirectWhatsAppUrl(p),"_blank","noopener");
       return;
@@ -440,6 +468,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
       <button class="detail-wa" type="button" id="detailWhatsApp">💬 CONSULTAR POR WHATSAPP</button>`;
     $("detailBack").onclick=()=>{ history.pushState({},"",location.pathname); renderProductDetail(); };
     $("detailWhatsApp").onclick=()=>{
+      if(personalCatalogToken)recordCustomerCatalogAnalyticsEvent("product_consult",Number(p.id));
       if(personalCatalogToken||notificationWhatsAppMode()==="direct") window.open(directWhatsAppUrl(p),"_blank","noopener");
       else shareProductByWhatsApp(String(p.id));
     };
@@ -556,6 +585,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     const whatsappButton=$("deliveryWhatsApp");
     if(whatsappButton){
       whatsappButton.addEventListener("click",()=>{
+        if(personalCatalogToken)recordCustomerCatalogAnalyticsEvent("delivery_consult");
         const outcome=evaluation?"sujeta a evaluación":"sin cobertura de entrega";
         const details=[locality&&`Localidad: ${locality}`,party&&`Partido: ${party}`].filter(Boolean).join("\n");
         const message=["Hola, quería consultar por una entrega.",`La consulta de cobertura para mi ubicación indicó que está ${outcome}.`,details].filter(Boolean).join("\n\n");
@@ -716,12 +746,14 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
         const permission=Notification.permission;
 
         if(permission==="denied"){
+          if(personalCatalogToken)recordCustomerCatalogAnalyticsEvent("notification_denied");
           showNotice(true,"Cómo activarlas");
           showHelp("El navegador ya tiene bloqueado este permiso. Abrí los ajustes del sitio desde el ícono junto a la dirección web, entrá en Notificaciones y seleccioná Permitir. Después volvé al catálogo.");
           return false;
         }
 
         if(permission==="granted"){
+          if(personalCatalogToken)recordCustomerCatalogAnalyticsEvent("notification_granted");
           showNotice(false);
 
           try{
@@ -754,6 +786,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
             const permission=await Notification.requestPermission();
             if(permission!=="granted"){
               if(permission==="denied"){
+                if(personalCatalogToken)recordCustomerCatalogAnalyticsEvent("notification_denied");
                 showNotice(true,"Cómo activarlas");
                 showHelp("El navegador bloqueó este permiso. Abrí los ajustes del sitio desde el ícono junto a la dirección web, entrá en Notificaciones y seleccioná Permitir. Después volvé al catálogo.");
               }else{
@@ -761,6 +794,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
               }
               return;
             }
+            if(personalCatalogToken)recordCustomerCatalogAnalyticsEvent("notification_granted");
           }
 
           const sub=await getCurrentPushSubscription(reg);
@@ -825,6 +859,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
       p_user_agent:navigator.userAgent
     });
     if(error) throw error;
+    if(personalCatalogToken)recordCustomerCatalogAnalyticsEvent("push_subscribed");
   }
 
   async function load(){
@@ -844,6 +879,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
         catalogWhatsAppMode="direct";
         $("personalCatalogNotice").style.display="block";
         $("saleFormLink").style.display="none";
+        recordCustomerCatalogAnalyticsEvent("visit");
       }else if(!settingsRes.error && settingsRes.data){
         catalogWhatsAppMode=settingsRes.data.catalog_product_click_whatsapp_mode==="direct"?"direct":"choose";
         catalogWhatsAppNumber=String(settingsRes.data.whatsapp_number||"").replace(/\D/g,"");
@@ -896,7 +932,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     if(result?.outcome!=="dismissed") installHelp.hidden=false;
   });
   window.addEventListener("ev-pwa-install-available",()=>{installButton.textContent="📲 Instalar ahora";});
-  window.addEventListener("appinstalled",()=>{ $("installPromo").style.display="none"; });
+  window.addEventListener("appinstalled",()=>{ $("installPromo").style.display="none";if(personalCatalogToken)recordCustomerCatalogAnalyticsEvent("install"); });
   updateInstallCard();
   updateCartBar();
   window.addEventListener("popstate",renderProductDetail);
