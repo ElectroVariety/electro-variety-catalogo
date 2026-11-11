@@ -450,7 +450,7 @@ function renderOnlineStaffRanking(rows){
   const monthLabel=formatOnlineMonthEnd();const rankingTitle=$("onlineStaffRanking")?.querySelector("h2");if(rankingTitle)rankingTitle.textContent=`🏆 Ranking mensual · Cierra el ${monthLabel}`;
   const renderGroup=(category,targetId,title)=>{
     const target=$(targetId),items=(rows||[]).filter(row=>row.category===category).slice(0,5);
-    const prize=`Premio para quien termine primero: $100.000`;
+    const prize=`Premio para quien termine primero: $200.000`;
     target.innerHTML=`<div class="online-ranking-group"><h3>${title}</h3><p class="online-ranking-prize">${prize}</p>${items.length?items.map(row=>`<div class="online-ranking-row"><strong>${Number(row.ranking_position)===1?"🏆":"#"+Number(row.ranking_position)}</strong><span>${catalogVerifiedName(row.display_name,row.seller_id)} · ${esc(row.role_label||"Usuario")}</span><span class="online-ranking-count">${Number(row.sale_count)} ventas</span></div>`).join(""):'<div class="seller-help">Todavía no hay ventas completadas en esta categoría este mes.</div>'}</div>`;
   };
   renderGroup("new","onlineStaffRankingNew","Clientes nuevos");
