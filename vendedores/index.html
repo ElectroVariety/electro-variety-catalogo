@@ -170,7 +170,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 <div id="sellerActivityModal" class="cart-modal seller-modal" aria-hidden="true">
   <div class="cart-panel seller-sales-panel" role="dialog" aria-modal="true" aria-labelledby="sellerActivityTitle">
     <div class="cart-head"><h2 id="sellerActivityTitle">🕘 Actividad de mis vendedores</h2><button id="sellerActivityClose" class="cart-close" type="button" aria-label="Cerrar">×</button></div>
-    <p class="seller-help">Sesiones del catálogo de vendedores de las personas asignadas a tu equipo. El tiempo de sesiones cerradas inesperadamente se estima hasta la última señal registrada.</p>
+    <p class="seller-help">Actividad de hoy de tus vendedores asignados. Abrí una persona para consultar su perfil y el historial de cada día. El tiempo de sesiones cerradas inesperadamente se estima hasta la última señal registrada.</p>
     <button id="sellerActivityRefresh" class="seller-action-button secondary" type="button">Actualizar actividad</button>
     <div id="sellerActivityStatus" class="seller-help" role="status"></div>
     <div id="sellerActivityList" class="seller-sales-history">Cargando…</div>
@@ -266,6 +266,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .online-profile-metric dt{color:#6b7280;font-size:12px}
 .online-profile-metric dd{margin:5px 0 0;color:#111827;font-weight:800;overflow-wrap:anywhere}
 .online-profile-note{margin:12px 0 0;color:#6b7280;font-size:12px}
+.online-profile-activity{margin-top:18px;padding-top:14px;border-top:1px solid #e5e7eb}.online-profile-activity h3{margin:0 0 10px;color:#111827;font-size:17px}.online-profile-activity-day{padding:11px;margin:8px 0;border:1px solid #e5e7eb;border-radius:12px;background:#f9fafb;font-size:12px;color:#4b5563}.online-profile-activity-day b{display:block;margin-bottom:5px;color:#111827;text-transform:capitalize}.seller-activity-profile-link{display:flex;justify-content:space-between;gap:8px;width:100%;padding:0;border:0;background:none;color:#111827;text-align:left;font:inherit;font-weight:800;cursor:pointer}.seller-activity-profile-link:hover{color:#2563eb}
 @media(max-width:480px){.online-staff-profile-panel{width:100%;max-height:94vh;border-radius:18px 18px 0 0;margin:auto auto 0}.online-profile-metrics{grid-template-columns:1fr}}
 .online-staff-team{margin:6px 0 0 13px;padding-left:8px;border-left:2px solid #dbeafe}
 .online-staff-team h4{margin:7px 0 2px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
@@ -465,7 +466,7 @@ async function loadOnlineStaffRanking(){
   if(error){$("onlineStaffRankingNew").innerHTML=`<div class="seller-help">No se pudo cargar el ranking: ${esc(error.message)}</div>`;return}
   renderOnlineStaffRanking(data||[]);
 }
-async function openOnlineStaffProfile(userId){
+async function openOnlineStaffProfile(userId,includeAssignedActivity=false){
   if(!canViewCatalogStaffProfiles()||!userId)return;
   const content=$("onlineStaffProfileContent");content.innerHTML='<div class="seller-help">Cargando perfil…</div>';openSellerModal("onlineStaffProfileModal");
   try{
@@ -477,6 +478,7 @@ async function openOnlineStaffProfile(userId){
     const photo=photoUrl?`<img class="online-profile-photo" src="${esc(photoUrl)}" alt="Foto de ${esc(row.display_name)}">`:'<div class="online-profile-photo online-profile-placeholder" role="img" aria-label="Sin foto de perfil">👤</div>';
     $("onlineStaffProfileTitle").textContent=`👤 ${row.display_name||"Perfil"}`;
     content.innerHTML=`<div class="online-profile-hero">${photo}<div class="online-profile-role">${esc(row.role_label||"Usuario")}</div><h3 class="online-profile-name">${catalogVerifiedName(row.display_name,row.user_id)}</h3><div class="online-profile-badge">${row.is_verified?"🔵 Insignia verificada":"Sin insignia de verificación"}</div></div><dl class="online-profile-metrics"><div class="online-profile-metric"><dt>Ventas a clientes de Electro Variety</dt><dd>${Number(row.existing_customer_sales)||0}</dd></div><div class="online-profile-metric"><dt>Ventas a clientes nuevos</dt><dd>${Number(row.new_customer_sales)||0}</dd></div><div class="online-profile-metric"><dt>Total de ventas completadas</dt><dd>${Number(row.total_customer_sales)||0}</dd></div><div class="online-profile-metric"><dt>Localidad donde más vendió</dt><dd>${esc(row.top_locality||"Sin datos todavía")}</dd></div><div class="online-profile-metric"><dt>Producto que más vendió</dt><dd>${esc(row.top_product||"Sin datos todavía")}${row.top_product?` · ${Number(row.top_product_units)||0} unidad(es)`:""}</dd></div></dl><p class="online-profile-note">Se cuentan pedidos entregados y confirmados. Los pedidos aún pendientes o cancelados no se incluyen.</p>`;
+    if(includeAssignedActivity){const dailyActivity=await loadAssignedSellerActivityProfile(userId);if(dailyActivity)renderAssignedSellerActivityProfile(dailyActivity)}
   }catch(error){content.innerHTML=`<div class="seller-help">No se pudo cargar el perfil: ${esc(error.message||error)}</div>`}
 }
 function closeOnlineStaffPanel(){
@@ -590,14 +592,31 @@ function activityDuration(seconds){
 async function loadSellerActivity(){
   const list=$("sellerActivityList"),status=$("sellerActivityStatus");
   list.textContent="Cargando actividad…";status.textContent="";
-  const {data,error}=await db.rpc("supervisor_list_assigned_catalog_daily_activity",{p_limit:2000});
+  const {data,error}=await db.rpc("supervisor_list_assigned_catalog_current_daily_activity",{p_limit:2000});
   if(error){list.textContent="No se pudo cargar la actividad: "+error.message;return}
   const rows=data||[];
   list.innerHTML=rows.length?rows.map(row=>{
     const first=new Date(row.first_session_at),last=new Date(row.last_session_at),day=new Date(`${row.activity_date}T12:00:00`);
-    return `<article class="seller-sale-card"><h3>${catalogVerifiedName(row.display_name||"Sin nombre",row.user_id)} · ${esc(row.role_label||"Usuario")}</h3><div class="sale-date">${day.toLocaleDateString("es-AR")} · Primera sesión ${first.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})} · Última sesión ${last.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}</div><div class="sale-date">${row.is_online?"🟢 En línea":"⚪ Sin sesión activa"} · Tiempo acumulado: ${activityDuration(row.duration_seconds)} · Productos compartidos por WhatsApp: ${Number(row.whatsapp_share_count)||0}</div></article>`
+    return `<article class="seller-sale-card"><button type="button" class="seller-activity-profile-link" data-open-assigned-activity-profile="${esc(row.user_id)}">${catalogVerifiedName(row.display_name||"Sin nombre",row.user_id)} · ${esc(row.role_label||"Usuario")} <span aria-hidden="true">›</span></button><div class="sale-date">Hoy · Primera sesión ${first.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})} · Última sesión ${last.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}</div><div class="sale-date">${row.is_online?"🟢 En línea":"⚪ Sin sesión activa"} · Tiempo acumulado: ${activityDuration(row.duration_seconds)} · Productos compartidos por WhatsApp: ${Number(row.whatsapp_share_count)||0} · Sesiones: ${Number(row.session_count)||0}</div><div class="sale-date">Ver perfil e historial diario →</div></article>`
   }).join(""):'<div class="seller-help">No hay actividad registrada para tus vendedores asignados.</div>';
-  status.textContent=`${rows.length} registro(s) diarios cargados.`;
+  status.textContent=`${rows.length} usuario(s) con actividad hoy.`;
+}
+async function loadAssignedSellerActivityProfile(userId){
+  if(currentStaffAccess?.role!=="supervisor"||!currentSalesVerified||!userId)return null;
+  const {data,error}=await db.rpc("supervisor_get_assigned_catalog_activity_profile",{p_user_id:userId,p_limit:10000});
+  if(error){console.warn("No se pudo consultar el historial de actividad asignado",error);return null}
+  return data||[];
+}
+function renderAssignedSellerActivityProfile(rows){
+  const content=$("onlineStaffProfileContent");if(!content)return;
+  const section=document.createElement("section");section.className="online-profile-activity";
+  section.innerHTML='<h3>🕘 Actividad diaria del catálogo</h3>';
+  if(!rows.length)section.insertAdjacentHTML("beforeend",'<div class="seller-help">Todavía no hay actividad diaria registrada.</div>');
+  else section.insertAdjacentHTML("beforeend",rows.map(row=>{
+    const first=new Date(row.first_session_at),last=new Date(row.last_session_at),date=new Date(`${row.activity_date}T12:00:00`);
+    return `<article class="online-profile-activity-day"><b>${date.toLocaleDateString("es-AR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})}</b><div>${row.is_online?"🟢 En línea":"⚪ Sin sesión activa"} · Primera sesión ${first.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})} · Última sesión ${last.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}</div><div>Tiempo conectado: ${activityDuration(row.duration_seconds)} · Sesiones: ${Number(row.session_count)||0} · Productos compartidos por WhatsApp: ${Number(row.whatsapp_share_count)||0}</div></article>`
+  }).join(""));
+  content.append(section);
 }
 async function loadSellerTeamProfiles(){
   if(currentStaffAccess?.role!=="supervisor"||!currentSalesVerified)return;
@@ -609,7 +628,7 @@ async function loadSellerTeamProfiles(){
   const paths=[...new Set(rows.map(row=>row.photo_path).filter(Boolean))];
   if(paths.length){const signed=await db.storage.from("staff-profile-photos").createSignedUrls(paths,1800);if(!signed.error)photoMap=new Map((signed.data||[]).map(item=>[item.path,item.signedUrl]))}
   const genderName={female:"Femenino",male:"Masculino",non_binary:"No binario",other:"Otro",prefer_not_to_say:"Prefiere no decirlo"};
-  box.innerHTML=rows.length?rows.map(row=>`<article class="ev-profile-card"><div class="identity">${photoMap.get(row.photo_path)?`<img src="${esc(photoMap.get(row.photo_path))}" alt="Foto de ${esc(row.full_name)}">`:'<div class="ev-profile-avatar-placeholder" aria-label="Sin foto de perfil">👤</div>'}<span class="role">${esc(row.role_label)}</span><h3>${catalogVerifiedName(row.full_name,row.user_id)}</h3></div><dl><div><dt>DNI</dt><dd>${esc(row.dni)}</dd></div><div><dt>Fecha de nacimiento</dt><dd>${new Date(`${row.birth_date}T12:00:00`).toLocaleDateString("es-AR")}</dd></div><div><dt>Género</dt><dd>${esc(genderName[row.gender]||row.gender)}</dd></div><div><dt>Teléfono</dt><dd><a href="tel:${esc(row.phone)}">${esc(row.phone)}</a></dd></div></dl></article>`).join(""):'<div class="seller-help">Tus vendedores todavía no completaron sus perfiles.</div>';
+  box.innerHTML=rows.length?rows.map(row=>`<article class="ev-profile-card"><div class="identity">${photoMap.get(row.photo_path)?`<img src="${esc(photoMap.get(row.photo_path))}" alt="Foto de ${esc(row.full_name)}">`:'<div class="ev-profile-avatar-placeholder" aria-label="Sin foto de perfil">👤</div>'}<span class="role">${esc(row.role_label)}</span><h3>${catalogVerifiedName(row.full_name,row.user_id)}</h3></div><dl><div><dt>DNI</dt><dd>${esc(row.dni)}</dd></div><div><dt>Fecha de nacimiento</dt><dd>${new Date(`${row.birth_date}T12:00:00`).toLocaleDateString("es-AR")}</dd></div><div><dt>Género</dt><dd>${esc(genderName[row.gender]||row.gender)}</dd></div><div><dt>Teléfono</dt><dd><a href="tel:${esc(row.phone)}">${esc(row.phone)}</a></dd></div></dl><button type="button" class="seller-action-button secondary" data-open-assigned-activity-profile="${esc(row.user_id)}">Ver perfil y actividad diaria</button></article>`).join(""):'<div class="seller-help">Tus vendedores todavía no completaron sus perfiles.</div>';
   status.textContent=`${rows.length} perfil(es) de vendedores asignados.`;
 }
 function openSellerTeamProfiles(){
@@ -949,7 +968,7 @@ async function startCatalog(seller=null,staffAccess=currentStaffAccess,staffName
   $("sellerSalesButton").style.display=seller?"":"none";
   $("sellerNewSaleButton").style.display=seller?"":"none";
   $("sellerTeamButton").style.display=canViewTeam?"":"none";
-  const canViewTeamActivity=staffAccess?.role==="supervisor";
+  const canViewTeamActivity=staffAccess?.role==="supervisor"&&currentSalesVerified;
   $("sellerActivityButton").style.display=canViewTeamActivity?"":"none";
   $("sellerTeamProfilesButton").style.display=staffAccess?.role==="supervisor"&&currentSalesVerified?"":"none";
   if(currentUserId)startCatalogActivitySession().catch(error=>console.warn("No se pudo iniciar la actividad",error));
@@ -1824,6 +1843,8 @@ $("sellerActivityButton").addEventListener("click",openSellerActivity);
 $("sellerActivityClose").addEventListener("click",()=>closeSellerModal("sellerActivityModal"));
 $("sellerActivityModal").addEventListener("click",e=>{if(e.target===$("sellerActivityModal"))closeSellerModal("sellerActivityModal")});
 $("sellerActivityRefresh").addEventListener("click",loadSellerActivity);
+$("sellerActivityList").addEventListener("click",event=>{const button=event.target.closest("[data-open-assigned-activity-profile]");if(button)void openOnlineStaffProfile(button.dataset.openAssignedActivityProfile,true)});
+$("sellerTeamProfilesList").addEventListener("click",event=>{const button=event.target.closest("[data-open-assigned-activity-profile]");if(button)void openOnlineStaffProfile(button.dataset.openAssignedActivityProfile,true)});
 $("sellerTeamProfilesButton").addEventListener("click",openSellerTeamProfiles);
 $("sellerTeamProfilesClose").addEventListener("click",()=>closeSellerModal("sellerTeamProfilesModal"));
 $("sellerTeamProfilesModal").addEventListener("click",e=>{if(e.target===$("sellerTeamProfilesModal"))closeSellerModal("sellerTeamProfilesModal")});
