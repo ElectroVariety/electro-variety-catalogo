@@ -90,6 +90,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
 .delivery-cta{background:#fff;border:1px solid #dbeafe;border-radius:18px;padding:16px;margin:0 0 16px;box-shadow:0 4px 14px rgba(0,0,0,.05)}
 .delivery-cta h2{margin:0 0 7px;font-size:19px;font-weight:1000}.delivery-cta p{margin:0 0 12px;color:#6b7280;font-size:13px;line-height:1.4}
 .delivery-btn{width:100%;border:0;border-radius:999px;background:#2563eb;color:#fff;padding:13px 16px;font-size:14px;font-weight:1000;cursor:pointer}
+.personal-catalog-notice{display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:13px 15px;margin:0 0 14px;color:#1e3a8a;font-size:13px;line-height:1.45}.personal-catalog-notice strong{display:block;margin-bottom:3px}
 .welcome-promo{position:relative;overflow:hidden;background:linear-gradient(125deg,#111827 0%,#1e3a8a 62%,#2563eb 100%);color:#fff;border-radius:22px;padding:22px;margin:0 0 16px;box-shadow:0 12px 28px rgba(30,58,138,.22)}.welcome-promo:before{content:"";position:absolute;width:210px;height:210px;border-radius:50%;background:rgba(255,255,255,.07);right:-70px;top:-105px}.welcome-promo-head,.welcome-promo-grid{position:relative;z-index:1}.welcome-promo-badge{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.1);border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;letter-spacing:.4px}.welcome-promo h2{font-size:23px;line-height:1.12;margin:12px 0 7px}.welcome-promo-intro{max-width:700px;margin:0;color:#e5e7eb;font-size:14px;line-height:1.45}.welcome-promo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:11px;margin-top:17px}.promo-action{min-width:0;background:#fff;color:#111827;border-radius:16px;padding:15px}.promo-action h3{font-size:16px;margin:0 0 6px}.promo-action p{font-size:12px;line-height:1.4;color:#5b6472;margin:0 0 11px}.promo-action button{width:100%;border:0;border-radius:11px;padding:12px 10px;font-size:13px;font-weight:1000;cursor:pointer}.promo-install-button{background:#16a34a;color:#fff}.promo-push-button{background:#2563eb;color:#fff}.promo-help{font-size:12px;line-height:1.45;color:#374151;background:#f3f4f6;border-radius:10px;padding:10px;margin:10px 0 0}.promo-help[hidden]{display:none!important}.promo-push-copy{font-size:12px;line-height:1.4;color:#5b6472;margin:0 0 11px}.promo-push-copy b{display:block;color:#111827;font-size:16px;margin-bottom:6px}
 @media(max-width:620px){.welcome-promo{padding:18px}.welcome-promo h2{font-size:21px}.welcome-promo-grid{grid-template-columns:1fr;gap:9px}.promo-action{padding:13px}}
 .delivery-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:100;display:none;align-items:center;justify-content:center;padding:12px}
@@ -128,6 +129,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     </div>
   </div>
 </section>
+  <section id="personalCatalogNotice" class="personal-catalog-notice"><strong>📲 Catálogo de tu vendedor</strong>Elegí un producto para iniciar una consulta privada por WhatsApp.</section>
   <section class="delivery-cta">
     <h2>📍 ¿Llegamos a tu domicilio?</h2>
     <p>Usá tu ubicación para comprobar si hacemos entregas en tu zona. Al continuar, autorizás guardar la ubicación de esta consulta.</p>
@@ -136,7 +138,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
   <section class="hero">
     <h1>¿QUÉ ESTÁS NECESITANDO?</h1>
     <p>Elegí una categoría y descubrí nuestros productos.</p>
-    <a href="../ventas/" style="display:inline-block;margin-top:13px;padding:11px 16px;border-radius:999px;background:#16a34a;color:#fff;text-decoration:none;font-size:13px;font-weight:1000">🛍️ Completar solicitud de compra</a>
+    <a id="saleFormLink" href="../ventas/" style="display:inline-block;margin-top:13px;padding:11px 16px;border-radius:999px;background:#16a34a;color:#fff;text-decoration:none;font-size:13px;font-weight:1000">🛍️ Completar solicitud de compra</a>
     <div class="search-wrap">
       <input id="searchInput" class="search-input" type="search" autocomplete="off" placeholder="¿Qué producto estás buscando?" aria-label="Buscar producto">
       <span class="search-icon">🔍</span>
@@ -209,6 +211,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
   let products=[];
   let catalogWhatsAppMode="choose";
   let catalogWhatsAppNumber="";
+  const personalCatalogToken=new URLSearchParams(location.search).get("ref")||"";
   let features=[];
   let selectedCategory="";
   let media=[];
@@ -388,7 +391,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
 
   function notificationWhatsAppMode(){try{return new URLSearchParams(location.search).get("wa")==="direct"?"direct":"choose";}catch(_){return "choose";}}
   function notificationWhatsAppNumber(){try{return String(new URLSearchParams(location.search).get("wa_num")||"").replace(/\D/g,"");}catch(_){return "";}}
-  function directWhatsAppUrl(p){const number=notificationWhatsAppNumber();return number?`https://wa.me/${number}?text=${encodeURIComponent(waText(p))}`:waLink(p);}
+  function directWhatsAppUrl(p){const number=personalCatalogToken?catalogWhatsAppNumber:notificationWhatsAppNumber();return number?`https://wa.me/${number}?text=${encodeURIComponent(waText(p))}`:waLink(p);}
   function catalogDirectWhatsAppUrl(p){return catalogWhatsAppNumber?`https://wa.me/${catalogWhatsAppNumber}?text=${encodeURIComponent(waText(p))}`:waLink(p);}
   function openCatalogProductWhatsApp(productId){
     const p=products.find(x=>String(x.id)===String(productId));
@@ -437,7 +440,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
       <button class="detail-wa" type="button" id="detailWhatsApp">💬 CONSULTAR POR WHATSAPP</button>`;
     $("detailBack").onclick=()=>{ history.pushState({},"",location.pathname); renderProductDetail(); };
     $("detailWhatsApp").onclick=()=>{
-      if(notificationWhatsAppMode()==="direct") window.open(directWhatsAppUrl(p),"_blank","noopener");
+      if(personalCatalogToken||notificationWhatsAppMode()==="direct") window.open(directWhatsAppUrl(p),"_blank","noopener");
       else shareProductByWhatsApp(String(p.id));
     };
   }
@@ -826,14 +829,22 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
 
   async function load(){
     try{
-      const [pRes,fRes,mRes,settingsRes]=await Promise.all([
+      const [pRes,fRes,mRes,settingsRes,referralRes]=await Promise.all([
         db.from("products").select("id,name,subtitle,category,image_url,active,stock,q_price,q_count,m_price,m_count").eq("active",true),
         db.from("client_product_features").select("product_id,trending,new_entry,coming_soon"),
         db.from("client_media").select("id,media_url,media_type,title,sort_order,created_at").eq("active",true).order("sort_order",{ascending:true}),
-        db.from("client_notification_settings").select("whatsapp_number,catalog_product_click_whatsapp_mode").eq("id",1).maybeSingle()
+        db.from("client_notification_settings").select("whatsapp_number,catalog_product_click_whatsapp_mode").eq("id",1).maybeSingle(),
+        personalCatalogToken?db.rpc("resolve_customer_catalog_whatsapp",{p_token:personalCatalogToken}):Promise.resolve({data:null,error:null})
       ]);
       if(pRes.error)throw pRes.error;
-      if(!settingsRes.error && settingsRes.data){
+      if(personalCatalogToken){
+        if(referralRes.error)throw referralRes.error;
+        catalogWhatsAppNumber=String(referralRes.data||"").replace(/\D/g,"");
+        if(catalogWhatsAppNumber.length<8)throw new Error("El enlace no está habilitado o el usuario verificado no tiene un WhatsApp válido.");
+        catalogWhatsAppMode="direct";
+        $("personalCatalogNotice").style.display="block";
+        $("saleFormLink").style.display="none";
+      }else if(!settingsRes.error && settingsRes.data){
         catalogWhatsAppMode=settingsRes.data.catalog_product_click_whatsapp_mode==="direct"?"direct":"choose";
         catalogWhatsAppNumber=String(settingsRes.data.whatsapp_number||"").replace(/\D/g,"");
       }
@@ -847,6 +858,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
       renderProductDetail();
     }catch(error){
       console.error(error);
+      if(personalCatalogToken){$("saleFormLink").style.display="none";$("personalCatalogNotice").style.display="block";$("personalCatalogNotice").innerHTML=`<strong>⚠️ Este enlace personal no está disponible</strong>${esc(error.message||"El usuario no tiene una insignia activa o un WhatsApp configurado.")}`;}
       $("products").innerHTML=`<div class="empty" style="grid-column:1/-1">No se pudo cargar el catálogo. Intentá nuevamente en unos segundos.</div>`;
     }
   }

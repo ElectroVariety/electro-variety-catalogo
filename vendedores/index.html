@@ -115,7 +115,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
     <label class="seller-field">Nueva contraseña<input id="sellerPassword" type="password" autocomplete="new-password"></label>
     <label class="seller-field">Repetir contraseña<input id="sellerPasswordConfirm" type="password" autocomplete="new-password"></label>
     <button id="sellerPasswordSave" class="seller-action-button" type="button">Actualizar contraseña</button>
-    <div id="customerSaleReferralPanel"><hr><h3>🔗 Tu enlace permanente de ventas</h3><p class="seller-help">Este enlace es único, queda guardado en tu perfil y no vence. Compartilo con tus clientes; las solicitudes aparecerán en tu cuenta.</p><div class="profile-name-preview"><input id="customerSaleReferralUrl" type="text" readonly aria-label="Enlace permanente de solicitudes"><button id="createCustomerSaleReferral" class="seller-action-button" type="button">Copiar enlace</button></div></div>
+    <div id="customerSaleReferralPanel"><hr><h3>🔗 Enlaces para compartir con clientes</h3><p class="seller-help">Estos enlaces permanentes usan tu token único y solo funcionan mientras tengas la insignia de verificación.</p><h4>Formulario de solicitud de compra</h4><div class="profile-name-preview"><input id="customerSaleReferralUrl" type="text" readonly aria-label="Enlace permanente del formulario de ventas"><button id="createCustomerSaleReferral" class="seller-action-button" type="button">Copiar formulario</button></div><h4>Catálogo para consultas por WhatsApp</h4><p class="seller-help">Tus clientes pueden elegir productos y abrir directamente un chat privado con tu WhatsApp.</p><div class="profile-name-preview"><input id="customerCatalogReferralUrl" type="text" readonly aria-label="Enlace permanente del catálogo personal"><button id="copyCustomerCatalogReferral" class="seller-action-button" type="button">Copiar catálogo</button></div></div>
     <div id="sellerProfileStatus" class="seller-status" role="status"></div>
   </div>
 </div>
@@ -322,6 +322,7 @@ let currentSeller=null;
 let currentSellerId=null;
 let currentStaffAccess=null;
 let currentSalesVerified=false;
+let currentUserHasSalesBadge=false;
 let currentUserId=null;
 let currentStaffProfileName="";
 let afterFirstLoginSetup=null;
@@ -657,7 +658,7 @@ function showLogin(message=""){
   $("tools").style.display="none";
   $("sellerActions").style.display="none";
   currentSeller=null;currentSellerId=null;
-  currentStaffAccess=null;currentSalesVerified=false;currentUserId=null;currentStaffProfileName="";afterFirstLoginSetup=null;afterVerifiedProfileSetup=null;currentVerifiedCatalogProfile=null;
+  currentStaffAccess=null;currentSalesVerified=false;currentUserHasSalesBadge=false;currentUserId=null;currentStaffProfileName="";afterFirstLoginSetup=null;afterVerifiedProfileSetup=null;currentVerifiedCatalogProfile=null;
   $("sellerProfileModal").style.display="none";$("sellerProfileModal").setAttribute("aria-hidden","true");
   $("sellerSalesModal").style.display="none";$("sellerSalesModal").setAttribute("aria-hidden","true");
   $("sellerTeamModal").style.display="none";$("sellerTeamModal").setAttribute("aria-hidden","true");
@@ -867,12 +868,10 @@ async function handleSession(session, mode="restore"){
     if(accessError){console.warn("No se pudo verificar el rol",accessError);retrySessionCheck(mode);return}
     currentStaffAccess=accessRows?.[0]||null;
     currentUserId=session.user.id;
-    currentSalesVerified=currentStaffAccess?.role==="admin";
-    if(!currentSalesVerified){
-      const {data:verification,error:verificationError}=await db.from("staff_sales_verifications").select("is_verified").eq("user_id",session.user.id).maybeSingle();
-      if(verificationError){console.warn("No se pudo verificar la insignia de ventas",verificationError);retrySessionCheck(mode);return}
-      currentSalesVerified=verification?.is_verified===true;
-    }
+    const {data:verification,error:verificationError}=await db.from("staff_sales_verifications").select("is_verified").eq("user_id",session.user.id).maybeSingle();
+    if(verificationError){console.warn("No se pudo verificar la insignia de ventas",verificationError);retrySessionCheck(mode);return}
+    currentUserHasSalesBadge=verification?.is_verified===true;
+    currentSalesVerified=currentStaffAccess?.role==="admin"||currentUserHasSalesBadge;
     if(currentStaffAccess?.role==="custom"){
       const {data:stockPermissions,error:stockPermissionsError}=await db.rpc("get_my_stock_role_permissions");
       if(stockPermissionsError){console.warn("No se pudieron verificar los permisos de stock",stockPermissionsError);retrySessionCheck(mode);return}
@@ -1136,7 +1135,7 @@ async function openSellerProfile(){
     catch(error){$("sellerProfileStatus").textContent="No se pudieron cargar tus datos: "+(error.message||error)}
   }
   $("customerSaleReferralUrl").value="";
-  $("customerSaleReferralPanel").style.display=(currentSalesVerified||currentStaffAccess?.role==="admin")?"":"none";
+  $("customerSaleReferralPanel").style.display=currentUserHasSalesBadge?"":"none";
   if($("customerSaleReferralPanel").style.display!=="none")loadOrCreateCustomerSaleReferral();
   $("sellerPassword").value="";
   $("sellerPasswordConfirm").value="";
@@ -1191,8 +1190,8 @@ async function submitVerifiedProfileChangeRequest(){
   catch(error){status.textContent="No se pudo enviar la solicitud: "+(error.message||error)}finally{button.disabled=false}
 }
 async function loadOrCreateCustomerSaleReferral(){
-  if(!currentSalesVerified&&currentStaffAccess?.role!=="admin")return;
-  const button=$("createCustomerSaleReferral"),input=$("customerSaleReferralUrl");button.disabled=true;input.value="";$("sellerProfileStatus").textContent="Buscando tu enlace permanente…";
+  if(!currentUserHasSalesBadge)return;
+  const buttons=[$("createCustomerSaleReferral"),$("copyCustomerCatalogReferral")];buttons.forEach(button=>button.disabled=true);$("customerSaleReferralUrl").value="";$("customerCatalogReferralUrl").value="";$("sellerProfileStatus").textContent="Buscando tus enlaces permanentes…";
   try{
     const {data:{session},error:sessionError}=await db.auth.getSession();if(sessionError||!session)throw new Error("La sesión venció. Volvé a ingresar.");
     let {data:row,error}=await db.from("customer_sale_referral_links").select("token").eq("owner_id",session.user.id).maybeSingle();
@@ -1203,16 +1202,17 @@ async function loadOrCreateCustomerSaleReferral(){
       if(created.data)row=created.data;
       else{const existing=await db.from("customer_sale_referral_links").select("token").eq("owner_id",session.user.id).single();if(existing.error)throw existing.error;row=existing.data;}
     }
-    const url=new URL("../ventas/",location.href);url.searchParams.set("ref",row.token);input.value=url.toString();$("sellerProfileStatus").textContent="✅ Tu enlace permanente está guardado en este perfil.";
-  }catch(error){$("sellerProfileStatus").textContent="No se pudo cargar tu enlace: "+(error.message||error)}finally{button.disabled=false}
+    const saleUrl=new URL("../ventas/",location.href);saleUrl.searchParams.set("ref",row.token);$("customerSaleReferralUrl").value=saleUrl.toString();
+    const catalogUrl=new URL("../clientes/",location.href);catalogUrl.searchParams.set("ref",row.token);$("customerCatalogReferralUrl").value=catalogUrl.toString();$("sellerProfileStatus").textContent="✅ Tus enlaces permanentes están guardados en este perfil.";
+  }catch(error){$("sellerProfileStatus").textContent="No se pudieron cargar tus enlaces: "+(error.message||error)}finally{buttons.forEach(button=>button.disabled=false)}
 }
-async function createCustomerSaleReferral(){
-  if(!currentSalesVerified&&currentStaffAccess?.role!=="admin")return;
-  const button=$("createCustomerSaleReferral"),url=$("customerSaleReferralUrl").value;
+async function copyCustomerReferral(inputId,buttonId){
+  if(!currentUserHasSalesBadge)return;
+  const button=$(buttonId),url=$(inputId).value;
   if(!url){await loadOrCreateCustomerSaleReferral();return}
   button.disabled=true;
-  try{await navigator.clipboard.writeText(url);$("sellerProfileStatus").textContent="✅ Enlace copiado. Es el mismo enlace permanente guardado en tu perfil.";}
-  catch(_){$("customerSaleReferralUrl").focus();$("customerSaleReferralUrl").select();$("sellerProfileStatus").textContent="Seleccioné el enlace para que lo copies.";}
+  try{await navigator.clipboard.writeText(url);$("sellerProfileStatus").textContent="✅ Enlace copiado. Sigue guardado en tu perfil.";}
+  catch(_){const input=$(inputId);input.focus();input.select();$("sellerProfileStatus").textContent="Seleccioné el enlace para que lo copies.";}
   finally{button.disabled=false}
 }
 async function saveSellerPassword(){
@@ -1813,7 +1813,8 @@ $("submitVerifiedProfileChangeRequest").addEventListener("click",submitVerifiedP
 $("sellerVerifiedPhotoFile").addEventListener("change",()=>previewVerifiedProfilePhoto("sellerVerifiedPhotoFile","sellerVerifiedPhotoPreview","sellerVerifiedPhotoPlaceholder"));
 $("verifiedSetupPhotoFile").addEventListener("change",()=>previewVerifiedProfilePhoto("verifiedSetupPhotoFile","verifiedSetupPhotoPreview","verifiedSetupPhotoPlaceholder"));
 $("sellerPasswordSave").addEventListener("click",saveSellerPassword);
-$("createCustomerSaleReferral").addEventListener("click",createCustomerSaleReferral);
+$("createCustomerSaleReferral").addEventListener("click",()=>copyCustomerReferral("customerSaleReferralUrl","createCustomerSaleReferral"));
+$("copyCustomerCatalogReferral").addEventListener("click",()=>copyCustomerReferral("customerCatalogReferralUrl","copyCustomerCatalogReferral"));
 $("firstLoginSetupSave").addEventListener("click",completeFirstLoginSetup);
 $("verifiedProfileSetupSave").addEventListener("click",saveVerifiedProfileSetup);
 $("sellerSalesButton").addEventListener("click",()=>openSellerSales("history"));
