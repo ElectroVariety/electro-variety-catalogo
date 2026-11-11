@@ -1338,6 +1338,7 @@ function saleItemStatusLabel(status){
   return ({pending_delivery:"Pendiente",delivered:"Entregado",not_delivered:"No entregado · stock devuelto",expired:"Venció · stock devuelto"})[status]||status;
 }
 function saleAllocationLabel(item){
+  if(item.manual_entry)return "Venta histórica cargada por administración · stock ya descontado";
   const parts=[];
   if(item.reserved_deposito)parts.push("Depósito: "+item.reserved_deposito+(item.deposito_untracked?" (sin cantidad exacta)":""));
   if(item.reserved_local)parts.push("Local: "+item.reserved_local+(item.local_untracked?" (sin cantidad exacta)":""));
@@ -1367,7 +1368,7 @@ async function loadSellerSales(){
   if(!currentSellerId)return;
   $("sellerSalesHistory").textContent="Cargando pedidos…";
   const {data,error}=await db.from("seller_sales")
-    .select("id,seller_name,order_text,status,customer_sale_request_id,requires_supervisor_delivery,created_at,expires_at,seller_sale_items(id,product_id,product_name,quantity,reserved_deposito,reserved_local,deposito_untracked,local_untracked,status,resolved_at)")
+    .select("id,seller_name,order_text,status,customer_sale_request_id,requires_supervisor_delivery,created_at,expires_at,seller_sale_items(id,product_id,product_name,quantity,reserved_deposito,reserved_local,deposito_untracked,local_untracked,status,resolved_at,manual_entry)")
     .eq("seller_id",currentSellerId).order("created_at",{ascending:false}).limit(100);
   if(error){$("sellerSalesHistory").textContent="No se pudo cargar el historial: "+error.message;return}
   renderSellerSales(data||[]);
