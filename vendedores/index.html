@@ -23,7 +23,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/electro-variety-catalogo/config.js"></script>
-<script src="/electro-variety-catalogo/shared/pdf-lib.min.js"></script><script src="/electro-variety-catalogo/shared/customer-sale-pdf.js"></script>
+
 <meta name="apple-mobile-web-app-title" content="Electro Variety">
 <style>
 #pwaInstallBtn{
@@ -701,6 +701,25 @@ const money=v=>{
   return Number.isFinite(n)?"$"+Math.round(n).toLocaleString("es-AR"):esc(v);
 };
 const productTitle=p=>p.subtitle?`${p.name} (${p.subtitle})`:p.name;
+const optimizedVendorProductImageFiles=new Set(["01886839-d449-41fd-acc8-e3fdd94c67c2.jpg","01ba1b54-e1e9-4241-a4e1-32467701ffd6.jpg","02c64d58-2451-4363-b862-d659ac03a3bc.jpg","038f10f1-f6c3-4b59-b49d-24228a9399d9.jpg","04aaf203-5077-432e-976c-270ad355b7a1.jpg","07052b19-9468-4734-bd62-16e93fb58725.jpg","0a5c1f27-a06c-4f43-8076-c5e2ab7270b3.jpg","0a6baa1c-3984-4729-b6cf-7520fffc4e9c.jpg","0a8fa7e9-f7eb-4adf-a7a3-0b5d4a1c4491.jpg","0d80ff3b-2142-4bae-8756-335e874add40.jpg","0f847e98-f19b-4fad-a324-def6f6a4282b.jpg","0fd299fe-148e-477b-a716-49acd434621e.jpg","106203b8-3ce0-4d95-9400-4bb488fd6b8c.jpg","10845b10-8913-4427-a964-8133be8b1dfb.jpg","10ce583d-3daa-44f6-ab3c-76c82f8f02c8.jpg","16434420-8c97-414c-82a7-a83312b8af9f.jpg","1b1d2638-6146-4299-bbd6-85127afe9f53.jpg","1b3fe2e0-743f-4e89-b49b-0eff70ec8de6.jpg","1c6954de-7159-4a6c-b559-1b60f2bcb25b.jpg","21832518-1253-4618-b539-424e6677dc4d.jpg","2389d096-69d5-4950-8a4c-788a090480f9.jpg","2444914f-a44e-4fc9-b1a5-8b165f78c5e3.jpg","2993cd93-1e2e-4df5-a7b5-6e9e40d0b972.jpg","2b5c5dc4-5430-46ab-aac8-2704eee082d0.jpg","2b6bc6d0-84ba-40b4-a0d7-77e2746e2b22.jpg","2c411477-5309-4968-b5b9-530e3ad17011.jpg","2c90fe28-9aeb-471d-8bca-5e65cef5b31c.jpg","2fabb38b-b9e8-482c-85e6-70c5e3d3d683.jpg","2fd280ac-6d64-41ed-bb87-11e027660e54.jpg","2fe5acb5-3c68-48ea-8244-12ad63f5e35c.jpg","322449f4-d680-47a5-9a75-718fdbf0a5ac.jpg","356279da-7340-45af-a23d-d414e4b6d5a3.jpg","35ba2aaa-33ac-49d3-8acb-db6c8658f048.jpg","3749ebdd-72bd-442c-a02f-1cd0202818d5.jpg","3b38bc1b-e567-4a2f-89fe-8d3d4503dde7.jpg","3bc34ce3-af42-4553-bc9f-012399364ba2.jpg","42c45fe1-a092-43a0-a85e-35a26f67468c.jpg","465fc31f-feeb-4cc5-a1ba-0c3a645f58c3.jpg","4bbd25ef-cf14-4dc9-b27e-faee52eaacc5.jpg","4d3ad6ef-9c6e-4e9a-97e8-02f8a9a67e9c.jpg","4e668db5-3006-47b3-8e6e-f3e899b7d329.jpg","516bd32e-b7b2-45cc-b5ab-231e6fa35205.jpg","523acab2-b259-4351-b1f0-357223859e12.jpg","53bc7a32-6fa9-4461-8827-56a9d44e7d8c.jpg","54972b4a-9288-424d-b616-d1c602489eec.jpg","5503e267-e461-4779-917e-b46db8126741.jpg","5aea6dee-7a4e-4ba5-a6fe-1c7566568fc8.jpg","5be4219e-cbb0-4e79-8f28-51adb3963309.jpg","5fe30087-2c52-497e-ba1d-f2576d0d26da.jpg","645ac8f0-892e-4ad8-8b2c-14b95461da54.jpg","658b2b71-4568-4d45-b102-5c17ce0f6d62.jpg","661dfa19-64c6-433b-8f33-cac679fee3cd.jpg","6959e540-b4e6-467a-851d-a784cc6675f7.jpg","6977d5f6-7fa5-4eee-a9db-65caca5d9311.jpg","6ff7cbfe-6a11-4830-a28c-95ea39752bb9.jpg","700d1633-9de9-4eb4-bb84-640bdc6f3134.jpg","725bf3a2-1847-4eb2-9d5a-8267285bdc77.jpg","734c807d-9f10-4331-a24f-0247a42f0703.jpg","74533591-294d-49d8-9fdd-65552a29101e.jpg","757767d2-4ce7-430a-abcb-4ebc595b571c.jpg","75cfbc71-dfa7-4622-98d5-b3b027cab106.jpg","75e9aa20-80dd-445a-a2ec-f649bb242a38.jpg","767b2fa4-0dab-4789-b236-e8f4916f9b04.jpg","78f7c7a7-0642-42be-bfcf-676689f68768.jpg","7915cfaa-9c38-492c-9258-a52f4950b75d.jpg","79de8d12-ea1b-47d7-8de4-054b3f8be034.jpg","7b22bcfc-955c-48c4-abc9-2087194565cb.jpg","7b44811e-4ab9-4dd1-887f-2c6ba579240a.jpg","7c2f34b6-8f33-4e25-978d-6f2b3a3cb714.jpg","7d20939b-ca27-428c-9a35-bce265fd8220.jpg","7d40c88e-7474-401c-8d75-8bc28de78f44.jpg","7ef9b1d7-6c18-47d7-9b12-189dcd505aa3.jpg","7fdc0f94-bee2-45ea-88ac-df1ddf58d9ed.jpg","84e41de8-30a0-4f87-969c-f708e6c92dcd.jpg","85083e65-4f87-462b-a944-5d8b8adf217b.jpg","89a03712-3b75-4c41-bdde-52e2452b2a75.jpg","8ab175a2-b01d-44ca-b458-68b6369e06a1.jpg","8bffec79-4f00-44f9-afde-84af363c0139.jpg","8e77782c-ba29-4b6f-a779-eac367e24e23.jpg","8ef4cff5-0696-45d9-bca2-8e437f2786d6.jpg","8fd5aa2d-ad13-4979-bd63-e08bb5b48a37.jpg","925562a1-36e7-4fad-889d-150abf8f9e98.jpg","97428678-6696-42b9-b06f-e11eb76073a0.jpg","97f629bc-81ba-453d-bcaf-642223893aae.jpg","9a1eb5fe-d73c-405a-87a7-45aa87863a5e.jpg","9dbe9e32-9d53-4353-96d1-bb57a29cab53.jpg","9e2a289d-5f89-4eec-a76c-d47155f14974.jpg","9e68689d-41d4-45fd-89a3-383bc77f0fc9.jpg","a5c1a5e2-3fca-43dc-b1d6-0a6547598353.jpg","a64fb344-614a-4c2b-a6ce-c0381555dae3.jpg","a6acf7bc-a139-4087-8136-6c9f5162cf39.jpg","a6f2f0be-704e-49e4-867d-9f1301a6a7da.jpg","a7091c58-e493-469c-a281-37467d68d22f.jpg","a72e4f3b-2660-4b49-96db-decfa6723836.jpg","a92b9cb0-9657-4b89-8c97-9b603d72887e.jpg","aa1828a9-19e2-44a1-ba30-b8f257906daf.jpg","aa714f55-6554-4464-b428-f60bcf216a3d.jpg","af471eb4-7cad-4a3c-af53-9eb2e0cc6c85.jpg","b01371ab-e368-4bac-8773-c0ee38e4b30d.jpg","b0cb4203-e141-45b6-8b77-98a7abe48daa.jpg","b27cbfe5-3d81-4325-8d1e-8dd9a934ead7.jpg","b33f71a2-7974-4281-8d13-15db8416ce1f.jpg","b7d1192b-d37f-4dac-8d5d-8d7b3f4eb5b9.jpg","b8c25f03-6d0c-44df-9305-7db23e810672.jpg","bba441df-f8e2-47a9-b65a-60a11204331c.jpg","bbc5ff62-dcc8-4647-b109-feacf86c418d.jpg","bd031a1f-d92b-4ef8-8f9a-f24fed71dbe6.jpg","bd2d0650-2d35-4437-9b18-5f500e660ce5.jpg","be85d677-f8ec-4f09-831a-2a3990c0f756.jpg","c043445e-c867-47e7-8ed2-be4639648b8f.jpg","c18dd1ae-58cd-4612-a424-7a5ff45d4d42.jpg","c2b5e280-58cb-459b-8980-fcf4fda441af.jpg","c5163d59-c75b-4fae-8897-b7fd08d78125.jpg","c6cb7d61-5130-4964-a00d-8acf811e0247.jpg","c7c9ae9a-9ead-4d07-9e76-d7bd5d05ad08.jpg","c8c8691d-f730-4ba6-a9f1-d75563542675.jpg","c914a7ce-12d6-4396-92ce-1d9c25d018b6.jpg","ca6cb562-1902-4de2-9935-d8c57df9c930.jpg","cd09d422-f82a-479a-be70-cf2f46a95104.jpg","cd4b9682-360e-4cc4-bd04-8ee62ab2049f.jpg","ce16e8b3-c09c-4f9a-b3c6-dbc0933a1dbb.jpg","d0747184-9445-4506-aac8-37f64d78bd68.jpg","d10a4104-3975-42d5-84a3-94e21423b9e2.jpg","d364b733-4e02-4c84-bd9d-bb52e0adf13b.jpg","d7b60bea-d003-452c-b502-9d2664b701eb.jpg","d8f0d82e-c5ff-46f5-91d5-0c08c21b8f14.jpg","d9562793-6a52-4f47-a5e8-745e7c2769db.jpg","d9b4185f-66d2-4e17-94b5-c5e0c855fb55.jpg","dceb6f22-b59d-476e-94a8-fe2c5bc7c36a.jpg","dd611782-37b9-4db5-8422-995bbf0d231e.jpg","e2b6e535-3a96-410b-a0ab-fa98530be60e.jpg","e414c60e-d209-4b51-bd90-3bf8edfcc099.jpg","e5831dc0-233e-4c56-9c69-c9d59cd8871a.jpg","ea6caa3c-05aa-49d8-849e-c0e42deec2ed.jpg","eae29a24-933a-45c2-8dc4-36c70be01701.jpg","ebe1b7f6-798a-4b26-b1a9-9e08b01d50f2.jpg","ee308dae-f2de-43c6-be3c-10390ad51f65.jpg","eec10979-4741-4848-ad3a-2d7ada311424.jpg","f006752a-a904-4d04-bcfd-f54c3065d6e0.jpg","f1d25f15-4c01-428a-a508-e3fefc53b20b.jpg","f396b332-00ca-45d2-845c-13bede11d36e.jpg","f4126180-2f2f-4f99-abf8-738a5d24641a.jpg","f5b277e7-ea6f-4513-ac59-c0552880bf8d.jpg","f6938e04-3f4c-421f-82c3-9f88fea35ee9.jpg","f7354b48-ff87-40f5-b518-f6f2e4f56c16.jpg","f84268c1-7946-47b5-ade7-07bffa94fec7.jpg","f89ff99f-85a7-4361-a317-021f789b490f.jpg","f9587f76-a128-4fbf-8941-35a51d455028.jpg","f9a574f1-eaf2-4425-ac4f-6c09d115555f.jpg","fa618dae-6dbd-4093-8d79-d7e1aafdfcbf.jpg","fd8be350-fbf7-472b-b97f-201d536d4c96.jpg"]);
+const productStorageOrigin=new URL(EV_CONFIG.SUPABASE_URL).origin;
+function optimizedVendorProductImageUrl(source){
+  const original=String(source||"").trim();if(!original)return "";
+  try{const url=new URL(original,location.href);const leaf=decodeURIComponent(url.pathname.split("/").pop()||"");if(url.origin!==productStorageOrigin||!url.pathname.startsWith("/storage/v1/object/public/product-images/")||!optimizedVendorProductImageFiles.has(leaf))return original;return new URL("./product-images-optimized/"+leaf.replace(/\.[^.]+$/,".webp"),location.href).href}catch{return original}
+}
+function productImageMarkup(product,className="img"){
+  const original=String(product?.image_url||"").trim();if(!original)return `<div class="${esc(className)}" style="aspect-ratio:1/1;background:#eef0f3"></div>`;
+  const optimized=optimizedVendorProductImageUrl(original),fallback=optimized!==original?` data-fallback-src="${esc(original)}"`:"";
+  return `<img class="${esc(className)}" src="${esc(optimized)}" alt="${esc(productTitle(product))}" loading="lazy" decoding="async"${fallback}>`;
+}
+let customerSalePdfLoadPromise=null;
+function loadCatalogScript(src){return new Promise((resolve,reject)=>{const script=document.createElement("script");script.src=src;script.async=true;script.onload=resolve;script.onerror=()=>reject(new Error("No se pudo cargar el módulo de PDF."));document.head.appendChild(script)})}
+function ensureCustomerSalePdfLoaded(){
+  if(window.EVCustomerSalePdf)return Promise.resolve(window.EVCustomerSalePdf);
+  if(!customerSalePdfLoadPromise)customerSalePdfLoadPromise=(async()=>{if(!window.PDFLib)await loadCatalogScript("/electro-variety-catalogo/shared/pdf-lib.min.js");if(!window.EVCustomerSalePdf)await loadCatalogScript("/electro-variety-catalogo/shared/customer-sale-pdf.js");if(!window.EVCustomerSalePdf)throw new Error("El módulo de PDF no quedó disponible.");return window.EVCustomerSalePdf})().catch(error=>{customerSalePdfLoadPromise=null;throw error});
+  return customerSalePdfLoadPromise;
+}
+
 
 function showLogin(message=""){
   void endCatalogActivitySession();
@@ -1151,7 +1170,7 @@ async function openCatalogCustomerSaleDocument(button){
   const win=window.open("about:blank","_blank");if(!win){alert("Permití ventanas emergentes para abrir el documento.");return}win.opener=null;
   try{const {data,error}=await db.storage.from("customer-sale-private").createSignedUrl(path,300);if(error||!data?.signedUrl)throw error||new Error("No se pudo generar el enlace.");win.location.href=data.signedUrl}catch(error){win.close();alert("No se pudo abrir el documento: "+(error.message||error))}
 }
-async function printCatalogCustomerSaleRequest(id){const request=catalogCustomerSaleRequests.find(row=>row.id===id);if(!request)return;try{await window.EVCustomerSalePdf.open(request,db)}catch(error){alert("No se pudo generar el PDF: "+(error.message||error))}}
+async function printCatalogCustomerSaleRequest(id){const request=catalogCustomerSaleRequests.find(row=>row.id===id);if(!request)return;try{const pdf=await ensureCustomerSalePdfLoaded();await pdf.open(request,db)}catch(error){alert("No se pudo generar el PDF: "+(error.message||error))}}
 async function saveCatalogCustomerSaleReview(button){
   if(currentStaffAccess?.role!=="supervisor")return;
   const id=button.dataset.saveCustomerRequest,credit=document.querySelector(`[data-customer-request-credit="${CSS.escape(id)}"]`)?.value,note=document.querySelector(`[data-customer-request-note="${CSS.escape(id)}"]`)?.value||"";
@@ -1519,9 +1538,7 @@ function catalogCard(p,index){
   const hasStock=stock===-1 || stock>0;
   const stockText=hasStock ? "HAY STOCK" : "SIN STOCK";
   const stockClass=hasStock ? "stock" : "stock out";
-  const image=p.image_url
-    ? `<img class="img" src="${esc(p.image_url)}" alt="${esc(productTitle(p))}" loading="lazy">`
-    : `<div class="img" style="aspect-ratio:1/1;background:#eef0f3"></div>`;
+  const image=productImageMarkup(p);
   const category=p.category ? `<div class="category">${esc(p.category)}</div>` : "";
   const stockLabel = stock > 0 ? `📦 Stock: ${stock}` : (hasStock ? "📦 Hay stock" : "📦 Sin stock");
   return `<article class="catalog-card">
@@ -1640,7 +1657,7 @@ function renderCart(){
   }
   $("cartSend").disabled=false;
   $("cartList").innerHTML=products.map(p=>`<div class="cart-item">
-    <img src="${esc(p.image_url)}" alt="${esc(productTitle(p))}">
+    ${productImageMarkup(p,"cart-item-image")}
     <div class="cart-item-info"><div class="cart-item-name">${esc(productTitle(p))}</div><div>${esc(p.q_count)} cuotas quincenales de ${money(p.q_price)}</div><div>${esc(p.m_count)} cuotas mensuales de ${money(p.m_price)}</div></div>
     <button class="cart-remove" type="button" data-remove-cart="${esc(p.id)}">Quitar</button>
   </div>`).join("");
@@ -1839,6 +1856,7 @@ async function copyProduct(index,button){
   }catch(error){alert("No se pudo copiar la ficha. Revisá los permisos del portapapeles del navegador.")}
 }
 
+$("app").addEventListener("error",event=>{const image=event.target;if(!(image instanceof HTMLImageElement)||!image.dataset.fallbackSrc)return;const fallback=image.dataset.fallbackSrc;image.removeAttribute("data-fallback-src");image.src=fallback},true);
 $("search").addEventListener("input",applyFilters);
 $("category").addEventListener("change",applyFilters);
 $("cartOpenButton").addEventListener("click",openCart);
