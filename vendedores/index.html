@@ -1126,13 +1126,18 @@ function openCatalogCustomerSaleRequests(){
 function renderSaleCreditResult(payload){
   if(payload.error)return `<div class="seller-help" role="status">${esc(payload.error)}</div>`;
   const r=payload.result||{},entities=Array.isArray(r.entities)?r.entities:[];
-  return `<div class="customer-request-section"><b>Consulta BCRA</b> · CUIL ${esc(r.cuil||"—")} · ${r.has_records?`Último período: ${esc(r.period||"—")}`:"Sin registros informados por el BCRA"}<br>${entities.length?`<ul>${entities.map(entity=>`<li>${esc(entity.entidad)} · Situación ${esc(entity.situacion??"—")} · Monto informado: ${new Intl.NumberFormat("es-AR").format(Number(entity.monto_miles)||0)} miles · Atraso: ${esc(entity.dias_atraso??"—")} días${entity.en_revision?" · En revisión":""}${entity.proceso_judicial?" · Proceso judicial":""}</li>`).join("")}</ul>`:""}<small>Consultado ${esc(r.queried_at?new Date(r.queried_at).toLocaleString("es-AR"):"recién")}. Fuente: BCRA. Resultado informativo; verificá los datos antes de decidir.</small></div>`;
+  return `<div class="customer-request-section"><b>Central de Deudores del BCRA</b> · CUIL ${esc(r.cuil||"—")} · ${r.has_records?`Último período: ${esc(r.period||"—")}`:"Sin registros informados por el BCRA"}<br>${entities.length?`<ul>${entities.map(entity=>`<li>${esc(entity.entidad)} · Situación ${esc(entity.situacion??"—")} · Monto informado: ${new Intl.NumberFormat("es-AR").format(Number(entity.monto_miles)||0)} miles · Atraso: ${esc(entity.dias_atraso??"—")} días${entity.en_revision?" · En revisión":""}${entity.proceso_judicial?" · Proceso judicial":""}</li>`).join("")}</ul>`:""}<small>Identificación del CUIL: ${esc(r.lookup_source||"—")}. El resultado es informativo; no incluye un informe comercial de Nosis ni equivale a un informe completo de Veraz. Consultado ${esc(r.queried_at?new Date(r.queried_at).toLocaleString("es-AR"):"recién")}.</small></div>`;
+}
+async function catalogCreditCheckError(error,data){
+  if(data?.error)return data.error;
+  try{const response=error?.context;if(response&&typeof response.clone==="function"){const body=await response.clone().json();if(body?.error)return body.error}}catch{}
+  return error?.message||"No se pudo consultar la situación crediticia.";
 }
 async function checkCatalogSaleCredit(id,button){
   if(currentStaffAccess?.role!=="supervisor"||!currentSalesVerified)return;
-  if(!confirm("Se enviará el DNI de esta solicitud a Nosis para identificar el CUIL y consultar los datos públicos del BCRA. La consulta no decide automáticamente la aprobación. ¿Continuar?"))return;
+  if(!confirm("Se usará el DNI para intentar identificar el CUIL y consultar los datos públicos de la Central de Deudores del BCRA. La consulta no incluye el informe comercial de Nosis, no equivale a un informe completo de Veraz y no decide automáticamente la aprobación. ¿Continuar?"))return;
   button.disabled=true;button.textContent="Consultando…";
-  try{const {data,error}=await db.functions.invoke("customer-sale-credit-check",{body:{request_id:id}});if(error)throw error;if(data?.error)throw new Error(data.error);catalogCreditResults.set(id,{result:data.result});}
+  try{const {data,error}=await db.functions.invoke("customer-sale-credit-check",{body:{request_id:id}});if(error||data?.error)throw new Error(await catalogCreditCheckError(error,data));catalogCreditResults.set(id,{result:data.result});}
   catch(error){catalogCreditResults.set(id,{error:error.message||"No se pudo consultar la situación crediticia."});}
   finally{renderCatalogCustomerSaleRequests();}
 }

@@ -4,6 +4,18 @@ const origins = new Set(["https://electrovariety.github.io", "http://localhost:5
 const headers = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "Vary": "Origin" };
 type Entity = { entidad: string; situacion: number | null; monto_miles: number | null; dias_atraso: number | null; en_revision: boolean; proceso_judicial: boolean };
 const digits = (value: unknown) => String(value ?? "").replace(/\D/g, "");
+function cuilCheckDigit(prefix: string, dni: string) {
+  const base = `${prefix}${dni.padStart(8, "0")}`;
+  const weights = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+  const sum = [...base].reduce((total, digit, index) => total + Number(digit) * weights[index], 0);
+  const check = 11 - (sum % 11);
+  if (check === 11) return `${base}0`;
+  if (check === 10) return null;
+  return `${base}${check}`;
+}
+function cuilCandidates(dni: string) {
+  return [...new Set(["20", "23", "24", "27"].map(prefix => cuilCheckDigit(prefix, dni)).filter((value): value is string => !!value))];
+}
 function respond(body: Record<string, unknown>, status: number, origin: string) { const h = new Headers(headers); if (origins.has(origin)) h.set("Access-Control-Allow-Origin", origin); return new Response(JSON.stringify(body), { status, headers: h }); }
 
 Deno.serve(async (request: Request) => {
@@ -31,33 +43,50 @@ Deno.serve(async (request: Request) => {
   const dniDigits = digits(dni);
   if (!/^\d{7,8}$/.test(dniDigits)) return respond({ error: "Esta solicitud no tiene un DNI válido para identificar el CUIL." }, 422, origin);
 
-  let nosisResponse: Response;
+  const padded = dniDigits.padStart(8, "0");
+  let nosisCuil: string | null = null;
   try {
     const form = new URLSearchParams({ Texto: dni, Tipo: "-1", EdadDesde: "-1", EdadHasta: "-1", IdProvincia: "-1", Localidad: "" });
-    nosisResponse = await fetch("https://informes.nosis.com/Home/Buscar", { method: "POST", headers: { Accept: "application/json, text/javascript, */*; q=0.01", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With": "XMLHttpRequest", Referer: "https://informes.nosis.com/" }, body: form, signal: AbortSignal.timeout(15000) });
-  } catch { return respond({ error: "No se pudo conectar con Nosis. Intentá nuevamente más tarde." }, 502, origin); }
-  if (!nosisResponse.ok) return respond({ error: "Nosis no pudo procesar la búsqueda en este momento." }, 502, origin);
-  let nosis: Record<string, unknown>;
-  try { nosis = await nosisResponse.json() as Record<string, unknown>; } catch { return respond({ error: "Nosis devolvió una respuesta que no se pudo interpretar." }, 502, origin); }
-  if (nosis.ExigirCaptcha === true) return respond({ error: "Nosis solicitó una verificación adicional. No se completó la consulta automática." }, 422, origin);
-  if (nosis.HayError === true) return respond({ error: "Nosis no pudo completar la búsqueda." }, 502, origin);
-  const padded = dniDigits.padStart(8, "0");
-  const candidates = (Array.isArray(nosis.EntidadesEncontradas) ? nosis.EntidadesEncontradas : []).flatMap((row) => {
-    if (!row || typeof row !== "object") return [];
-    const item = row as Record<string, unknown>, cuil = digits(item.Documento);
-    return /^\d{11}$/.test(cuil) && cuil.slice(2, 10) === padded ? [{ cuil }] : [];
-  });
-  const unique = [...new Set(candidates.map((row) => row.cuil))];
-  if (!unique.length) return respond({ error: "Nosis no encontró un CUIL asociado al DNI. Verificá los datos y revisá manualmente." }, 404, origin);
-  if (unique.length > 1) return respond({ error: "Nosis encontró más de un CUIL posible. Verificá la identidad y revisá manualmente." }, 422, origin);
+    const response = await fetch("https://informes.nosis.com/Home/Buscar", { method: "POST", headers: { Accept: "application/json, text/javascript, */*; q=0.01", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With": "XMLHttpRequest", Referer: "https://informes.nosis.com/" }, body: form, signal: AbortSignal.timeout(5000) });
+    if (response.ok) {
+      const nosis = await response.json() as Record<string, unknown>;
+      const matches = (Array.isArray(nosis.EntidadesEncontradas) ? nosis.EntidadesEncontradas : []).flatMap(row => {
+        if (!row || typeof row !== "object") return [];
+        const cuil = digits((row as Record<string, unknown>).Documento);
+        return /^\d{11}$/.test(cuil) && cuil.slice(2, 10) === padded ? [cuil] : [];
+      });
+      const unique = [...new Set(matches)];
+      if (unique.length === 1) nosisCuil = unique[0];
+    }
+  } catch { /* Nosis' public search can time out or require a captcha; try the BCRA fallback below. */ }
 
-  let bcraResponse: Response;
-  try { bcraResponse = await fetch(`https://api.bcra.gob.ar/CentralDeDeudores/v1.0/Deudas/${unique[0]}`, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(15000) }); }
-  catch { return respond({ error: "Se obtuvo el CUIL, pero no se pudo conectar con el BCRA." }, 502, origin); }
-  if (bcraResponse.status === 404) return respond({ result: { cuil: unique[0], has_records: false, period: null, entities: [], queried_at: new Date().toISOString() } }, 200, origin);
-  if (!bcraResponse.ok) return respond({ error: "El BCRA no pudo completar la consulta en este momento." }, 502, origin);
-  let bcra: Record<string, unknown>;
-  try { bcra = await bcraResponse.json() as Record<string, unknown>; } catch { return respond({ error: "El BCRA devolvió una respuesta que no se pudo interpretar." }, 502, origin); }
+  const requestBcra = async (cuil: string) => {
+    const response = await fetch(`https://api.bcra.gob.ar/CentralDeDeudores/v1.0/Deudas/${cuil}`, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(10000) });
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error(`BCRA devolvió HTTP ${response.status}.`);
+    const body = await response.json() as Record<string, unknown>;
+    const results = body.results && typeof body.results === "object" ? body.results as Record<string, unknown> : {};
+    const periods = Array.isArray(results.periodos) ? results.periodos : [];
+    return { cuil, body, periodCount: periods.length };
+  };
+  let matches: Array<{ cuil: string; body: Record<string, unknown>; periodCount: number }> = [];
+  if (nosisCuil) {
+    try {
+      const result = await requestBcra(nosisCuil);
+      if (result) matches = [result];
+      else return respond({ result: { cuil: nosisCuil, lookup_source: "Nosis", has_records: false, period: null, entities: [], queried_at: new Date().toISOString() } }, 200, origin);
+    } catch { return respond({ error: "Nosis identificó el CUIL, pero el BCRA no pudo completar la consulta. Intentá nuevamente." }, 502, origin); }
+  } else {
+    const results = await Promise.allSettled(cuilCandidates(dniDigits).map(requestBcra));
+    matches = results.flatMap(result => result.status === "fulfilled" && result.value ? [result.value] : []);
+    const withRecords = matches.filter(result => result.periodCount > 0);
+    if (withRecords.length === 1) matches = withRecords;
+    else if (withRecords.length > 1) return respond({ error: "El DNI coincide con más de un CUIL con información en el BCRA. Verificá el CUIL antes de continuar." }, 422, origin);
+    else if (!matches.length && results.every(result => result.status === "rejected")) return respond({ error: "No se pudo conectar con el BCRA para consultar los posibles CUIL. Intentá nuevamente." }, 502, origin);
+    else return respond({ error: "Nosis no pudo localizar el CUIL y el BCRA no devolvió un registro que permita identificarlo automáticamente. Verificá el CUIL y volvé a consultar." }, 422, origin);
+  }
+  const cuil = matches[0].cuil;
+  const bcra = matches[0].body;
   const results = bcra.results && typeof bcra.results === "object" ? bcra.results as Record<string, unknown> : {};
   const periods = Array.isArray(results.periodos) ? results.periodos : [];
   const latest = [...periods].filter((row): row is Record<string, unknown> => !!row && typeof row === "object").sort((a,b)=>String(b.periodo??"").localeCompare(String(a.periodo??"")))[0];
@@ -66,5 +95,5 @@ Deno.serve(async (request: Request) => {
     const item = row as Record<string, unknown>;
     return [{ entidad: typeof item.entidad === "string" ? item.entidad : "Entidad informante", situacion: typeof item.situacion === "number" ? item.situacion : null, monto_miles: typeof item.monto === "number" && Number.isFinite(item.monto) ? item.monto : null, dias_atraso: typeof item.diasAtrasoPago === "number" ? item.diasAtrasoPago : null, en_revision: item.enRevision === true, proceso_judicial: item.procesoJud === true }];
   }) : [];
-  return respond({ result: { cuil: unique[0], has_records: periods.length > 0, period: typeof latest?.periodo === "string" ? latest.periodo : null, entities, queried_at: new Date().toISOString() } }, 200, origin);
+  return respond({ result: { cuil, lookup_source: nosisCuil ? "Nosis" : "BCRA por coincidencia de DNI", has_records: periods.length > 0, period: typeof latest?.periodo === "string" ? latest.periodo : null, entities, queried_at: new Date().toISOString() } }, 200, origin);
 });
