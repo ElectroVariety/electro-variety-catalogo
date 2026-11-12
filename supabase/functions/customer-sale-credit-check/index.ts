@@ -25,7 +25,7 @@ Deno.serve(async (request: Request) => {
   if (!origins.has(origin)) return respond({ error: "Origen no autorizado." }, 403, origin);
   const authorization = request.headers.get("Authorization");
   if (!authorization?.startsWith("Bearer ")) return respond({ error: "Iniciá sesión para consultar la situación crediticia." }, 401, origin);
-  let payload: { request_id?: string };
+  let payload: { request_id?: string; cuil?: string };
   try { payload = await request.json(); } catch { return respond({ error: "Solicitud inválida." }, 400, origin); }
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(payload.request_id ?? ""))) return respond({ error: "Solicitud inválida." }, 400, origin);
 
@@ -42,10 +42,12 @@ Deno.serve(async (request: Request) => {
   const dni = String(application.dni ?? "").trim();
   const dniDigits = digits(dni);
   if (!/^\d{7,8}$/.test(dniDigits)) return respond({ error: "Esta solicitud no tiene un DNI válido para identificar el CUIL." }, 422, origin);
+  const suppliedCuil = digits(payload.cuil);
+  if (payload.cuil && (!/^\d{11}$/.test(suppliedCuil) || suppliedCuil.slice(2, 10) !== dniDigits.padStart(8, "0"))) return respond({ error: "El CUIL ingresado no coincide con el DNI de esta solicitud." }, 422, origin);
 
   const padded = dniDigits.padStart(8, "0");
-  let nosisCuil: string | null = null;
-  try {
+  let nosisCuil: string | null = suppliedCuil || null;
+  if (!nosisCuil) try {
     const form = new URLSearchParams({ Texto: dni, Tipo: "-1", EdadDesde: "-1", EdadHasta: "-1", IdProvincia: "-1", Localidad: "" });
     const response = await fetch("https://informes.nosis.com/Home/Buscar", { method: "POST", headers: { Accept: "application/json, text/javascript, */*; q=0.01", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With": "XMLHttpRequest", Referer: "https://informes.nosis.com/" }, body: form, signal: AbortSignal.timeout(5000) });
     if (response.ok) {
