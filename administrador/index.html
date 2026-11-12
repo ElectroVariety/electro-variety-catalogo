@@ -614,6 +614,32 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     }
   }
 
+  async function optimizeCatalogProductImage(file) {
+    if (!file || !["image/jpeg", "image/png"].includes(file.type) || typeof window.createImageBitmap !== "function") return file;
+    let bitmap;
+    try {
+      bitmap = await window.createImageBitmap(file);
+      const scale = Math.min(1, 900 / bitmap.width, 1200 / bitmap.height);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext("2d", { alpha: true });
+      if (!context) return file;
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/webp", 0.82));
+      if (!blob || blob.size >= file.size) return file;
+      const baseName = file.name.replace(/\.[^.]+$/, "") || "producto";
+      return new File([blob], `${baseName}.webp`, { type: "image/webp", lastModified: Date.now() });
+    } catch (error) {
+      console.warn("No se pudo optimizar la imagen; se subirá el original.", error);
+      return file;
+    } finally {
+      bitmap?.close?.();
+    }
+  }
+
   async function save() {
     const name = cleanText($("name").value);
     const qprice = cleanText($("qprice").value);
@@ -634,13 +660,15 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     try {
       if (file) {
         if (!file.type.startsWith("image/")) throw new Error("El archivo seleccionado no es una imagen.");
-        setStatus("status", "Subiendo imagen…");
+        setStatus("status", "Optimizando imagen…");
 
-        const extension = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+        const uploadFile = await optimizeCatalogProductImage(file);
+        setStatus("status", uploadFile === file ? "Subiendo imagen…" : "Subiendo imagen optimizada…");
+        const extension = uploadFile.type === "image/webp" ? "webp" : (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
         const path = `${crypto.randomUUID()}.${extension}`;
-        const upload = await db.storage.from(STORAGE_BUCKET).upload(path, file, {
+        const upload = await db.storage.from(STORAGE_BUCKET).upload(path, uploadFile, {
           upsert: false,
-          contentType: file.type
+          contentType: uploadFile.type || file.type
         });
         if (upload.error) throw upload.error;
 
