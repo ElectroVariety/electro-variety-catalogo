@@ -16,7 +16,20 @@
   const incomeLabels = { formal_job: "Trabajo en blanco", informal_job: "Trabajo en negro", self_employed: "Trabajo por cuenta propia", business: "Tengo un comercio", allowance: "Cobro una asignación", retirement: "Cobro una jubilación", pension: "Cobro una pensión", cooperative: "Cobro de una cooperativa", other: "Otros ingresos" };
   const statusLabels = { pending: "Pendiente", contacted: "Contactado", converted: "Venta confirmada", cancelled: "Cancelada", approved: "Aprobada", rejected: "Rechazada" };
   const clean = value => String(value ?? "—").replace(/[\u0000-\u001f]/g, " ").replace(/—/g, "-").replace(/[^\u0000-\u00ff]/g, "?").trim() || "—";
-  const money = value => "$ " + new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(Number(value) || 0);
+  const amountValue = value => {
+    if (typeof value === "number") return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+    const digits = String(value ?? "").replace(/\D/g, "");
+    const amount = Number(digits);
+    return Number.isSafeInteger(amount) ? amount : 0;
+  };
+  const money = value => "$ " + new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(amountValue(value));
+  const formatDni = value => {
+    const normalized = String(value ?? "").trim().replace(/[.\s-]/g, "").toUpperCase();
+    const match = normalized.match(/^([A-Z]?)(\d{7,8})$/);
+    if (!match) return clean(value);
+    const [, prefix, digits] = match;
+    return prefix + digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
   const yesNo = value => value === true ? "Sí" : value === false ? "No" : "No informado";
   const wrap = (value, font, size, width) => {
     const lines = [];
@@ -123,10 +136,10 @@
     const incomes = Array.isArray(request.income_sources) ? request.income_sources : [];
     const items = Array.isArray(request.items) ? request.items : [];
     const customerOnly = conditional.customer_only === "true" || request.is_electro_variety_customer === true;
-    const itemFields = items.flatMap((item, index) => [[`Producto ${index + 1}`, item.product_name], ["Cantidad", `${Number(item.quantity) || 0} unidad(es)`], ["Cuotas", `${Number(item.installment_count) || 0} ${item.frequency === "quincenal" ? "quincenales" : "mensuales"}`], ["Valor de cada cuota", money(item.installment_amount)], ...(item.total_amount != null ? [["Total aproximado", money(item.total_amount)]] : [])]);
+    const itemFields = items.flatMap((item, index) => [[`Producto ${index + 1}`, item.product_name], ["Cantidad", `${Number(item.quantity) || 0} unidad(es)`], ["Cuotas", `${Number(item.installment_count) || 0} ${item.frequency === "quincenal" ? "quincenales" : "mensuales"}`], ["Valor de cada cuota", money(item.installment_amount)]]);
     drawSection("01", "Tu compra", itemFields.length ? itemFields : [["Productos solicitados", "Sin productos informados"]]);
     drawSection("02", "Datos personales", [
-      ["Nombre y apellido", request.full_name], ["DNI", request.dni],
+      ["Nombre y apellido", request.full_name], ["DNI", formatDni(request.dni)],
       ...(!customerOnly ? [["DNI actualizado", yesNo(request.dni_updated)], ["Teléfono personal", request.phone], ["Teléfono alternativo", request.alternative_phone], ["Vínculo con el contacto alternativo", request.alternative_contact_relationship], ["Vino recomendado por alguien", yesNo(request.referred_by)], ["Es cliente de Electro Variety", yesNo(request.is_electro_variety_customer)]] : [["Teléfono personal", request.phone]]),
       ...Object.entries(conditional).filter(([key, value]) => ["referrer_full_name", "referrer_phone", "referrer_relationship"].includes(key) && String(value || "").trim()).map(([key, value]) => [({ referrer_full_name: "Nombre de quien recomendó", referrer_phone: "Teléfono de quien recomendó", referrer_relationship: "Vínculo con quien recomendó" })[key], value]),
     ]);
@@ -135,7 +148,7 @@
       drawSection("04", "Comprobante de domicilio", [
         ["Servicios o comprobantes declarados", proofServices.map(service => serviceLabels[service] || service).join(", ") || "Ninguno informado"],
         ...(proofServices.some(service => ["edesur", "metrogas", "water"].includes(service)) ? [["Servicio a nombre de la persona", conditional.service_owner === "yes" ? "Sí" : conditional.service_owner === "no" ? "No" : "No informado"]] : []),
-        ...[["Nombre del titular", "service_holder_name"], ["DNI del titular", "service_holder_dni"], ["Vínculo con el titular", "service_holder_relationship"]].filter(([, key]) => conditional[key]).map(([label, key]) => [label, conditional[key]]),
+        ...[["Nombre del titular", "service_holder_name"], ["DNI del titular", "service_holder_dni"], ["Vínculo con el titular", "service_holder_relationship"]].filter(([, key]) => conditional[key]).map(([label, key]) => [label, key === "service_holder_dni" ? formatDni(conditional[key]) : conditional[key]]),
       ]);
       drawSection("05", "Situación financiera", [["Tiene deudas actualmente", yesNo(request.has_debts)], ...(request.has_debts ? [["Motivo de la deuda", conditional.debt_reason], ["Monto aproximado de la deuda", money(conditional.debt_amount)]] : [])]);
       ensureRoom(55); y -= 7;
