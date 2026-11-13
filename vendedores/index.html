@@ -327,6 +327,7 @@ let currentSalesVerified=false;
 let currentUserHasSalesBadge=false;
 let currentUserId=null;
 let currentStaffProfileName="";
+let catalogFailureTestScenario=null;
 let afterFirstLoginSetup=null;
 let afterVerifiedProfileSetup=null;
 let currentVerifiedCatalogProfile=null;
@@ -1035,7 +1036,19 @@ async function startCatalog(seller=null,staffAccess=currentStaffAccess,staffName
   startOnlineStaffPresence().catch(error=>{console.warn("Presencia de personal",error);$("onlineStaffStatus").textContent="No se pudo conectar con el panel de personal."});
   $("catLogout").style.display="block";
   $("app").innerHTML='<div class="msg">Cargando catálogo…</div>';
+  catalogFailureTestScenario=null;
+  if(seller){
+    try{const {data,error}=await db.rpc("get_my_catalog_failure_test_scenario");if(!error){const row=Array.isArray(data)?data[0]:data;catalogFailureTestScenario=row||null}else console.warn("No se pudo consultar la simulación de prueba",error)}catch(error){console.warn("No se pudo consultar la simulación de prueba",error)}
+    const bypassKey=`ev-catalog-failure-bypass-${seller.user_id}`;
+    if(catalogFailureTestScenario?.app_close&&sessionStorage.getItem(bypassKey)!=="1"){
+      $("app").innerHTML='<div class="msg catalog-failure-test-close" role="alert"><h2>⚠️ Cierre inesperado simulado</h2><p>Esta falla está activa para esta cuenta de prueba. No se modificó ni se perdió información.</p><button class="seller-action-button" id="catalogFailureTestContinue" type="button">Reabrir el catálogo</button></div>';
+      $("catalogFailureTestContinue").addEventListener("click",()=>{sessionStorage.setItem(bypassKey,"1");location.reload()});
+      return;
+    }
+  }
   try{
+    const simulatedDelay=Math.max(0,Math.min(30000,Number(catalogFailureTestScenario?.load_delay_ms)||0));
+    if(simulatedDelay)await new Promise(resolve=>setTimeout(resolve,simulatedDelay));
     const {data,error}=await db.from("products").select("*").eq("active",true);
     if(error) throw error;
     allProducts=Array.isArray(data)?data:[];
@@ -1715,6 +1728,11 @@ async function shareNextCartProduct(){
 
   const p=cartShareProducts[cartShareIndex];
   const position=cartShareIndex+1;
+  const simulated=await simulateCatalogProductShare(p);
+  if(simulated!==null){
+    if(simulated){cartShareIndex++;if(cartShareIndex<cartShareProducts.length)updateCartShareUI("✅ Simulación de compartir completada.");else{cartIds.clear();updateCartButtons();renderCart();updateCartShareUI("✅ Flujo de prueba completado.")}}
+    return;
+  }
   const text=`${productTitle(p)}\n\n${p.q_count} cuotas quincenales de ${money(p.q_price)}\n${p.m_count} cuotas mensuales de ${money(p.m_price)}`;
   const imageUrl=String(p.image_url||'').trim();
   if(!imageUrl){
@@ -1780,9 +1798,42 @@ async function sendCartWhatsApp(){
   await shareNextCartProduct();
 }
 
+async function simulateCatalogProductShare(p){
+  const mode=catalogFailureTestScenario?.share_mode||"none";
+  if(!catalogFailureTestScenario||mode==="none")return null;
+  if(mode==="nothing"){
+    alert("Falla simulada: no se envió ningún contenido a WhatsApp.");
+    return false;
+  }
+  const fullText=`${productTitle(p)}\n\n${p.q_count} cuotas quincenales de ${money(p.q_price)}\n${p.m_count} cuotas mensuales de ${money(p.m_price)}`;
+  if(mode==="text_only"){
+    try{
+      if(navigator.share)await navigator.share({title:p.name||"Producto",text:fullText});
+      else if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(fullText);alert("Falla simulada: se preparó el texto sin imagen; no se abrió el selector de WhatsApp.");return false}
+      else throw new Error("Este navegador no permite compartir el texto.");
+      return true;
+    }catch(error){if(error?.name!=="AbortError")alert("Falla simulada al compartir: "+(error.message||"No se pudo enviar el texto."));return false}
+  }
+  if(mode==="image_without_prices"){
+    try{
+      const imageUrl=String(p.image_url||"");if(!imageUrl)throw new Error("El producto no tiene imagen.");
+      const response=await fetch(imageUrl,{mode:"cors",cache:"no-store"});if(!response.ok)throw new Error("No se pudo obtener la imagen.");
+      const blob=await response.blob(),mime=blob.type?.startsWith("image/")?blob.type:"image/jpeg",extension=mime.split("/")[1]||"jpeg";
+      const safe=(p.name||"producto").replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase()||"producto";
+      const file=new File([blob],safe+"."+extension,{type:mime});
+      if(!navigator.share||!navigator.canShare||!navigator.canShare({files:[file]}))throw new Error("Este navegador no permite compartir la imagen como archivo.");
+      await navigator.share({title:p.name||"Producto",text:productTitle(p),files:[file]});
+      return true;
+    }catch(error){if(error?.name!=="AbortError")alert("Falla simulada al compartir: "+(error.message||"No se pudo enviar la imagen."));return false}
+  }
+  return null;
+}
+
 async function shareProduct(index){
   const p=filteredProducts[index];
   if(!p)return;
+  const simulated=await simulateCatalogProductShare(p);
+  if(simulated!==null){if(simulated)await recordCatalogWhatsappShare();return}
   const text=`${productTitle(p)}\n\n${p.q_count} cuotas quincenales de ${money(p.q_price)}\n${p.m_count} cuotas mensuales de ${money(p.m_price)}`;
   const imageUrl=String(p.image_url||"");
   const shareText=imageUrl ? `${text}\n\n${imageUrl}` : text;
