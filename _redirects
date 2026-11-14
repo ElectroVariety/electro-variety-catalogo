@@ -1,0 +1,27 @@
+# Short public URLs; rewrite internally so the requested path stays in the address bar.
+/catalogo /catalogo/ 301
+/catalogo/ /clientes/ 200
+/catalogo/* /clientes/:splat 200
+
+/formulario /formulario/ 301
+/formulario/ /ventas/ 200
+/formulario/* /ventas/:splat 200
+
+/admin /admin/ 301
+/admin/ /administrador/ 200
+/admin/* /administrador/:splat 200
+
+/stock-deposito /stock-deposito/ 301
+/stock-deposito/ /deposito/ 200
+/stock-deposito/* /deposito/:splat 200
+
+/stock-local /stock-local/ 301
+/stock-local/ /local/ 200
+/stock-local/* /local/:splat 200
+
+/lista-de-productos /lista-de-productos/ 301
+/lista-de-productos/ /lista-productos/ 200
+/lista-de-productos/* /lista-productos/:splat 200
+
+# Compatibility for assets and service-worker paths used by the old GitHub Pages base URL.
+/electro-variety-catalogo/* /:splat 200
