@@ -1282,6 +1282,8 @@ async function loadOrCreateCustomerSaleReferral(){
       if(created.data)row=created.data;
       else{const existing=await db.from("customer_sale_referral_links").select("token").eq("owner_id",session.user.id).single();if(existing.error)throw existing.error;row=existing.data;}
     }
+    const {error:phoneAliasError}=await db.rpc("register_my_customer_sale_referral_phone_alias",{p_phone:phoneRef});
+    if(phoneAliasError)throw phoneAliasError;
     const saleUrl=new URL("../formulario/",location.href);saleUrl.searchParams.set("ref",phoneRef);$("customerSaleReferralUrl").value=saleUrl.toString();
     const catalogUrl=new URL("../catalogo/",location.href);catalogUrl.searchParams.set("ref",phoneRef);$("customerCatalogReferralUrl").value=catalogUrl.toString();$("sellerProfileStatus").textContent="✅ Tus enlaces permanentes usan el teléfono registrado y están guardados en este perfil.";
   }catch(error){$("sellerProfileStatus").textContent="No se pudieron cargar tus enlaces: "+(error.message||error)}finally{buttons.forEach(button=>button.disabled=false)}
