@@ -2,6 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const allowedOrigins = new Set([
   "https://electrovariety.github.io",
+  "https://electrovariety.com",
+  "https://www.electrovariety.com",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   "http://localhost:5500",
@@ -332,10 +334,12 @@ Deno.serve(async (request: Request) => {
   let sellerId: string | null = null;
   let sellerName = "";
   if (referralToken) {
-    if (!/^[0-9a-f-]{36}$/i.test(referralToken)) return respond({ error: "El enlace de vendedor no es válido." }, 400, origin);
-    const { data: referral, error: referralError } = await admin.from("customer_sale_referral_links")
-      .select("owner_id").eq("token", referralToken).gt("expires_at", new Date().toISOString()).maybeSingle();
-    if (referralError || !referral) return respond({ error: "El enlace de vendedor venció o ya no está disponible. Pedí uno nuevo." }, 400, origin);
+    if (!/^(?:[0-9a-f-]{36}|\+?[0-9().\s-]{8,25})$/i.test(referralToken)) return respond({ error: "El enlace de vendedor no es válido." }, 400, origin);
+    const { data: referralOwner, error: referralError } = await admin.rpc("resolve_customer_sale_referral_owner", { p_ref: referralToken });
+    if (referralError || !referralOwner) return respond({ error: "El enlace de vendedor venció o ya no está disponible. Pedí uno nuevo." }, 400, origin);
+    const { data: referral, error: linkError } = await admin.from("customer_sale_referral_links")
+      .select("owner_id").eq("owner_id", referralOwner).gt("expires_at", new Date().toISOString()).maybeSingle();
+    if (linkError || !referral) return respond({ error: "El enlace de vendedor venció o ya no está disponible. Pedí uno nuevo." }, 400, origin);
     sellerId = referral.owner_id;
     const [{ data: sellerProfile }, { data: staffProfile }, { data: stockProfile }, { data: verification }] = await Promise.all([
       admin.from("seller_profiles").select("name,active").eq("user_id", sellerId).maybeSingle(),

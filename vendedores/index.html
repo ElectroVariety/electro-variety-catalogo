@@ -1271,6 +1271,9 @@ async function loadOrCreateCustomerSaleReferral(){
   const buttons=[$("createCustomerSaleReferral"),$("copyCustomerCatalogReferral")];buttons.forEach(button=>button.disabled=true);$("customerSaleReferralUrl").value="";$("customerCatalogReferralUrl").value="";$("sellerProfileStatus").textContent="Buscando tus enlaces permanentes…";
   try{
     const {data:{session},error:sessionError}=await db.auth.getSession();if(sessionError||!session)throw new Error("La sesión venció. Volvé a ingresar.");
+    if(!currentVerifiedCatalogProfile)await loadMyVerifiedCatalogProfile();
+    const phoneRef=String(currentVerifiedCatalogProfile?.phone||currentSeller?.phone||"").replace(/\D/g,"");
+    if(phoneRef.length<8||phoneRef.length>15)throw new Error("Completá un número de teléfono válido en tu perfil para crear los enlaces personales.");
     let {data:row,error}=await db.from("customer_sale_referral_links").select("token").eq("owner_id",session.user.id).maybeSingle();
     if(error)throw error;
     if(!row){
@@ -1279,8 +1282,8 @@ async function loadOrCreateCustomerSaleReferral(){
       if(created.data)row=created.data;
       else{const existing=await db.from("customer_sale_referral_links").select("token").eq("owner_id",session.user.id).single();if(existing.error)throw existing.error;row=existing.data;}
     }
-    const saleUrl=new URL("../formulario/",location.href);saleUrl.searchParams.set("ref",row.token);$("customerSaleReferralUrl").value=saleUrl.toString();
-    const catalogUrl=new URL("../catalogo/",location.href);catalogUrl.searchParams.set("ref",row.token);$("customerCatalogReferralUrl").value=catalogUrl.toString();$("sellerProfileStatus").textContent="✅ Tus enlaces permanentes están guardados en este perfil.";
+    const saleUrl=new URL("../formulario/",location.href);saleUrl.searchParams.set("ref",phoneRef);$("customerSaleReferralUrl").value=saleUrl.toString();
+    const catalogUrl=new URL("../catalogo/",location.href);catalogUrl.searchParams.set("ref",phoneRef);$("customerCatalogReferralUrl").value=catalogUrl.toString();$("sellerProfileStatus").textContent="✅ Tus enlaces permanentes usan el teléfono registrado y están guardados en este perfil.";
   }catch(error){$("sellerProfileStatus").textContent="No se pudieron cargar tus enlaces: "+(error.message||error)}finally{buttons.forEach(button=>button.disabled=false)}
 }
 async function copyCustomerReferral(inputId,buttonId){
