@@ -376,7 +376,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
   async function shareCartByWhatsApp(){
     const selected=products.filter(p=>cart.has(String(p.id)));
     if(!selected.length)return;
-    if(personalCatalogToken)selected.forEach(p=>recordCustomerCatalogAnalyticsEvent("product_consult",Number(p.id)));
+    selected.forEach(p=>recordCustomerCatalogAnalyticsEvent("product_consult",Number(p.id)));
     const text=`Hola, quiero consultar por estos productos:\n\n${selected.map(p=>p.name||"Producto").join("\n\n")}`;
 
     // Si el administrador configuró WhatsApp directo, NO usamos navigator.share:
@@ -587,7 +587,6 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     const whatsappButton=$("deliveryWhatsApp");
     if(whatsappButton){
       whatsappButton.addEventListener("click",()=>{
-        recordCustomerCatalogAnalyticsEvent("delivery_consult");
         const outcome=evaluation?"sujeta a evaluación":"sin cobertura de entrega";
         const details=[locality&&`Localidad: ${locality}`,party&&`Partido: ${party}`].filter(Boolean).join("\n");
         const message=["Hola, quería consultar por una entrega.",`La consulta de cobertura para mi ubicación indicó que está ${outcome}.`,details].filter(Boolean).join("\n\n");
