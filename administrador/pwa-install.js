@@ -4,10 +4,10 @@
   let app = "";
 
   if (path.includes("/vendedores/")) app = "vendedores";
-  else if (path.includes("/clientes/")) app = "clientes";
-  else if (path.includes("/deposito/")) app = "deposito";
-  else if (path.includes("/local/")) app = "local";
-  else if (path.includes("/administrador/")) app = "administrador";
+  else if ((path.includes("/clientes/") || path.includes("/catalogo/"))) app = "clientes";
+  else if ((path.includes("/deposito/") || path.includes("/stock-deposito/"))) app = "deposito";
+  else if ((path.includes("/local/") || path.includes("/stock-local/"))) app = "local";
+  else if ((path.includes("/administrador/") || path.includes("/admin/"))) app = "administrador";
 
   const labels = {
     vendedores: "📱 Instalar Electro Variety - Vendedores",

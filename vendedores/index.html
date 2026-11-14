@@ -1279,8 +1279,8 @@ async function loadOrCreateCustomerSaleReferral(){
       if(created.data)row=created.data;
       else{const existing=await db.from("customer_sale_referral_links").select("token").eq("owner_id",session.user.id).single();if(existing.error)throw existing.error;row=existing.data;}
     }
-    const saleUrl=new URL("../ventas/",location.href);saleUrl.searchParams.set("ref",row.token);$("customerSaleReferralUrl").value=saleUrl.toString();
-    const catalogUrl=new URL("../clientes/",location.href);catalogUrl.searchParams.set("ref",row.token);$("customerCatalogReferralUrl").value=catalogUrl.toString();$("sellerProfileStatus").textContent="✅ Tus enlaces permanentes están guardados en este perfil.";
+    const saleUrl=new URL("../formulario/",location.href);saleUrl.searchParams.set("ref",row.token);$("customerSaleReferralUrl").value=saleUrl.toString();
+    const catalogUrl=new URL("../catalogo/",location.href);catalogUrl.searchParams.set("ref",row.token);$("customerCatalogReferralUrl").value=catalogUrl.toString();$("sellerProfileStatus").textContent="✅ Tus enlaces permanentes están guardados en este perfil.";
   }catch(error){$("sellerProfileStatus").textContent="No se pudieron cargar tus enlaces: "+(error.message||error)}finally{buttons.forEach(button=>button.disabled=false)}
 }
 async function copyCustomerReferral(inputId,buttonId){
@@ -1915,8 +1915,8 @@ $("customerSaleRequestsFilter").addEventListener("change",renderCatalogCustomerS
 $("customerSaleRequestsSearch").addEventListener("input",renderCatalogCustomerSaleRequests);
 ["customerSaleFilterCustomer","customerSaleFilterDebt","customerSaleFilterReferral"].forEach(id=>$(id).addEventListener("change",renderCatalogCustomerSaleRequests));
 $("customerSaleRequestsCatalogList").addEventListener("click",e=>{const selected=e.target.closest("[data-select-customer-request]");if(selected){selectCatalogCustomerSaleRequest(selected.dataset.selectCustomerRequest);return}const doc=e.target.closest("[data-customer-request-document]");if(doc){openCatalogCustomerSaleDocument(doc);return}const credit=e.target.closest("[data-check-sale-credit]");if(credit){checkCatalogSaleCredit(credit.dataset.checkSaleCredit,credit);return}const print=e.target.closest("[data-print-customer-request]");if(print){printCatalogCustomerSaleRequest(print.dataset.printCustomerRequest);return}const decision=e.target.closest("[data-customer-request-decision]");if(decision){decideCatalogCustomerSaleRequest(decision);return}const save=e.target.closest("[data-save-customer-request]");if(save)saveCatalogCustomerSaleReview(save)});
-$("sellerDepotStockButton").addEventListener("click",()=>location.href="../deposito/?role=1");
-$("sellerLocalStockButton").addEventListener("click",()=>location.href="../local/?role=1");
+$("sellerDepotStockButton").addEventListener("click",()=>location.href="../stock-deposito/?role=1");
+$("sellerLocalStockButton").addEventListener("click",()=>location.href="../stock-local/?role=1");
 $("sellerTeamClose").addEventListener("click",()=>closeSellerModal("sellerTeamModal"));
 $("sellerTeamRefresh").addEventListener("click",()=>loadSellerTeam(true));
 $("sellerTeamFilter").addEventListener("change",()=>loadSellerTeam(true));
