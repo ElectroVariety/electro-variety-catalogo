@@ -85,9 +85,10 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <div class="full"><label>Nombre</label><input id="name"/></div><div><label>Subtítulo</label><input id="subtitle"/></div><div><label>Categoría</label><input id="category"/></div>
 <div><label>Cuota quincenal</label><input id="qprice"/></div><div><label>Cantidad quincenal</label><input id="qcount" min="1" type="number"/></div><div><label>Cuota mensual</label><input id="mprice"/></div><div><label>Cantidad mensual</label><input id="mcount" min="1" type="number"/></div>
 <div class="full"><label>Imagen (obligatoria al crear; opcional al editar)</label><input accept="image/*" id="image" type="file"/></div>
+<div><label>Quién puede verlo en el catálogo de vendedores</label><select id="sellerVisibility"><option value="all">Todos los usuarios del catálogo</option><option value="privileged">Solo administración y roles con permiso</option></select></div><div><label>Enlaces del catálogo de clientes</label><select id="customerCatalogScope"><option value="all">Catálogo general y enlaces personales</option><option value="general_only">Solo catálogo general</option></select></div>
 </div><div class="actions"><button class="blue" id="saveButton" type="button">💾 Guardar</button><button class="dark" id="resetButton" type="button">Nuevo / cancelar edición</button></div><div class="small" id="status"></div></div><div class="card">
 <h2>📥 Importar desde WhatsApp</h2>
-<div class="small">Exportá un chat de WhatsApp con <b>Incluir archivos</b> y subí el ZIP acá. El sistema detectará automáticamente nombre, cuotas e imagen y te mostrará una vista previa antes de guardar.</div>
+<div class="small">Exportá un chat de WhatsApp con <b>Incluir archivos</b> y subí el ZIP acá. El sistema detectará automáticamente nombre, cuotas e imagen y te mostrará una vista previa antes de guardar. Los productos importados usan las dos opciones de privacidad del formulario de producto.</div>
 <div class="actions"><input accept=".zip,application/zip" id="waZip" style="flex:1" type="file"/><button class="blue" id="analyzeWaButton" type="button">🔎 Analizar ZIP</button></div>
 <div class="small" id="waStatus"></div>
 <div class="import-preview" id="waPreview"></div>
@@ -444,7 +445,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         <div class="info">
           <b>${esc(p.name)}</b>
           <div class="small">${esc(p.category || "Sin categoría")} · ${esc(p.q_price)} × ${esc(p.q_count)} · ${esc(p.m_price)} × ${esc(p.m_count)}</div>
-          <div class="small">${p.active !== false ? "🟢 Publicado" : "⚪ Oculto"} · Posición ${i + 1}</div>
+          <div class="small">${p.active !== false ? "🟢 Publicado" : "⚪ Oculto"} · Vendedores: ${p.seller_visibility === "privileged" ? "🔒 Solo con permiso" : "Todos"} · Clientes: ${p.customer_catalog_scope === "general_only" ? "Solo catálogo general" : "General y enlaces personales"} · Posición ${i + 1}</div>
           <div class="product-tools">
             <button type="button" onclick="editProduct(${Number(p.id)})">✏️ Editar</button>
             <button type="button" class="${p.active !== false ? "red" : "blue"}" onclick="toggleProduct(${Number(p.id)},${p.active !== false})">${p.active !== false ? "🙈 Ocultar" : "👁️ Publicar"}</button>
@@ -686,6 +687,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         m_price: mprice,
         m_count: mcount,
         image_url: imageUrl,
+        seller_visibility: $("sellerVisibility").value === "privileged" ? "privileged" : "all",
+        customer_catalog_scope: $("customerCatalogScope").value === "general_only" ? "general_only" : "all",
         active: editing?.active ?? true,
         updated_at: new Date().toISOString()
       };
@@ -736,6 +739,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     $("qcount").value = data.q_count || "";
     $("mprice").value = data.m_price || "";
     $("mcount").value = data.m_count || "";
+    $("sellerVisibility").value = data.seller_visibility === "privileged" ? "privileged" : "all";
+    $("customerCatalogScope").value = data.customer_catalog_scope === "general_only" ? "general_only" : "all";
     $("image").value = "";
     setStatus("status", "Editando: " + data.name);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -745,6 +750,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     editing = null;
     $("formTitle").textContent = "Nuevo producto";
     ["name","subtitle","category","qprice","qcount","mprice","mcount"].forEach(id => $(id).value = "");
+    $("sellerVisibility").value = "all";
+    $("customerCatalogScope").value = "all";
     $("image").value = "";
   }
 
@@ -952,7 +959,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         if(role?.can_view_assigned_sellers)permissions.push("Ver pedidos y actividad de vendedores asignados");
         if(role?.can_manage_deposito_stock)permissions.push("Editar stock de Depósito y solicitar aprobación");
         if(role?.can_manage_local_stock)permissions.push("Editar stock de Local y solicitar aprobación");
-        if(!role?.can_view_assigned_sellers&&!role?.can_manage_deposito_stock&&!role?.can_manage_local_stock)permissions.push("Este rol no tiene permisos adicionales configurados");
+        if(role?.can_view_restricted_products)permissions.push("Ver productos reservados en el catálogo de vendedores");
+        if(!role?.can_view_assigned_sellers&&!role?.can_manage_deposito_stock&&!role?.can_manage_local_stock&&!role?.can_view_restricted_products)permissions.push("Este rol no tiene permisos adicionales configurados");
       }else{
         for(const baseRole of staffBaseRoles(user)){
           if(baseRole==="Local")permissions.push("Editar stock de Local y solicitar aprobación");
@@ -1559,7 +1567,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const [usersResult, candidatesResult, rolesResult, assignmentsResult, sellersResult, stockResult] = await Promise.all([
       db.rpc("admin_list_staff_sales_verifications"),
       db.rpc("admin_list_custom_role_candidates"),
-      db.rpc("admin_list_staff_roles"),
+      db.rpc("admin_list_staff_roles_with_product_visibility"),
       db.rpc("admin_get_staff_role_assignments"),
       db.from("seller_profiles").select("user_id,name,phone,active").order("name",{ascending:true}),
       db.from("stock_profiles").select("user_id,location")
@@ -1681,7 +1689,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     if (!assignmentsBox) return;
     assignmentsBox.textContent = "Cargando roles…";
     const [rolesResult, usersResult, assignmentsResult, sellersResult] = await Promise.all([
-      db.rpc("admin_list_staff_roles"),
+      db.rpc("admin_list_staff_roles_with_product_visibility"),
       db.rpc("admin_list_custom_role_candidates"),
       db.rpc("admin_get_staff_role_assignments"),
       db.from("seller_profiles").select("user_id,name,phone,active").order("name", {ascending:true})
@@ -1697,7 +1705,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const sellers = sellersResult.data || [];
     const permissionsBox = $("customRolePermissions");
     if (permissionsBox) {
-      permissionsBox.innerHTML = roles.length ? roles.map(role => `<div class="supervisor-assignment"><b>${esc(role.name)}</b><div class="assignment-checklist role-permission-checklist"><label><input type="checkbox" data-role-permission="sales" ${role.can_view_assigned_sellers ? "checked" : ""}><span>Ver pedidos de vendedores asignados</span></label><label><input type="checkbox" data-role-permission="deposito" ${role.can_manage_deposito_stock ? "checked" : ""}><span>Editar stock de Depósito y enviar solicitud de aprobación</span></label><label><input type="checkbox" data-role-permission="local" ${role.can_manage_local_stock ? "checked" : ""}><span>Editar stock de Local y enviar solicitud de aprobación</span></label></div><button class="blue" type="button" data-save-role-permissions="${esc(role.id)}">💾 Guardar permisos</button></div>`).join("") : '<div class="small">Creá un rol para configurar sus permisos.</div>';
+      permissionsBox.innerHTML = roles.length ? roles.map(role => `<div class="supervisor-assignment"><b>${esc(role.name)}</b><div class="assignment-checklist role-permission-checklist"><label><input type="checkbox" data-role-permission="sales" ${role.can_view_assigned_sellers ? "checked" : ""}><span>Ver pedidos de vendedores asignados</span></label><label><input type="checkbox" data-role-permission="deposito" ${role.can_manage_deposito_stock ? "checked" : ""}><span>Editar stock de Depósito y enviar solicitud de aprobación</span></label><label><input type="checkbox" data-role-permission="local" ${role.can_manage_local_stock ? "checked" : ""}><span>Editar stock de Local y enviar solicitud de aprobación</span></label><label><input type="checkbox" data-role-permission="restricted-products" ${role.can_view_restricted_products ? "checked" : ""}><span>Ver productos reservados en el catálogo de vendedores</span></label></div><button class="blue" type="button" data-save-role-permissions="${esc(role.id)}">💾 Guardar permisos</button></div>`).join("") : '<div class="small">Creá un rol para configurar sus permisos.</div>';
     }
     const roleSelect = $("customRoleChoice");
     const userSelect = $("customRoleUser");
@@ -1747,11 +1755,12 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const permission = key => card?.querySelector(`[data-role-permission="${key}"]`)?.checked === true;
     button.disabled = true;
     try {
-      const {error} = await db.rpc("admin_update_staff_role_permissions", {
+      const {error} = await db.rpc("admin_update_staff_role_permissions_with_product_visibility", {
         p_role_id: roleId,
         p_can_view_assigned_sellers: permission("sales"),
         p_can_manage_deposito_stock: permission("deposito"),
-        p_can_manage_local_stock: permission("local")
+        p_can_manage_local_stock: permission("local"),
+        p_can_view_restricted_products: permission("restricted-products")
       });
       if (error) throw error;
       setStatus("customRoleStatus", "✅ Permisos del rol actualizados.", "ok");
@@ -2334,6 +2343,8 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
             m_price: product.m_price,
             m_count: product.m_count,
             image_url: imageUrl,
+            seller_visibility: $("sellerVisibility").value === "privileged" ? "privileged" : "all",
+            customer_catalog_scope: $("customerCatalogScope").value === "general_only" ? "general_only" : "all",
             active: true,
             updated_at: new Date().toISOString()
           };
@@ -2758,6 +2769,9 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   $("logout").addEventListener("click", signout);
   $("saveButton").addEventListener("click", save);
   $("resetButton").addEventListener("click", resetForm);
+  $("sellerVisibility").addEventListener("change", () => {
+    if ($("sellerVisibility").value === "privileged" && !editing) $("customerCatalogScope").value = "general_only";
+  });
   $("createSellerButton").addEventListener("click", createSeller);
   $("sellerList").addEventListener("click", event => {
     const editButton = event.target.closest("[data-edit-seller]");

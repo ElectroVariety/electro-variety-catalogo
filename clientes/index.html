@@ -866,7 +866,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
   async function load(){
     try{
       const [pRes,fRes,mRes,settingsRes,referralRes]=await Promise.all([
-        db.from("products").select("id,name,subtitle,category,image_url,active,stock,q_price,q_count,m_price,m_count").eq("active",true),
+        db.from("products").select("id,name,subtitle,category,image_url,active,stock,q_price,q_count,m_price,m_count,customer_catalog_scope").eq("active",true),
         db.from("client_product_features").select("product_id,trending,new_entry,coming_soon"),
         db.from("client_media").select("id,media_url,media_type,title,sort_order,created_at").eq("active",true).order("sort_order",{ascending:true}),
         db.from("client_notification_settings").select("whatsapp_number,catalog_product_click_whatsapp_mode").eq("id",1).maybeSingle(),
@@ -888,7 +888,9 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
       }
       features=fRes.error?[]:(fRes.data||[]);
       media=mRes.error?[]:(mRes.data||[]);
-      products=(pRes.data||[]).filter(productHasPublicStock);
+      products=(pRes.data||[])
+        .filter(product=>!personalCatalogToken||product.customer_catalog_scope!=="general_only")
+        .filter(productHasPublicStock);
       renderCategories();
       renderCategoryProducts();
       renderFeatured();

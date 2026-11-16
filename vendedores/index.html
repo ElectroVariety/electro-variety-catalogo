@@ -942,9 +942,14 @@ async function handleSession(session, mode="restore"){
     currentUserHasSalesBadge=verification?.is_verified===true;
     currentSalesVerified=currentStaffAccess?.role==="admin"||currentUserHasSalesBadge;
     if(currentStaffAccess?.role==="custom"){
-      const {data:stockPermissions,error:stockPermissionsError}=await db.rpc("get_my_stock_role_permissions");
-      if(stockPermissionsError){console.warn("No se pudieron verificar los permisos de stock",stockPermissionsError);retrySessionCheck(mode);return}
+      const [stockResult,restrictedResult]=await Promise.all([
+        db.rpc("get_my_stock_role_permissions"),
+        db.rpc("get_my_restricted_product_permission")
+      ]);
+      const {data:stockPermissions,error:stockPermissionsError}=stockResult;
+      if(stockPermissionsError||restrictedResult.error){console.warn("No se pudieron verificar los permisos del rol",stockPermissionsError||restrictedResult.error);retrySessionCheck(mode);return}
       Object.assign(currentStaffAccess,Array.isArray(stockPermissions)?(stockPermissions[0]||{}):(stockPermissions||{}));
+      currentStaffAccess.can_view_restricted_products=restrictedResult.data===true;
     }
     const {data:seller,error:sellerError}=await db.from("seller_profiles")
       .select("user_id,name,phone,active,profile_setup_completed").eq("user_id",session.user.id).maybeSingle();
@@ -991,7 +996,7 @@ async function handleSession(session, mode="restore"){
       return;
     }
     const access=currentStaffAccess;
-    const canEnter=access&&(access.role==="admin"||access.role==="supervisor"||currentSalesVerified||(access.role==="custom"&&(access.can_view_assigned_sellers||access.can_manage_deposito_stock||access.can_manage_local_stock)));
+    const canEnter=access&&(access.role==="admin"||access.role==="supervisor"||currentSalesVerified||(access.role==="custom"&&(access.can_view_assigned_sellers||access.can_manage_deposito_stock||access.can_manage_local_stock||access.can_view_restricted_products)));
     if(canEnter){
       const {data:adminProfile}=await db.from("admin_profiles").select("display_name,profile_setup_completed").eq("user_id",session.user.id).maybeSingle();
       const {data:stockProfile}=await db.from("stock_profiles").select("name,profile_setup_completed").eq("user_id",session.user.id).maybeSingle();
