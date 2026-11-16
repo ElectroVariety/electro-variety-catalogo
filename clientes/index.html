@@ -37,16 +37,6 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
 .cart-item{display:flex;align-items:center;gap:10px;border-bottom:1px solid #e5e7eb;padding:11px 0}
 .cart-item-name{font-size:14px;font-weight:800;flex:1}
 .cart-remove{border:0;background:#fee2e2;color:#991b1b;border-radius:999px;padding:7px 10px;font-weight:900;cursor:pointer}
-.combo-guide{margin:0 0 14px;padding:12px 14px;border-radius:14px;background:#eff6ff;color:#1e3a8a;font-size:13px;line-height:1.45}
-.combo-guide strong{display:block;margin-bottom:3px}
-.combo-summary{margin:12px 0 16px;padding:14px;border:1px solid #dbeafe;border-radius:15px;background:#f8fbff}
-.combo-summary h3{margin:0 0 8px;font-size:16px}
-.combo-limit{margin:8px 0 0;color:#166534;font-size:12px;line-height:1.4}
-.combo-error{margin:10px 0 0;padding:10px 12px;border-radius:11px;background:#fee2e2;color:#991b1b;font-size:13px;line-height:1.4}
-.cart-mode{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
-.cart-mode button{border:1px solid #d1d5db;border-radius:12px;background:#f8fafc;color:#111827;padding:11px 9px;font-weight:900;cursor:pointer}
-.cart-mode button.active{border-color:#2563eb;background:#eff6ff;color:#1d4ed8}
-@media(max-width:420px){.cart-mode{grid-template-columns:1fr}}
 .cart-share:disabled{opacity:.5;cursor:not-allowed}
 .cart-actions{display:flex;gap:8px}
 .cart-actions button{flex:1;border:0;border-radius:999px;padding:12px;font-weight:1000;cursor:pointer}
@@ -150,7 +140,6 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     <h1>¿QUÉ ESTÁS NECESITANDO?</h1>
     <p>Elegí una categoría y descubrí nuestros productos.</p>
     <a id="saleFormLink" href="../formulario/" style="display:inline-block;margin-top:13px;padding:11px 16px;border-radius:999px;background:#16a34a;color:#fff;text-decoration:none;font-size:13px;font-weight:1000">🛍️ Completar solicitud de compra</a>
-    <div class="combo-guide" style="margin-top:14px;text-align:left"><strong>🎁 Armá tu propio combo</strong></div>
     <div class="search-wrap">
       <input id="searchInput" class="search-input" type="search" autocomplete="off" placeholder="¿Qué producto estás buscando?" aria-label="Buscar producto">
       <span class="search-icon">🔍</span>
@@ -206,16 +195,12 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
 
 <div id="cartBackdrop" class="cart-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
   <div class="cart-modal">
-    <h2 id="cartTitle">🛍️ Productos seleccionados</h2>
+    <h2 id="cartTitle">🛍️ Mi carrito</h2>
     <div id="cartList"></div>
-    <div class="cart-mode" role="group" aria-label="Tipo de consulta">
-      <button id="inquiryMode" type="button">💬 Consultar productos</button>
-      <button id="comboMode" type="button">🎁 Armar un combo</button>
-    </div>
-    <div id="comboSummary" class="combo-summary" hidden></div>
+    <p>Podés consultar uno o varios productos. La consulta no confirma una compra.</p>
     <div class="cart-actions">
       <button id="closeCart" class="cart-close" type="button">Cerrar</button>
-      <button id="shareCart" class="cart-share" type="button">📲 Consultar este combo</button>
+      <button id="shareCart" class="cart-share" type="button">📲 Consultar por WhatsApp</button>
     </div>
   </div>
 </div>
@@ -263,7 +248,6 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
   let mediaIndex=0;
   let mediaTimer=null;
   const cart=new Set();
-  let cartMode="inquiry";
   let searchTerm="";
   let deliveryMap=null;
   let deliveryMarker=null;
@@ -387,63 +371,18 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     document.querySelectorAll(`[data-cart-id="${CSS.escape(id)}"]`).forEach(btn=>syncCartButton(btn,id));
   }
 
-  function parsePrice(value){
-    const digits=String(value??"").replace(/\D/g,"");
-    return digits?Number(digits):0;
-  }
-
-  function comboPlan(selected,frequency){
-    const countKey=frequency==="quincenal"?"q_count":"m_count";
-    const priceKey=frequency==="quincenal"?"q_price":"m_price";
-    const plans=selected.map(product=>({count:Number(product[countKey])||0,price:parsePrice(product[priceKey])}));
-    if(plans.some(plan=>plan.count<=0||plan.price<=0))return null;
-    const installments=Math.max(...plans.map(plan=>plan.count));
-    const financedTotal=plans.reduce((sum,plan)=>sum+plan.count*plan.price,0);
-    const installmentAmount=Math.ceil((financedTotal/installments)/500)*500;
-    const durationLimit=frequency==="quincenal"?24:12;
-    if(installments>durationLimit)return {valid:false,installments,installmentAmount,financedTotal};
-    const monthlyEquivalent=frequency==="quincenal"?installmentAmount*2:installmentAmount;
-    if(monthlyEquivalent>200000)return {valid:false,installments,installmentAmount,financedTotal};
-    return {valid:true,installments,installmentAmount,financedTotal};
-  }
-
   function renderCart(){
     const list=$("cartList");
     const selected=products.filter(p=>cart.has(String(p.id)));
-    const summary=$("comboSummary"),shareButton=$("shareCart");
-    $("inquiryMode").classList.toggle("active",cartMode==="inquiry");
-    $("comboMode").classList.toggle("active",cartMode==="combo");
-    summary.hidden=true;
-    summary.innerHTML="";
-    shareButton.disabled=false;
+    const shareButton=$("shareCart");
+    shareButton.disabled=!selected.length;
     if(!selected.length){
       list.innerHTML='<div class="empty">No hay productos seleccionados.</div>';
       return;
     }
     list.innerHTML=`<ul class="cart-list">${selected.map(p=>`<li class="cart-item"><span class="cart-item-name">${esc(p.name||"Producto")}</span><button class="cart-remove" type="button" data-remove-cart="${String(p.id)}">Quitar</button></li>`).join("")}</ul>`;
     list.querySelectorAll("[data-remove-cart]").forEach(btn=>btn.onclick=()=>{toggleCart(String(btn.dataset.removeCart));renderCart();});
-    if(cartMode==="inquiry"){
-      summary.hidden=false;
-      summary.innerHTML='<h3>Consulta de productos</h3><div class="combo-limit">Podés consultar uno o varios productos sin confirmar que quieras comprarlos todos.</div>';
-      shareButton.textContent="📲 Consultar selección por WhatsApp";
-      return;
-    }
-    if(selected.length<2){
-      summary.hidden=false;
-      summary.innerHTML='<h3>Para armar un combo</h3><div class="combo-limit">Agregá al menos dos productos individuales.</div>';
-      shareButton.textContent="📲 Consultar combo por WhatsApp";
-      shareButton.disabled=true;
-      return;
-    }
-    const q=comboPlan(selected,"quincenal"),m=comboPlan(selected,"mensual");
-    const availablePlans=[q,m].filter(Boolean);
-    const available=availablePlans.length>0&&availablePlans.every(plan=>plan.valid);
-    summary.hidden=false;
-    summary.innerHTML=available
-      ?'<h3>Combo listo para consultar</h3><div class="combo-limit">El equipo te confirma las opciones de pago por WhatsApp.</div>'
-      :'<div class="combo-error">Límite excedido, quita un producto o elige uno de menor valor.</div>';
-    shareButton.textContent="📲 Consultar combo por WhatsApp";
-    shareButton.disabled=!available;
+    shareButton.textContent=selected.length>1?"📲 Consultar selección por WhatsApp":"📲 Consultar producto por WhatsApp";
   }
 
   function openCart(){
@@ -456,17 +395,9 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     const selected=products.filter(p=>cart.has(String(p.id)));
     if(!selected.length)return;
     selected.forEach(p=>recordCustomerCatalogAnalyticsEvent("product_consult",Number(p.id)));
-    let text;
-    if(cartMode==="combo"){
-      const q=comboPlan(selected,"quincenal"),m=comboPlan(selected,"mensual");
-      const availablePlans=[q,m].filter(Boolean);
-      if(selected.length<2||!availablePlans.length||availablePlans.some(plan=>!plan.valid))return;
-      text=`Hola, quisiera consultar si pueden armar un combo con estos productos:\n\n${selected.map(p=>`• ${p.name||"Producto"}`).join("\n")}`;
-    }else if(selected.length>1){
-      text=`Hola, me interesan estos productos y quisiera consultar por disponibilidad y opciones, sin confirmar una compra:\n\n${selected.map(p=>`• ${p.name||"Producto"}`).join("\n")}`;
-    }else{
-      text=`Hola, quiero consultar por este producto:\n\n${selected[0].name||"Producto"}`;
-    }
+    const text=selected.length>1
+      ?`Hola, me interesan estos productos y quisiera consultar por disponibilidad y opciones, sin confirmar una compra:\n\n${selected.map(p=>`• ${p.name||"Producto"}`).join("\n")}`
+      :`Hola, quiero consultar por este producto:\n\n${selected[0].name||"Producto"}`;
 
     // Si el administrador configuró WhatsApp directo, NO usamos navigator.share:
     // eso abre el selector del sistema. Abrimos directamente el chat configurado.
@@ -1002,8 +933,6 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
   $("deliveryLocate").addEventListener("click",()=>{recordCustomerCatalogAnalyticsEvent("delivery_consult");checkDeliveryLocation();});
   $("deliveryBackdrop").addEventListener("click",e=>{if(e.target.id==="deliveryBackdrop")closeDeliveryModal();});
   $("openCart").addEventListener("click",openCart);
-  $("inquiryMode").addEventListener("click",()=>{cartMode="inquiry";renderCart();});
-  $("comboMode").addEventListener("click",()=>{cartMode="combo";renderCart();});
   $("closeCart").addEventListener("click",closeCart);
   $("shareCart").addEventListener("click",shareCartByWhatsApp);
   $("cartBackdrop").addEventListener("click",e=>{if(e.target.id==="cartBackdrop")closeCart();});
