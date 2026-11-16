@@ -149,7 +149,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     <h1>¿QUÉ ESTÁS NECESITANDO?</h1>
     <p>Elegí una categoría y descubrí nuestros productos.</p>
     <a id="saleFormLink" href="../formulario/" style="display:inline-block;margin-top:13px;padding:11px 16px;border-radius:999px;background:#16a34a;color:#fff;text-decoration:none;font-size:13px;font-weight:1000">🛍️ Completar solicitud de compra</a>
-    <div class="combo-guide" style="margin-top:14px;text-align:left"><strong>🎁 Armá tu propio combo</strong>Agregá dos o más productos y calculamos las cuotas combinadas. Hasta 12 meses y con cuotas mensuales de hasta $200.000, sin descuentos.</div>
+    <div class="combo-guide" style="margin-top:14px;text-align:left"><strong>🎁 Armá tu propio combo</strong></div>
     <div class="search-wrap">
       <input id="searchInput" class="search-input" type="search" autocomplete="off" placeholder="¿Qué producto estás buscando?" aria-label="Buscar producto">
       <span class="search-icon">🔍</span>
@@ -427,10 +427,10 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     const available=[q?.valid,m?.valid].some(Boolean);
     const planMarkup=(plan,label)=>plan?.valid?`<div class="combo-plan"><span>${label}</span><strong>${plan.installments} cuotas de ${formatCurrency(plan.installmentAmount)}</strong></div>`:"";
     const excluded=[];
-    if(q&&!q.valid)excluded.push(q.installments>24?"La opción quincenal supera 12 meses.":"No se puede calcular la opción quincenal para todos los productos seleccionados.");
-    if(m&&!m.valid)excluded.push(m.installments>12?"La opción mensual supera los 12 meses.":m.installmentAmount>200000?"La opción mensual supera el tope de $200.000 por cuota.":"No se puede calcular la opción mensual para todos los productos seleccionados.");
+    if(q&&!q.valid)excluded.push("La opción quincenal no está disponible para esta combinación.");
+    if(m&&!m.valid)excluded.push("La opción mensual no está disponible para esta combinación.");
     summary.hidden=false;
-    summary.innerHTML=`<h3>Cuotas de tu combo</h3>${planMarkup(q,"Quincenales")}${planMarkup(m,"Mensuales")}${available?`<div class="combo-limit">Importes calculados sumando el total financiado de cada producto, sin descuentos. El plan final queda sujeto a confirmación del vendedor.</div>${excluded.length?`<div class="combo-note">${excluded.map(esc).join(" ")}</div>`:""}`:`<div class="combo-error">Esta combinación no cumple las condiciones. El plazo máximo es de 12 meses (24 cuotas quincenales) y la cuota mensual no puede superar $200.000. Probá quitar un producto.</div>`}`;
+    summary.innerHTML=`<h3>Cuotas de tu combo</h3>${planMarkup(q,"Quincenales")}${planMarkup(m,"Mensuales")}${excluded.length?`<div class="combo-note">${excluded.map(esc).join(" ")}</div>`:""}${available?"":'<div class="combo-error">Esta combinación no está disponible. Probá quitar un producto o elegir otra forma de pago.</div>'}`;
     shareButton.textContent="📲 Consultar este combo";
     shareButton.disabled=!available;
   }
@@ -450,7 +450,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
       const q=comboPlan(selected,"quincenal"),m=comboPlan(selected,"mensual");
       if(!q?.valid&&!m?.valid)return;
       const quote=[q?.valid?`Quincenal: ${q.installments} cuotas de ${formatCurrency(q.installmentAmount)}`:"",m?.valid?`Mensual: ${m.installments} cuotas de ${formatCurrency(m.installmentAmount)}`:""].filter(Boolean).join("\n");
-      text=`Hola, quiero consultar por este combo personalizado:\n\n${selected.map(p=>`• ${p.name||"Producto"}`).join("\n")}\n\n${quote}\n\nImportes calculados sin descuentos.`;
+      text=`Hola, quiero consultar por este combo personalizado:\n\n${selected.map(p=>`• ${p.name||"Producto"}`).join("\n")}\n\n${quote}`;
     }else{
       text=`Hola, quiero consultar por este producto:\n\n${selected[0].name||"Producto"}`;
     }
