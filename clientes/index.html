@@ -41,10 +41,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
 .combo-guide strong{display:block;margin-bottom:3px}
 .combo-summary{margin:12px 0 16px;padding:14px;border:1px solid #dbeafe;border-radius:15px;background:#f8fbff}
 .combo-summary h3{margin:0 0 8px;font-size:16px}
-.combo-plan{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid #dbeafe;font-size:14px}
-.combo-plan strong{white-space:nowrap}
 .combo-limit{margin:8px 0 0;color:#166534;font-size:12px;line-height:1.4}
-.combo-note{margin:8px 0 0;color:#92400e;font-size:12px;line-height:1.4}
 .combo-error{margin:10px 0 0;padding:10px 12px;border-radius:11px;background:#fee2e2;color:#991b1b;font-size:13px;line-height:1.4}
 .cart-share:disabled{opacity:.5;cursor:not-allowed}
 .cart-actions{display:flex;gap:8px}
@@ -386,10 +383,6 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     return digits?Number(digits):0;
   }
 
-  function formatCurrency(value){
-    return `$${new Intl.NumberFormat("es-AR",{maximumFractionDigits:0}).format(Math.round(value))}`;
-  }
-
   function comboPlan(selected,frequency){
     const countKey=frequency==="quincenal"?"q_count":"m_count";
     const priceKey=frequency==="quincenal"?"q_price":"m_price";
@@ -425,13 +418,12 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
       return;
     }
     const q=comboPlan(selected,"quincenal"),m=comboPlan(selected,"mensual");
-    const available=[q?.valid,m?.valid].some(Boolean);
-    const planMarkup=(plan,label)=>plan?.valid?`<div class="combo-plan"><span>${label}</span><strong>${plan.installments} cuotas de ${formatCurrency(plan.installmentAmount)}</strong></div>`:"";
-    const excluded=[];
-    if(q&&!q.valid)excluded.push("La opción quincenal no está disponible para esta combinación.");
-    if(m&&!m.valid)excluded.push("La opción mensual no está disponible para esta combinación.");
+    const availablePlans=[q,m].filter(Boolean);
+    const available=availablePlans.length>0&&availablePlans.every(plan=>plan.valid);
     summary.hidden=false;
-    summary.innerHTML=`<h3>Cuotas de tu combo</h3>${planMarkup(q,"Quincenales")}${planMarkup(m,"Mensuales")}${excluded.length?`<div class="combo-note">${excluded.map(esc).join(" ")}</div>`:""}${available?"":'<div class="combo-error">Esta combinación no está disponible. Probá quitar un producto o elegir otra forma de pago.</div>'}`;
+    summary.innerHTML=available
+      ?'<h3>Combo listo para consultar</h3><div class="combo-limit">El equipo te confirma las opciones de pago por WhatsApp.</div>'
+      :'<div class="combo-error">Esta selección supera los límites disponibles. Elegí productos con cuotas de menor valor o quitá productos del combo.</div>';
     shareButton.textContent="📲 Consultar este combo";
     shareButton.disabled=!available;
   }
@@ -449,9 +441,9 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     let text;
     if(selected.length>1){
       const q=comboPlan(selected,"quincenal"),m=comboPlan(selected,"mensual");
-      if(!q?.valid&&!m?.valid)return;
-      const quote=[q?.valid?`Quincenal: ${q.installments} cuotas de ${formatCurrency(q.installmentAmount)}`:"",m?.valid?`Mensual: ${m.installments} cuotas de ${formatCurrency(m.installmentAmount)}`:""].filter(Boolean).join("\n");
-      text=`Hola, quiero consultar por este combo personalizado:\n\n${selected.map(p=>`• ${p.name||"Producto"}`).join("\n")}\n\n${quote}`;
+      const availablePlans=[q,m].filter(Boolean);
+      if(!availablePlans.length||availablePlans.some(plan=>!plan.valid))return;
+      text=`Hola, quiero consultar por este combo personalizado:\n\n${selected.map(p=>`• ${p.name||"Producto"}`).join("\n")}\n\n¿Me podrían informar las opciones de pago disponibles?`;
     }else{
       text=`Hola, quiero consultar por este producto:\n\n${selected[0].name||"Producto"}`;
     }
