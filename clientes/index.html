@@ -400,7 +400,8 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     const installmentAmount=Math.round(financedTotal/installments);
     const durationLimit=frequency==="quincenal"?24:12;
     if(installments>durationLimit)return {valid:false,installments,installmentAmount,financedTotal};
-    if(frequency==="mensual"&&installmentAmount>200000)return {valid:false,installments,installmentAmount,financedTotal};
+    const monthlyEquivalent=frequency==="quincenal"?installmentAmount*2:installmentAmount;
+    if(monthlyEquivalent>200000)return {valid:false,installments,installmentAmount,financedTotal};
     return {valid:true,installments,installmentAmount,financedTotal};
   }
 
