@@ -37,6 +37,16 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
 .cart-item{display:flex;align-items:center;gap:10px;border-bottom:1px solid #e5e7eb;padding:11px 0}
 .cart-item-name{font-size:14px;font-weight:800;flex:1}
 .cart-remove{border:0;background:#fee2e2;color:#991b1b;border-radius:999px;padding:7px 10px;font-weight:900;cursor:pointer}
+.combo-guide{margin:0 0 14px;padding:12px 14px;border-radius:14px;background:#eff6ff;color:#1e3a8a;font-size:13px;line-height:1.45}
+.combo-guide strong{display:block;margin-bottom:3px}
+.combo-summary{margin:12px 0 16px;padding:14px;border:1px solid #dbeafe;border-radius:15px;background:#f8fbff}
+.combo-summary h3{margin:0 0 8px;font-size:16px}
+.combo-plan{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid #dbeafe;font-size:14px}
+.combo-plan strong{white-space:nowrap}
+.combo-limit{margin:8px 0 0;color:#166534;font-size:12px;line-height:1.4}
+.combo-note{margin:8px 0 0;color:#92400e;font-size:12px;line-height:1.4}
+.combo-error{margin:10px 0 0;padding:10px 12px;border-radius:11px;background:#fee2e2;color:#991b1b;font-size:13px;line-height:1.4}
+.cart-share:disabled{opacity:.5;cursor:not-allowed}
 .cart-actions{display:flex;gap:8px}
 .cart-actions button{flex:1;border:0;border-radius:999px;padding:12px;font-weight:1000;cursor:pointer}
 .cart-close{background:#eef0f3;color:#111827}.cart-share{background:#16a34a;color:#fff}
@@ -139,6 +149,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     <h1>¿QUÉ ESTÁS NECESITANDO?</h1>
     <p>Elegí una categoría y descubrí nuestros productos.</p>
     <a id="saleFormLink" href="../formulario/" style="display:inline-block;margin-top:13px;padding:11px 16px;border-radius:999px;background:#16a34a;color:#fff;text-decoration:none;font-size:13px;font-weight:1000">🛍️ Completar solicitud de compra</a>
+    <div class="combo-guide" style="margin-top:14px;text-align:left"><strong>🎁 Armá tu propio combo</strong>Agregá dos o más productos y calculamos las cuotas combinadas. Hasta 12 meses y con cuotas mensuales de hasta $200.000, sin descuentos.</div>
     <div class="search-wrap">
       <input id="searchInput" class="search-input" type="search" autocomplete="off" placeholder="¿Qué producto estás buscando?" aria-label="Buscar producto">
       <span class="search-icon">🔍</span>
@@ -189,16 +200,17 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
 </div>
 
 <div id="cartBar" class="cart-bar">
-  <button id="openCart" class="cart-button" type="button">🛒 Ver carrito (0)</button>
+  <button id="openCart" class="cart-button" type="button">🎁 Armar combo (0)</button>
 </div>
 
 <div id="cartBackdrop" class="cart-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
   <div class="cart-modal">
-    <h2 id="cartTitle">🛒 Productos seleccionados</h2>
+    <h2 id="cartTitle">🎁 Tu combo</h2>
     <div id="cartList"></div>
+    <div id="comboSummary" class="combo-summary" hidden></div>
     <div class="cart-actions">
       <button id="closeCart" class="cart-close" type="button">Cerrar</button>
-      <button id="shareCart" class="cart-share" type="button">📲 Consultar por WhatsApp</button>
+      <button id="shareCart" class="cart-share" type="button">📲 Consultar este combo</button>
     </div>
   </div>
 </div>
@@ -263,6 +275,19 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
   }
 
   function productHasPublicStock(p){ const n=Number(p.stock); return n===-1 || n>0; }
+  function isPrebuiltCombo(p){
+    const category=String(p.category||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("es");
+    const name=String(p.name||"").toLocaleLowerCase("es");
+    const image=String(p.image_url||"").toLocaleLowerCase("es");
+    if(/\bcombos?\b|temporada|bundle/.test(category)||/\bcombo\b/.test(name))return true;
+    if(/(?:^|[\/_-])(?:combo|combos|bundle|combinado|conjunto)(?:[\/_-]|\.|$)/i.test(image))return true;
+    // Evita confundir prestaciones de un solo producto con un combo:
+    // RAM, puertas, cajones, controles incluidos y otros detalles técnicos.
+    const titleComponents=name.replace(/\([^)]*\)/g," ")
+      .replace(/\+\s*\d+(?:[.,]\d+)?\s*gb\s*ram\b/gi,"")
+      .replace(/\+\s*\d+\s*(?:puertas?|cajones?)\b/gi,"");
+    return /\s\+\s/.test(titleComponents);
+  }
 
   function productCard(p){
     const title=p.name||"Producto";
@@ -274,7 +299,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
         <div class="product-name">${esc(title)}</div>
         <div class="product-desc">${esc(desc)}</div>
         <button class="wa" type="button" data-wa-index="${String(p.id)}">💬 CONSULTAR POR WHATSAPP</button>
-        <button class="add-cart" type="button" data-cart-id="${String(p.id)}">➕ Agregar al carrito</button>
+        ${isPrebuiltCombo(p)?"":`<button class="add-cart" type="button" data-cart-id="${String(p.id)}">➕ Agregar al combo</button>`}
       </div>
     </article>`;
   }
@@ -346,7 +371,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
   function updateCartBar(){
     const n=cart.size;
     $("cartBar").style.display=n?"block":"none";
-    $("openCart").textContent=`🛒 Ver carrito (${n})`;
+    $("openCart").textContent=`🎁 Armar combo (${n})`;
   }
 
   function toggleCart(id){
@@ -356,15 +381,58 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     document.querySelectorAll(`[data-cart-id="${CSS.escape(id)}"]`).forEach(btn=>syncCartButton(btn,id));
   }
 
+  function parsePrice(value){
+    const digits=String(value??"").replace(/\D/g,"");
+    return digits?Number(digits):0;
+  }
+
+  function formatCurrency(value){
+    return `$${new Intl.NumberFormat("es-AR",{maximumFractionDigits:0}).format(Math.round(value))}`;
+  }
+
+  function comboPlan(selected,frequency){
+    const countKey=frequency==="quincenal"?"q_count":"m_count";
+    const priceKey=frequency==="quincenal"?"q_price":"m_price";
+    const plans=selected.map(product=>({count:Number(product[countKey])||0,price:parsePrice(product[priceKey])}));
+    if(plans.some(plan=>plan.count<=0||plan.price<=0))return null;
+    const installments=Math.max(...plans.map(plan=>plan.count));
+    const financedTotal=plans.reduce((sum,plan)=>sum+plan.count*plan.price,0);
+    const installmentAmount=Math.round(financedTotal/installments);
+    const durationLimit=frequency==="quincenal"?24:12;
+    if(installments>durationLimit)return {valid:false,installments,installmentAmount,financedTotal};
+    if(frequency==="mensual"&&installmentAmount>200000)return {valid:false,installments,installmentAmount,financedTotal};
+    return {valid:true,installments,installmentAmount,financedTotal};
+  }
+
   function renderCart(){
     const list=$("cartList");
     const selected=products.filter(p=>cart.has(String(p.id)));
+    const summary=$("comboSummary"),shareButton=$("shareCart");
+    summary.hidden=true;
+    summary.innerHTML="";
+    shareButton.disabled=false;
     if(!selected.length){
       list.innerHTML='<div class="empty">No hay productos seleccionados.</div>';
       return;
     }
     list.innerHTML=`<ul class="cart-list">${selected.map(p=>`<li class="cart-item"><span class="cart-item-name">${esc(p.name||"Producto")}</span><button class="cart-remove" type="button" data-remove-cart="${String(p.id)}">Quitar</button></li>`).join("")}</ul>`;
     list.querySelectorAll("[data-remove-cart]").forEach(btn=>btn.onclick=()=>{toggleCart(String(btn.dataset.removeCart));renderCart();});
+    if(selected.length<2){
+      summary.hidden=false;
+      summary.innerHTML='<h3>Agregá otro producto para ver el precio del combo</h3><div class="combo-limit">También podés consultar este producto individualmente.</div>';
+      shareButton.textContent="📲 Consultar por WhatsApp";
+      return;
+    }
+    const q=comboPlan(selected,"quincenal"),m=comboPlan(selected,"mensual");
+    const available=[q?.valid,m?.valid].some(Boolean);
+    const planMarkup=(plan,label)=>plan?.valid?`<div class="combo-plan"><span>${label}</span><strong>${plan.installments} cuotas de ${formatCurrency(plan.installmentAmount)}</strong></div>`:"";
+    const excluded=[];
+    if(q&&!q.valid)excluded.push(q.installments>24?"La opción quincenal supera 12 meses.":"No se puede calcular la opción quincenal para todos los productos seleccionados.");
+    if(m&&!m.valid)excluded.push(m.installments>12?"La opción mensual supera los 12 meses.":m.installmentAmount>200000?"La opción mensual supera el tope de $200.000 por cuota.":"No se puede calcular la opción mensual para todos los productos seleccionados.");
+    summary.hidden=false;
+    summary.innerHTML=`<h3>Cuotas de tu combo</h3>${planMarkup(q,"Quincenales")}${planMarkup(m,"Mensuales")}${available?`<div class="combo-limit">Importes calculados sumando el total financiado de cada producto, sin descuentos. El plan final queda sujeto a confirmación del vendedor.</div>${excluded.length?`<div class="combo-note">${excluded.map(esc).join(" ")}</div>`:""}`:`<div class="combo-error">Esta combinación no cumple las condiciones. El plazo máximo es de 12 meses (24 cuotas quincenales) y la cuota mensual no puede superar $200.000. Probá quitar un producto.</div>`}`;
+    shareButton.textContent="📲 Consultar este combo";
+    shareButton.disabled=!available;
   }
 
   function openCart(){
@@ -377,7 +445,15 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     const selected=products.filter(p=>cart.has(String(p.id)));
     if(!selected.length)return;
     selected.forEach(p=>recordCustomerCatalogAnalyticsEvent("product_consult",Number(p.id)));
-    const text=`Hola, quiero consultar por estos productos:\n\n${selected.map(p=>p.name||"Producto").join("\n\n")}`;
+    let text;
+    if(selected.length>1){
+      const q=comboPlan(selected,"quincenal"),m=comboPlan(selected,"mensual");
+      if(!q?.valid&&!m?.valid)return;
+      const quote=[q?.valid?`Quincenal: ${q.installments} cuotas de ${formatCurrency(q.installmentAmount)}`:"",m?.valid?`Mensual: ${m.installments} cuotas de ${formatCurrency(m.installmentAmount)}`:""].filter(Boolean).join("\n");
+      text=`Hola, quiero consultar por este combo personalizado:\n\n${selected.map(p=>`• ${p.name||"Producto"}`).join("\n")}\n\n${quote}\n\nImportes calculados sin descuentos.`;
+    }else{
+      text=`Hola, quiero consultar por este producto:\n\n${selected[0].name||"Producto"}`;
+    }
 
     // Si el administrador configuró WhatsApp directo, NO usamos navigator.share:
     // eso abre el selector del sistema. Abrimos directamente el chat configurado.
