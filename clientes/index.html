@@ -397,7 +397,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     if(plans.some(plan=>plan.count<=0||plan.price<=0))return null;
     const installments=Math.max(...plans.map(plan=>plan.count));
     const financedTotal=plans.reduce((sum,plan)=>sum+plan.count*plan.price,0);
-    const installmentAmount=Math.ceil(financedTotal/installments);
+    const installmentAmount=Math.ceil((financedTotal/installments)/500)*500;
     const durationLimit=frequency==="quincenal"?24:12;
     if(installments>durationLimit)return {valid:false,installments,installmentAmount,financedTotal};
     const monthlyEquivalent=frequency==="quincenal"?installmentAmount*2:installmentAmount;
