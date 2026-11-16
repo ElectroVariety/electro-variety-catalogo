@@ -543,9 +543,9 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     const product = (window.currentProducts || []).find(p => String(p.id) === String(id));
     if (!product) return;
 
-    if (!confirm(`¿Eliminar definitivamente "${product.name}"?`)) return;
+    if (!confirm(`¿Eliminar "${product.name}" del catálogo? El historial de ventas conservará el nombre del producto. Si hay pedidos pendientes de entrega, primero habrá que resolverlos.`)) return;
 
-    const { error } = await db.from(REQUIRED_TABLE).delete().eq("id", id);
+    const { error } = await db.rpc("admin_delete_product", { p_product_id: Number(id) });
     if (error) {
       alert("No se pudo eliminar: " + error.message);
       return;
