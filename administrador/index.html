@@ -83,7 +83,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <div class="card" id="login"><h2>Acceso administrador</h2><label>Email</label><input autocomplete="username" id="email" type="email"/><label style="display:block;margin-top:10px">Contraseña</label><input autocomplete="current-password" id="password" type="password"/><button class="blue" id="loginButton" style="width:100%;margin-top:13px" type="button">🔐 Ingresar</button><div class="small" id="loginMsg" style="margin-top:9px"></div></div>
 <div class="wrap hidden" id="app"><div id="adminQuickAccess" class="card hidden" style="gap:8px;flex-wrap:wrap;align-items:center"><b style="margin-right:auto">Accesos rápidos</b><a class="button-link blue" href="../vendedores/">🛍️ Catálogo de vendedores</a><a class="button-link blue" href="../lista-de-productos/">📋 Lista de productos</a><a class="button-link blue" href="../stock-deposito/?admin=1">🏭 Stock Depósito</a><a class="button-link blue" href="../stock-local/?admin=1">🏪 Stock Local</a></div><div class="admin-shell"><div class="admin-mobile-bar"><button id="adminMenuButton" type="button">☰ Menú</button><div class="admin-mobile-title" id="adminMobileTitle">📦 Productos</div></div><aside class="admin-sidebar" id="adminSidebar"><div class="side-title">⚙️ ADMINISTRACIÓN</div><nav aria-label="Secciones del administrador" class="admin-nav"><button class="active" data-admin-section="products" type="button">📦 Productos</button><button class="" data-admin-section="stock" type="button">📊 Stock</button><button class="" data-admin-section="clients" type="button">📣 Clientes</button><button class="" data-admin-section="delivery" type="button">📍 Ubicaciones</button><button class="" data-admin-section="devices" type="button">📱 Dispositivos</button><button class="" data-admin-section="sellers" type="button">👥 Vendedores</button><button class="" data-admin-section="sales" type="button">🧾 Perfiles y pedidos</button><button class="" data-admin-section="customer-sales" type="button">🛍️ Solicitudes de compra</button></nav></aside><div class="admin-sidebar-backdrop" id="adminSidebarBackdrop"></div><main class="admin-content"><section class="admin-panel active" data-admin-panel="products" id="admin-panel-products"><div class="card"><h2 id="formTitle">Nuevo producto</h2><div class="grid">
 <div class="full"><label>Nombre</label><input id="name"/></div><div><label>Subtítulo</label><input id="subtitle"/></div><div><label>Categoría</label><input id="category"/></div>
-<div><label>Cuota quincenal</label><input id="qprice"/></div><div><label>Cantidad quincenal</label><input id="qcount" min="1" type="number"/></div><div><label>Cuota mensual</label><input id="mprice"/></div><div><label>Cantidad mensual</label><input id="mcount" min="1" type="number"/></div>
+<div><label>Cuota quincenal (opcional)</label><input id="qprice"/></div><div><label>Cantidad quincenal (opcional)</label><input id="qcount" min="1" type="number"/></div><div><label>Cuota mensual (opcional)</label><input id="mprice"/></div><div><label>Cantidad mensual (opcional)</label><input id="mcount" min="1" type="number"/></div><div class="small full">Configurá al menos una modalidad completa: quincenal o mensual. La otra puede quedar vacía.</div>
 <div class="full"><label>Imagen (obligatoria al crear; opcional al editar)</label><input accept="image/*" id="image" type="file"/></div>
 <div><label>Quién puede verlo en el catálogo de vendedores</label><select id="sellerVisibility"><option value="all">Todos los usuarios del catálogo</option><option value="privileged">Solo administración y roles con permiso</option></select></div><div><label>Enlaces del catálogo de clientes</label><select id="customerCatalogScope"><option value="all">Catálogo general y enlaces personales</option><option value="general_only">Solo catálogo general</option></select></div>
 </div><div class="actions"><button class="blue" id="saveButton" type="button">💾 Guardar</button><button class="dark" id="resetButton" type="button">Nuevo / cancelar edición</button></div><div class="small" id="status"></div></div><div class="card">
@@ -276,6 +276,13 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     return s;
   }
 
+  function productPlanSummary(product) {
+    return [
+      Number(product?.q_count) > 0 && product?.q_price ? `${product.q_count} cuotas quincenales de $${product.q_price}` : "",
+      Number(product?.m_count) > 0 && product?.m_price ? `${product.m_count} cuotas mensuales de $${product.m_price}` : ""
+    ].filter(Boolean).join(" · ");
+  }
+
   function inferCategory(name) {
     const n = normalizeName(name);
     if (/aire acondicionado|ventilador|caloventor|convector|estufa|climatizador/.test(n)) return "Climatización";
@@ -444,7 +451,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         ${p.image_url ? `<img class="thumb" src="${esc(p.image_url)}" alt="">` : `<div class="thumb"></div>`}
         <div class="info">
           <b>${esc(p.name)}</b>
-          <div class="small">${esc(p.category || "Sin categoría")} · ${esc(p.q_price)} × ${esc(p.q_count)} · ${esc(p.m_price)} × ${esc(p.m_count)}</div>
+          <div class="small">${esc(p.category || "Sin categoría")} · ${esc(productPlanSummary(p) || "Sin modalidad configurada")}</div>
           <div class="small">${p.active !== false ? "🟢 Publicado" : "⚪ Oculto"} · Vendedores: ${p.seller_visibility === "privileged" ? "🔒 Solo con permiso" : "Todos"} · Clientes: ${p.customer_catalog_scope === "general_only" ? "Solo catálogo general" : "General y enlaces personales"} · Posición ${i + 1}</div>
           <div class="product-tools">
             <button type="button" onclick="editProduct(${Number(p.id)})">✏️ Editar</button>
@@ -643,14 +650,22 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 
   async function save() {
     const name = cleanText($("name").value);
-    const qprice = cleanText($("qprice").value);
-    const qcount = Number($("qcount").value);
-    const mprice = cleanText($("mprice").value);
-    const mcount = Number($("mcount").value);
+    const qpriceInput = cleanText($("qprice").value);
+    const qcountInput = cleanText($("qcount").value);
+    const mpriceInput = cleanText($("mprice").value);
+    const mcountInput = cleanText($("mcount").value);
+    const qcount = qcountInput ? Number(qcountInput) : 0;
+    const mcount = mcountInput ? Number(mcountInput) : 0;
+    const hasQuincenal = !!qpriceInput && Number.isInteger(qcount) && qcount > 0;
+    const hasMensual = !!mpriceInput && Number.isInteger(mcount) && mcount > 0;
+    const partialQuincenal = !!(qpriceInput || qcountInput) && !hasQuincenal;
+    const partialMensual = !!(mpriceInput || mcountInput) && !hasMensual;
+    const qprice = hasQuincenal ? qpriceInput : "";
+    const mprice = hasMensual ? mpriceInput : "";
     const category = cleanText($("category").value) || "Electrodomésticos";
 
-    if (!name || !qprice || !Number.isInteger(qcount) || qcount < 1 || !mprice || !Number.isInteger(mcount) || mcount < 1) {
-      setStatus("status", "Completá nombre, precios y cantidades válidas de ambas financiaciones.", "warn");
+    if (!name || (!hasQuincenal && !hasMensual) || partialQuincenal || partialMensual) {
+      setStatus("status", "Completá el nombre y al menos una modalidad completa. Si cargás una modalidad, completá su precio y cantidad de cuotas.", "warn");
       return;
     }
 
@@ -683,9 +698,9 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         subtitle: cleanText($("subtitle").value),
         category,
         q_price: qprice,
-        q_count: qcount,
+        q_count: hasQuincenal ? qcount : 0,
         m_price: mprice,
-        m_count: mcount,
+        m_count: hasMensual ? mcount : 0,
         image_url: imageUrl,
         seller_visibility: $("sellerVisibility").value === "privileged" ? "privileged" : "all",
         customer_catalog_scope: $("customerCatalogScope").value === "general_only" ? "general_only" : "all",
@@ -1607,7 +1622,21 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
   }
   function updateRankingSalePlanPreview() {
     const product = (window.currentProducts || []).find(item => String(item.id) === $("rankingSaleProduct")?.value);
-    const frequency = $("rankingSaleFrequency")?.value;
+    const frequencySelect = $("rankingSaleFrequency");
+    if (frequencySelect) {
+      for (const option of frequencySelect.options) {
+        if (!option.value) continue;
+        const available = !product || (option.value === "quincenal"
+          ? Number(product.q_count) > 0 && !!product.q_price
+          : Number(product.m_count) > 0 && !!product.m_price);
+        option.disabled = !available;
+        option.hidden = !available;
+      }
+      if (product && frequencySelect.selectedOptions[0]?.disabled) {
+        frequencySelect.value = Number(product.q_count) > 0 && product.q_price ? "quincenal" : Number(product.m_count) > 0 && product.m_price ? "mensual" : "";
+      }
+    }
+    const frequency = frequencySelect?.value;
     const preview = $("rankingSalePlanPreview");
     if (!preview) return;
     if (!product || !frequency) {
@@ -2160,7 +2189,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 
       const q = after.match(/(\d+)\s+cuotas?\s+quincenales?\s+de\s+\$?\s*([\d.,]+)/i);
       const m = after.match(/(\d+)\s+cuotas?\s+mensuales?\s+de\s+\$?\s*([\d.,]+)/i);
-      if (!q || !m) continue;
+      if (!q && !m) continue;
 
       const lines = after.split("\n").map(cleanText).filter(Boolean);
       const title = [];
@@ -2177,10 +2206,10 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         name,
         subtitle: "",
         category: inferCategory(name),
-        q_price: moneyValue(q[2]),
-        q_count: Number(q[1]),
-        m_price: moneyValue(m[2]),
-        m_count: Number(m[1]),
+        q_price: q ? moneyValue(q[2]) : "",
+        q_count: q ? Number(q[1]) : 0,
+        m_price: m ? moneyValue(m[2]) : "",
+        m_count: m ? Number(m[1]) : 0,
         imageName
       });
     }
@@ -2263,7 +2292,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
                  ${p.duplicate || !p.entry ? "disabled" : ""}>
           <div class="info">
             <b>${esc(p.name)}</b>
-            <div class="small">${esc(p.category)} · ${p.q_count} quincenales de $${esc(p.q_price)} · ${p.m_count} mensuales de $${esc(p.m_price)}</div>
+            <div class="small">${esc(p.category)} · ${esc(productPlanSummary(p) || "Sin modalidad configurada")}</div>
             <div class="small ${p.duplicate || !p.entry ? "warn" : "ok"}">
               ${p.duplicate ? "⚠️ Ya existe — no se selecciona" : p.entry ? "✅ Listo para importar" : "⚠️ No se encontró la imagen"}
             </div>
@@ -2551,7 +2580,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
       const f=map.get(String(p.id))||{};
       const openProduct = f.notification_open_product !== false;
       return `<div class="client-feature-item" data-client-product-card data-client-product-search="${esc([p.name,p.subtitle,p.category].filter(Boolean).join(" "))}">
-        <div class="client-feature-product-head"><img class="client-feature-thumb" src="${esc(p.image_url||"")}" alt="${esc(p.name)}" loading="lazy" onerror="this.hidden=true"><div class="client-feature-product-info"><div class="client-feature-product-name">${esc(p.name)}</div><div class="small">${esc(p.category||"Sin categoría")}</div>${p.subtitle?`<div class="small">${esc(p.subtitle)}</div>`:""}<div class="small">${esc(p.q_count||0)} cuotas quincenales · ${esc(p.q_price||"—")} &nbsp;|&nbsp; ${esc(p.m_count||0)} cuotas mensuales · ${esc(p.m_price||"—")}</div></div></div>
+        <div class="client-feature-product-head"><img class="client-feature-thumb" src="${esc(p.image_url||"")}" alt="${esc(p.name)}" loading="lazy" onerror="this.hidden=true"><div class="client-feature-product-info"><div class="client-feature-product-name">${esc(p.name)}</div><div class="small">${esc(p.category||"Sin categoría")}</div>${p.subtitle?`<div class="small">${esc(p.subtitle)}</div>`:""}<div class="small">${esc(productPlanSummary(p)||"Sin modalidad configurada")}</div></div></div>
         <div class="client-feature-flags">
           <label><input type="checkbox" data-client-feature="trending" data-product-id="${p.id}" ${f.trending?"checked":""}> 🔥 Tendencia</label>
           <label><input type="checkbox" data-client-feature="new_entry" data-product-id="${p.id}" ${f.new_entry?"checked":""}> 🆕 Nuevo ingreso</label>
