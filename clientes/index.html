@@ -35,7 +35,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
 .cart-modal h2{margin:0 0 8px;font-size:22px}
 .cart-list{margin:12px 0 18px;padding:0;list-style:none}
 .cart-item{display:flex;align-items:center;gap:10px;border-bottom:1px solid #e5e7eb;padding:11px 0}
-.cart-item-info{flex:1;min-width:0}.cart-item-name{display:block;font-size:14px;font-weight:800}.cart-item-plans{display:block;margin-top:4px;font-size:12px;line-height:1.4;color:#6b7280}
+.cart-item-name{font-size:14px;font-weight:800;flex:1}
 .cart-remove{border:0;background:#fee2e2;color:#991b1b;border-radius:999px;padding:7px 10px;font-weight:900;cursor:pointer}
 .combo-guide{margin:0 0 14px;padding:12px 14px;border-radius:14px;background:#eff6ff;color:#1e3a8a;font-size:13px;line-height:1.45}
 .combo-guide strong{display:block;margin-bottom:3px}
@@ -76,7 +76,6 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
 .product-cat{font-size:10px;color:#6b7280;font-weight:900;text-transform:uppercase}
 .product-name{font-size:16px;font-weight:1000;margin:5px 0}
 .product-desc{font-size:12px;color:#6b7280;line-height:1.35;margin-bottom:10px}
-.product-plans{font-size:11px;line-height:1.4;color:#374151;background:#f8fafc;border-radius:9px;padding:8px;margin:0 0 9px}
 .wa{display:block;width:100%;border:0;cursor:pointer;text-align:center;text-decoration:none;background:#16a34a;color:#fff;border-radius:999px;padding:10px 8px;font-size:12px;font-weight:1000;margin-top:auto}
 .empty{color:#6b7280;font-size:13px;text-align:center;padding:14px}
 .detail-wrap{background:#fff;border-radius:20px;padding:16px;margin-bottom:16px}
@@ -296,7 +295,6 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
         <div class="product-cat">${esc(p.category||"Producto")}</div>
         <div class="product-name">${esc(title)}</div>
         <div class="product-desc">${esc(desc)}</div>
-        <div class="product-plans">${esc(formatProductPlans(p))}</div>
         <button class="wa" type="button" data-wa-index="${String(p.id)}">💬 CONSULTAR POR WHATSAPP</button>
         ${isPrebuiltCombo(p)?"":`<button class="add-cart" type="button" data-cart-id="${String(p.id)}">➕ Agregar al combo</button>`}
       </div>
@@ -385,19 +383,6 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     return digits?Number(digits):0;
   }
 
-  function formatCurrency(value){
-    return `$${new Intl.NumberFormat("es-AR",{maximumFractionDigits:0}).format(Math.round(value))}`;
-  }
-
-  function formatProductPlans(product){
-    const plans=[];
-    const qCount=Number(product.q_count)||0,qPrice=parsePrice(product.q_price);
-    const mCount=Number(product.m_count)||0,mPrice=parsePrice(product.m_price);
-    if(qCount>0&&qPrice>0)plans.push(`${qCount} cuotas quincenales de ${formatCurrency(qPrice)}`);
-    if(mCount>0&&mPrice>0)plans.push(`${mCount} cuotas mensuales de ${formatCurrency(mPrice)}`);
-    return plans.length?plans.join(" · "):"Consultá las cuotas disponibles";
-  }
-
   function comboPlan(selected,frequency){
     const countKey=frequency==="quincenal"?"q_count":"m_count";
     const priceKey=frequency==="quincenal"?"q_price":"m_price";
@@ -424,7 +409,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
       list.innerHTML='<div class="empty">No hay productos seleccionados.</div>';
       return;
     }
-    list.innerHTML=`<ul class="cart-list">${selected.map(p=>`<li class="cart-item"><div class="cart-item-info"><span class="cart-item-name">${esc(p.name||"Producto")}</span><small class="cart-item-plans">${esc(formatProductPlans(p))}</small></div><button class="cart-remove" type="button" data-remove-cart="${String(p.id)}">Quitar</button></li>`).join("")}</ul>`;
+    list.innerHTML=`<ul class="cart-list">${selected.map(p=>`<li class="cart-item"><span class="cart-item-name">${esc(p.name||"Producto")}</span><button class="cart-remove" type="button" data-remove-cart="${String(p.id)}">Quitar</button></li>`).join("")}</ul>`;
     list.querySelectorAll("[data-remove-cart]").forEach(btn=>btn.onclick=()=>{toggleCart(String(btn.dataset.removeCart));renderCart();});
     if(selected.length<2){
       summary.hidden=false;
@@ -438,7 +423,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
     summary.hidden=false;
     summary.innerHTML=available
       ?'<h3>Combo listo para consultar</h3><div class="combo-limit">El equipo te confirma las opciones de pago por WhatsApp.</div>'
-      :'<div class="combo-error">Esta selección supera los límites disponibles. Elegí productos con cuotas de menor valor o quitá productos del combo.</div>';
+      :'<div class="combo-error">Límite excedido, quita un producto o elige uno de menor valor.</div>';
     shareButton.textContent="📲 Consultar este combo";
     shareButton.disabled=!available;
   }
@@ -458,8 +443,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
       const q=comboPlan(selected,"quincenal"),m=comboPlan(selected,"mensual");
       const availablePlans=[q,m].filter(Boolean);
       if(!availablePlans.length||availablePlans.some(plan=>!plan.valid))return;
-      const quote=[q?.valid?`Quincenal: ${q.installments} cuotas de ${formatCurrency(q.installmentAmount)}`:"",m?.valid?`Mensual: ${m.installments} cuotas de ${formatCurrency(m.installmentAmount)}`:""].filter(Boolean).join("\n");
-      text=`Hola, quiero consultar por este combo personalizado:\n\n${selected.map(p=>`• ${p.name||"Producto"}`).join("\n")}\n\nCuotas del combo:\n${quote}`;
+      text=`Hola, quiero consultar por este combo personalizado:\n\n${selected.map(p=>`• ${p.name||"Producto"}`).join("\n")}\n\n¿Me podrían informar las opciones de pago disponibles?`;
     }else{
       text=`Hola, quiero consultar por este producto:\n\n${selected[0].name||"Producto"}`;
     }
