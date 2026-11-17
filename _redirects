@@ -1,4 +1,8 @@
 # Short public URLs; rewrite internally so the requested path stays in the address bar.
+/electro-variety-catalogo/catalogo /catalogo/ 301
+/electro-variety-catalogo/catalogo/ /catalogo/ 301
+/electro-variety-catalogo/catalogo/* /catalogo/:splat 301
+
 /catalogo /catalogo/ 301
 /catalogo/ /clientes/ 200
 /catalogo/* /clientes/:splat 200
