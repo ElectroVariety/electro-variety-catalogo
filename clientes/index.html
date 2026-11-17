@@ -153,7 +153,6 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
   <section class="hero">
     <h1>¿QUÉ ESTÁS NECESITANDO?</h1>
     <p>Elegí una categoría y descubrí nuestros productos.</p>
-    <a id="saleFormLink" href="../formulario/" style="display:inline-block;margin-top:13px;padding:11px 16px;border-radius:999px;background:#16a34a;color:#fff;text-decoration:none;font-size:13px;font-weight:1000">🛍️ Completar solicitud de compra</a>
     <div class="search-wrap">
       <input id="searchInput" class="search-input" type="search" autocomplete="off" placeholder="¿Qué producto estás buscando?" aria-label="Buscar producto">
       <span class="search-icon">🔍</span>
@@ -914,7 +913,6 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
         if(catalogWhatsAppNumber.length<8)throw new Error("El enlace no está habilitado o el usuario verificado no tiene un WhatsApp válido.");
         catalogWhatsAppMode="direct";
         $("personalCatalogNotice").style.display="block";
-        $("saleFormLink").style.display="none";
         recordCustomerCatalogAnalyticsEvent("visit");
       }else if(!settingsRes.error && settingsRes.data){
         catalogWhatsAppMode=settingsRes.data.catalog_product_click_whatsapp_mode==="direct"?"direct":"choose";
@@ -932,7 +930,7 @@ header{background:#111827;color:#fff;padding:18px 16px;text-align:center;positio
       renderProductDetail();
     }catch(error){
       console.error(error);
-      if(personalCatalogToken){$("saleFormLink").style.display="none";$("personalCatalogNotice").style.display="block";$("personalCatalogNotice").innerHTML=`<strong>⚠️ Este enlace personal no está disponible</strong>${esc(error.message||"El usuario no tiene una insignia activa o un WhatsApp configurado.")}`;}
+      if(personalCatalogToken){$("personalCatalogNotice").style.display="block";$("personalCatalogNotice").innerHTML=`<strong>⚠️ Este enlace personal no está disponible</strong>${esc(error.message||"El usuario no tiene una insignia activa o un WhatsApp configurado.")}`;}
       $("products").innerHTML=`<div class="empty" style="grid-column:1/-1">No se pudo cargar el catálogo. Intentá nuevamente en unos segundos.</div>`;
     }
   }
