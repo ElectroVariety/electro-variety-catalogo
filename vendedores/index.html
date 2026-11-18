@@ -270,6 +270,7 @@ main{max-width:760px;margin:auto;background:#fff;min-height:calc(100vh - 100px);
 .online-customer-analytics-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin:12px 0}.online-customer-analytics-controls label{display:grid;gap:4px;min-width:130px;color:#6b7280;font-size:12px}.online-customer-analytics-controls input{max-width:180px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}.online-customer-analytics-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}.online-customer-top-products,.online-customer-daily{margin-top:14px}.online-customer-top-products ol{margin:6px 0;padding-left:22px}.online-customer-daily>.online-profile-activity-day{margin-top:8px}
 @media(max-width:480px){.online-staff-profile-panel{width:100%;max-height:94vh;border-radius:18px 18px 0 0;margin:auto auto 0}.online-profile-metrics{grid-template-columns:1fr}}
 .online-staff-team{margin:6px 0 0 13px;padding-left:8px;border-left:2px solid #dbeafe}
+.stock-breakdown{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;color:#475569;font-size:12px;font-weight:700}.stock-breakdown span{padding:5px 8px;background:#f1f5f9;border-radius:8px}
 .online-staff-team h4{margin:7px 0 2px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
 .online-staff-subheading{margin:7px 0 2px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
  @media(min-width:1100px){.catalog-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
@@ -320,6 +321,7 @@ let db;
 let sellerDb;
 let adminDb;
 let allProducts=[];
+let stockInventoryByProduct=new Map();
 let currentSeller=null;
 let currentSellerId=null;
 let currentStaffAccess=null;
@@ -1049,6 +1051,21 @@ async function startCatalog(seller=null,staffAccess=currentStaffAccess,staffName
     const {data,error}=await db.from("products").select("*").eq("active",true);
     if(error) throw error;
     allProducts=Array.isArray(data)?data:[];
+    stockInventoryByProduct=new Map();
+    if(currentUserHasSalesBadge||currentStaffAccess?.role==="admin"){
+      try{
+        const productIds=allProducts.map(product=>Number(product.id)).filter(Number.isFinite);
+        if(productIds.length){
+          const {data:inventory,error:inventoryError}=await db.from("stock_inventory").select("product_id,location,quantity").in("product_id",productIds);
+          if(inventoryError)throw inventoryError;
+          for(const row of inventory||[]){
+            const productId=String(row.product_id);
+            if(!stockInventoryByProduct.has(productId))stockInventoryByProduct.set(productId,{});
+            stockInventoryByProduct.get(productId)[row.location]=row.quantity;
+          }
+        }
+      }catch(inventoryError){console.warn("No se pudo cargar el desglose de stock para usuarios verificados",inventoryError)}
+    }
   // Orden REAL del catálogo: categoría A-Z y, dentro de cada categoría, producto A-Z.
   // Se eliminan caracteres invisibles de WhatsApp y signos iniciales que podrían alterar el orden.
   const sortKey=value=>String(value??"")
@@ -1556,6 +1573,9 @@ function catalogCard(p,index){
   const image=productImageMarkup(p);
   const category=p.category ? `<div class="category">${esc(p.category)}</div>` : "";
   const stockLabel = stock > 0 ? `📦 Stock: ${stock}` : (hasStock ? "📦 Hay stock" : "📦 Sin stock");
+  const canSeeStockSplit=currentUserHasSalesBadge||currentStaffAccess?.role==="admin";
+  const stockSplit=canSeeStockSplit?(stockInventoryByProduct.get(String(p.id))||{}):null;
+  const stockSplitMarkup=canSeeStockSplit?`<div class="stock-breakdown" aria-label="Stock por ubicación"><span>🏭 Depósito: ${stockSplit.deposito==null?"Sin registrar":Number(stockSplit.deposito)}</span><span>🏪 Local: ${stockSplit.local==null?"Sin registrar":Number(stockSplit.local)}</span></div>`:"";
   return `<article class="catalog-card">
     ${category}
     <div class="prodtitle">${esc(productTitle(p))}</div>
@@ -1565,6 +1585,7 @@ function catalogCard(p,index){
       ${Number(p.m_count)>0&&String(p.m_price||"").replace(/\D/g,"") ? `<div class="row">${esc(p.m_count)} cuotas mensuales de <span class="value">${money(p.m_price)}</span></div>` : ""}
     </div>
     <div class="${stockClass}">${stockLabel}</div>
+    ${stockSplitMarkup}
     <div class="bottom-actions">
       <button class="cart-add" type="button" data-cart-index="${index}">🛒 AGREGAR</button>
       <button class="share" type="button" data-share-index="${index}">🟢 COMPARTIR</button>
