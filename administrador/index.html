@@ -85,7 +85,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
 <div class="full"><label>Nombre</label><input id="name"/></div><div><label>Subtítulo</label><input id="subtitle"/></div><div><label>Categoría</label><input id="category"/></div>
 <div><label>Cuota quincenal (opcional)</label><input id="qprice"/></div><div><label>Cantidad quincenal (opcional)</label><input id="qcount" min="1" type="number"/></div><div><label>Cuota mensual (opcional)</label><input id="mprice"/></div><div><label>Cantidad mensual (opcional)</label><input id="mcount" min="1" type="number"/></div><div class="small full">Configurá al menos una modalidad completa: quincenal o mensual. La otra puede quedar vacía.</div>
 <div class="full"><label>Imagen (obligatoria al crear; opcional al editar)</label><input accept="image/*" id="image" type="file"/></div>
-<div><label>Quién puede verlo en el catálogo de vendedores</label><select id="sellerVisibility"><option value="all">Todos los usuarios del catálogo</option><option value="privileged">Solo administración y roles con permiso</option></select></div><div><label>Enlaces del catálogo de clientes</label><select id="customerCatalogScope"><option value="all">Catálogo general y enlaces personales</option><option value="general_only">Solo catálogo general</option></select></div>
+<div><label>Quién puede verlo en el catálogo de vendedores</label><select id="sellerVisibility"><option value="all">Todos los usuarios del catálogo</option><option value="privileged">Solo administración y roles con permiso</option></select></div><div><label>Enlaces del catálogo de clientes</label><select id="customerCatalogScope"><option value="all">Catálogo general y enlaces personales</option><option value="general_only">Solo catálogo general</option><option value="seller_only">Solo catálogo de vendedores</option></select></div>
 </div><div class="actions"><button class="blue" id="saveButton" type="button">💾 Guardar</button><button class="dark" id="resetButton" type="button">Nuevo / cancelar edición</button></div><div class="small" id="status"></div></div><div class="card">
 <h2>📥 Importar desde WhatsApp</h2>
 <div class="small">Exportá un chat de WhatsApp con <b>Incluir archivos</b> y subí el ZIP acá. El sistema detectará automáticamente nombre, cuotas e imagen y te mostrará una vista previa antes de guardar. Los productos importados usan las dos opciones de privacidad del formulario de producto.</div>
@@ -452,7 +452,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         <div class="info">
           <b>${esc(p.name)}</b>
           <div class="small">${esc(p.category || "Sin categoría")} · ${esc(productPlanSummary(p) || "Sin modalidad configurada")}</div>
-          <div class="small">${p.active !== false ? "🟢 Publicado" : "⚪ Oculto"} · Vendedores: ${p.seller_visibility === "privileged" ? "🔒 Solo con permiso" : "Todos"} · Clientes: ${p.customer_catalog_scope === "general_only" ? "Solo catálogo general" : "General y enlaces personales"} · Posición ${i + 1}</div>
+          <div class="small">${p.active !== false ? "🟢 Publicado" : "⚪ Oculto"} · Vendedores: ${p.seller_visibility === "privileged" ? "🔒 Solo con permiso" : "Todos"} · Clientes: ${p.customer_catalog_scope === "seller_only" ? "No visible para clientes" : p.customer_catalog_scope === "general_only" ? "Solo catálogo general" : "General y enlaces personales"} · Posición ${i + 1}</div>
           <div class="product-tools">
             <button type="button" onclick="editProduct(${Number(p.id)})">✏️ Editar</button>
             <button type="button" class="${p.active !== false ? "red" : "blue"}" onclick="toggleProduct(${Number(p.id)},${p.active !== false})">${p.active !== false ? "🙈 Ocultar" : "👁️ Publicar"}</button>
@@ -703,7 +703,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
         m_count: hasMensual ? mcount : 0,
         image_url: imageUrl,
         seller_visibility: $("sellerVisibility").value === "privileged" ? "privileged" : "all",
-        customer_catalog_scope: $("customerCatalogScope").value === "general_only" ? "general_only" : "all",
+        customer_catalog_scope: ["general_only","seller_only"].includes($("customerCatalogScope").value) ? $("customerCatalogScope").value : "all",
         active: editing?.active ?? true,
         updated_at: new Date().toISOString()
       };
@@ -755,7 +755,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
     $("mprice").value = data.m_price || "";
     $("mcount").value = data.m_count || "";
     $("sellerVisibility").value = data.seller_visibility === "privileged" ? "privileged" : "all";
-    $("customerCatalogScope").value = data.customer_catalog_scope === "general_only" ? "general_only" : "all";
+    $("customerCatalogScope").value = ["general_only","seller_only"].includes(data.customer_catalog_scope) ? data.customer_catalog_scope : "all";
     $("image").value = "";
     setStatus("status", "Editando: " + data.name);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2373,7 +2373,7 @@ body{margin:0;background:#eef0f3;font-family:Arial,sans-serif;color:#111827}head
             m_count: product.m_count,
             image_url: imageUrl,
             seller_visibility: $("sellerVisibility").value === "privileged" ? "privileged" : "all",
-            customer_catalog_scope: $("customerCatalogScope").value === "general_only" ? "general_only" : "all",
+            customer_catalog_scope: ["general_only","seller_only"].includes($("customerCatalogScope").value) ? $("customerCatalogScope").value : "all",
             active: true,
             updated_at: new Date().toISOString()
           };
